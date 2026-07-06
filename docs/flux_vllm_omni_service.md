@@ -19,6 +19,15 @@ MODEL_PATH=/home/liujinyuan/DATA/models/FLUX.2-klein-4B \
   scripts/start_flux_server.sh
 ```
 
+`start_flux_server.sh` starts the process, then polls `/health` until the API is
+ready. The default readiness timeout is 180 seconds. Override it if needed:
+
+```bash
+READY_TIMEOUT_SECONDS=300 \
+MODEL_PATH=/home/liujinyuan/DATA/models/FLUX.2-klein-4B \
+  scripts/start_flux_server.sh
+```
+
 Foreground equivalent:
 
 ```bash
@@ -38,6 +47,9 @@ VLLM_TARGET_DEVICE=cuda vllm-omni serve /home/liujinyuan/DATA/models/FLUX.2-klei
 scripts/status_flux_server.sh
 scripts/stop_flux_server.sh
 ```
+
+`status_flux_server.sh` reports process state, HTTP health status, `/v1/models`
+availability, GPU memory, and recent log lines when the API is not ready.
 
 ## Generate And Edit Images
 
@@ -75,6 +87,6 @@ Observed on this RTX 3090 with vLLM-Omni, CUDA, bfloat16,
 - Startup to ready server: about 27 seconds.
 - Model runner load: 8.74 seconds.
 - Model memory: about 14.9 GiB reported by vLLM-Omni.
-- Warm text-to-image latency: 2.55-2.81 seconds at 1024x1024.
-- Image edit latency with `size=auto`: 3.87 seconds.
+- Warm text-to-image latency: 2.9 seconds at 1024x1024.
+- Image edit latency with `size=auto`: 3.6 seconds.
 - vLLM-Omni selected FlashAttention and compiled the transformer with `torch.compile`.

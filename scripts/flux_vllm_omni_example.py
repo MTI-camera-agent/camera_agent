@@ -103,7 +103,7 @@ def main() -> None:
     edit_args = argparse.Namespace(
         base_url=args.base_url,
         prompt=DEFAULT_EDIT_PROMPT,
-        image=Path("test_img/stand_female_0.jpg"),
+        image=Path("test_img/stand_female_1.jpg"),
         out=Path("outputs/flux_vllm_omni/edit_auto.png"),
         size="auto",
         guidance_scale=1.0,
