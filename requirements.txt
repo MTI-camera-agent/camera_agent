@@ -1,0 +1,7 @@
+agno
+google-genai
+httpx
+pillow
+pydantic
+pyyaml
+pytest

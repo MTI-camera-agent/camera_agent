@@ -7,7 +7,6 @@ from pathlib import Path
 
 import httpx
 
-
 DEFAULT_BASE_URL = "http://127.0.0.1:8010"
 DEFAULT_PROMPT = "A cat holding a sign that says hello world"
 DEFAULT_EDIT_PROMPT = (
@@ -23,7 +22,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     generate = subparsers.add_parser("generate")
     generate.add_argument("--prompt", default=DEFAULT_PROMPT)
-    generate.add_argument("--out", type=Path, default=Path("outputs/flux_vllm_omni/text_to_image.png"))
+    generate.add_argument(
+        "--out",
+        type=Path,
+        default=Path("outputs/flux_vllm_omni/text_to_image.png"),
+    )
     generate.add_argument("--size", default="1024x1024")
     generate.add_argument("--guidance-scale", type=float, default=1.0)
     generate.add_argument("--num-inference-steps", type=int, default=4)
@@ -76,10 +79,18 @@ def edit_image(args: argparse.Namespace) -> None:
     with args.image.open("rb") as handle:
         files = {"image": (args.image.name, handle, "image/jpeg")}
         started = time.perf_counter()
-        response = httpx.post(f"{args.base_url}/v1/images/edits", data=data, files=files, timeout=None)
+        response = httpx.post(
+            f"{args.base_url}/v1/images/edits",
+            data=data,
+            files=files,
+            timeout=None,
+        )
         elapsed = time.perf_counter() - started
     save_response_image(response, args.out)
-    print(f"edited={args.out} latency_seconds={elapsed:.6f} response_size={response.json().get('size')}")
+    print(
+        f"edited={args.out} latency_seconds={elapsed:.6f} "
+        f"response_size={response.json().get('size')}"
+    )
 
 
 def main() -> None:

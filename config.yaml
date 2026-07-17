@@ -1,0 +1,29 @@
+prompts_dir: prompts
+outputs_dir: outputs
+
+logging:
+  level: INFO
+
+loop:
+  max_iterations: 3
+
+tracing:
+  # Options: plain, json, none
+  format: plain
+
+structured_vision:
+  provider: agno.google
+  model_id: gemini-3.1-flash-lite
+  api_key_env: GEMINI_API_KEY
+  temperature: 0.2
+  max_output_tokens: 4096
+  retries: 1
+  use_json_mode: true
+
+image_generator:
+  provider: openai_compatible
+  base_url: http://127.0.0.1:8010
+  timeout_seconds: null
+  guidance_scale: 1.0
+  num_inference_steps: 4
+  seed: 0

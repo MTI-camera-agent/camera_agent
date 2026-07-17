@@ -3,13 +3,13 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from google import genai
 from google.genai import types
-
 
 DEFAULT_MODEL = "gemini-2.5-flash"
 DEFAULT_IMAGE = Path("test_img/stand_female_0.jpg")
@@ -105,7 +105,10 @@ def _stream_generate_content(
     return "".join(chunks)
 
 
-def _emit_tool_use_events(response: types.GenerateContentResponse, seen: set[tuple[str, str | None]]) -> None:
+def _emit_tool_use_events(
+    response: types.GenerateContentResponse,
+    seen: set[tuple[str, str | None]],
+) -> None:
     for event in _extract_tool_use_events(response):
         key = (event.name, event.detail)
         if key in seen:
@@ -126,11 +129,17 @@ def _extract_tool_use_events(response: types.GenerateContentResponse) -> Iterabl
         for part in content.parts or []:
             function_call = getattr(part, "function_call", None)
             if function_call is not None and function_call.name:
-                yield ToolUseEvent(name=function_call.name, detail=_format_tool_args(function_call.args))
+                yield ToolUseEvent(
+                    name=function_call.name,
+                    detail=_format_tool_args(function_call.args),
+                )
 
             tool_call = getattr(part, "tool_call", None)
             if tool_call is not None and tool_call.tool_type:
-                yield ToolUseEvent(name=str(tool_call.tool_type), detail=_format_tool_args(tool_call.args))
+                yield ToolUseEvent(
+                    name=str(tool_call.tool_type),
+                    detail=_format_tool_args(tool_call.args),
+                )
 
 
 def _extract_grounding_events(candidate: types.Candidate) -> Iterable[ToolUseEvent]:
