@@ -1,0 +1,388 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hellocamera.local/protocol-v1.schema.json",
+  "title": "HelloCamera WebSocket Protocol v1",
+  "oneOf": [
+    { "$ref": "#/$defs/hello" },
+    { "$ref": "#/$defs/observation" },
+    { "$ref": "#/$defs/clientError" },
+    { "$ref": "#/$defs/result" },
+    { "$ref": "#/$defs/captureHighResolution" },
+    { "$ref": "#/$defs/previewImageHeader" },
+    { "$ref": "#/$defs/highResolutionImageHeader" },
+    { "$ref": "#/$defs/resultImageHeader" }
+  ],
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "positiveInteger": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "timestamp": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "nullableUUID": {
+      "oneOf": [
+        { "$ref": "#/$defs/uuid" },
+        { "type": "null" }
+      ]
+    },
+    "point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "number", "minimum": 0, "maximum": 1 },
+        "y": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "camera": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "lensID",
+        "lensName",
+        "zoomFactor",
+        "focalLength35mm",
+        "exposureBias",
+        "flashMode",
+        "orientation",
+        "frameWidth",
+        "frameHeight",
+        "cropAspectRatio"
+      ],
+      "properties": {
+        "lensID": { "type": "string", "minLength": 1 },
+        "lensName": { "type": "string", "minLength": 1 },
+        "zoomFactor": { "type": "number", "exclusiveMinimum": 0 },
+        "focalLength35mm": { "type": "number", "exclusiveMinimum": 0 },
+        "focusPoint": {
+          "oneOf": [
+            { "$ref": "#/$defs/point" },
+            { "type": "null" }
+          ]
+        },
+        "exposurePoint": {
+          "oneOf": [
+            { "$ref": "#/$defs/point" },
+            { "type": "null" }
+          ]
+        },
+        "exposureBias": { "type": "number" },
+        "iso": { "type": ["number", "null"], "exclusiveMinimum": 0 },
+        "exposureDurationSeconds": {
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0
+        },
+        "whiteBalanceRedGain": {
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0
+        },
+        "whiteBalanceGreenGain": {
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0
+        },
+        "whiteBalanceBlueGain": {
+          "type": ["number", "null"],
+          "exclusiveMinimum": 0
+        },
+        "flashMode": { "const": "off" },
+        "orientation": { "const": "portrait" },
+        "frameWidth": { "$ref": "#/$defs/positiveInteger" },
+        "frameHeight": { "$ref": "#/$defs/positiveInteger" },
+        "cropAspectRatio": { "type": "number", "exclusiveMinimum": 0 },
+        "rollRadians": { "type": ["number", "null"] },
+        "pitchRadians": { "type": ["number", "null"] }
+      }
+    },
+    "overlayBase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "points"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": {
+          "enum": ["arrow", "line", "rectangle", "circle", "path", "text"]
+        },
+        "points": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/point" }
+        },
+        "text": { "type": "string", "minLength": 1 },
+        "color": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$"
+        },
+        "lineWidth": { "type": "number", "exclusiveMinimum": 0 },
+        "expiresInMilliseconds": { "$ref": "#/$defs/positiveInteger" }
+      }
+    },
+    "overlay": {
+      "allOf": [
+        { "$ref": "#/$defs/overlayBase" },
+        {
+          "oneOf": [
+            {
+              "properties": {
+                "kind": { "enum": ["arrow", "line", "path"] },
+                "points": { "minItems": 2 }
+              }
+            },
+            {
+              "properties": {
+                "kind": { "enum": ["rectangle", "circle"] },
+                "points": { "minItems": 2, "maxItems": 2 }
+              }
+            },
+            {
+              "required": ["text"],
+              "properties": {
+                "kind": { "const": "text" },
+                "points": { "minItems": 1, "maxItems": 1 }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "hello": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "version", "messageId", "client", "capabilities"],
+      "properties": {
+        "type": { "const": "hello" },
+        "version": { "const": 1 },
+        "messageId": { "$ref": "#/$defs/uuid" },
+        "client": { "const": "HelloCamera-iOS" },
+        "capabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "preview_jpeg",
+              "high_resolution_request",
+              "overlay_primitives",
+              "sample_image",
+              "motion_attitude"
+            ]
+          }
+        }
+      }
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "version",
+        "messageId",
+        "observationId",
+        "timestampMs",
+        "reason",
+        "intention",
+        "camera",
+        "imageMessageId"
+      ],
+      "properties": {
+        "type": { "const": "observation" },
+        "version": { "const": 1 },
+        "messageId": { "$ref": "#/$defs/uuid" },
+        "observationId": { "$ref": "#/$defs/positiveInteger" },
+        "timestampMs": { "$ref": "#/$defs/timestamp" },
+        "reason": {
+          "enum": [
+            "stream",
+            "reconnected",
+            "intention_updated",
+            "zoom_changed",
+            "focus_changed",
+            "exposure_changed",
+            "user_capture"
+          ]
+        },
+        "intention": { "type": "string" },
+        "camera": { "$ref": "#/$defs/camera" },
+        "imageMessageId": { "$ref": "#/$defs/uuid" }
+      }
+    },
+    "clientError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "version",
+        "messageId",
+        "timestampMs",
+        "code",
+        "detail"
+      ],
+      "properties": {
+        "type": { "const": "error" },
+        "version": { "const": 1 },
+        "messageId": { "$ref": "#/$defs/uuid" },
+        "timestampMs": { "$ref": "#/$defs/timestamp" },
+        "requestId": { "$ref": "#/$defs/nullableUUID" },
+        "code": { "enum": ["busy", "rate_limited", "invalid_message"] },
+        "detail": { "type": "string", "minLength": 1 }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "code": { "enum": ["busy", "rate_limited"] }
+            },
+            "required": ["code"]
+          },
+          "then": {
+            "required": ["requestId"],
+            "properties": {
+              "requestId": { "$ref": "#/$defs/uuid" }
+            }
+          }
+        }
+      ]
+    },
+    "result": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "version",
+        "messageId",
+        "observationId",
+        "timestampMs"
+      ],
+      "properties": {
+        "type": { "const": "result" },
+        "version": { "const": 1 },
+        "messageId": { "$ref": "#/$defs/uuid" },
+        "observationId": { "$ref": "#/$defs/positiveInteger" },
+        "timestampMs": { "$ref": "#/$defs/timestamp" },
+        "text": { "type": "string", "minLength": 1 },
+        "overlays": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/overlay" }
+        },
+        "imageMessageId": { "$ref": "#/$defs/uuid" }
+      },
+      "anyOf": [
+        { "required": ["text"] },
+        { "required": ["overlays"] },
+        { "required": ["imageMessageId"] }
+      ]
+    },
+    "captureHighResolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "version", "requestId"],
+      "properties": {
+        "type": { "const": "capture_high_resolution" },
+        "version": { "const": 1 },
+        "requestId": { "$ref": "#/$defs/uuid" }
+      }
+    },
+    "imageHeaderBase": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "version",
+        "messageId",
+        "timestampMs",
+        "mimeType",
+        "width",
+        "height"
+      ],
+      "properties": {
+        "type": {
+          "enum": ["preview_image", "high_resolution_image", "result_image"]
+        },
+        "version": { "const": 1 },
+        "messageId": { "$ref": "#/$defs/uuid" },
+        "observationId": {
+          "oneOf": [
+            { "$ref": "#/$defs/positiveInteger" },
+            { "type": "null" }
+          ]
+        },
+        "requestId": { "$ref": "#/$defs/nullableUUID" },
+        "timestampMs": { "$ref": "#/$defs/timestamp" },
+        "mimeType": { "enum": ["image/jpeg", "image/png"] },
+        "width": { "$ref": "#/$defs/positiveInteger" },
+        "height": { "$ref": "#/$defs/positiveInteger" },
+        "initiation": {
+          "type": ["string", "null"],
+          "enum": ["user", "agent", null]
+        }
+      }
+    },
+    "previewImageHeader": {
+      "allOf": [
+        { "$ref": "#/$defs/imageHeaderBase" },
+        {
+          "required": ["observationId"],
+          "properties": {
+            "type": { "const": "preview_image" },
+            "mimeType": { "const": "image/jpeg" },
+            "observationId": { "$ref": "#/$defs/positiveInteger" },
+            "requestId": { "type": "null" },
+            "initiation": { "type": "null" }
+          }
+        }
+      ]
+    },
+    "highResolutionImageHeader": {
+      "allOf": [
+        { "$ref": "#/$defs/imageHeaderBase" },
+        {
+          "required": ["initiation"],
+          "properties": {
+            "type": { "const": "high_resolution_image" },
+            "mimeType": { "const": "image/jpeg" },
+            "observationId": { "type": "null" },
+            "initiation": { "enum": ["user", "agent"] }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": { "initiation": { "const": "agent" } },
+                "required": ["initiation"]
+              },
+              "then": {
+                "required": ["requestId"],
+                "properties": {
+                  "requestId": { "$ref": "#/$defs/uuid" }
+                }
+              },
+              "else": {
+                "properties": {
+                  "requestId": { "type": "null" }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "resultImageHeader": {
+      "allOf": [
+        { "$ref": "#/$defs/imageHeaderBase" },
+        {
+          "required": ["observationId"],
+          "properties": {
+            "type": { "const": "result_image" },
+            "observationId": { "$ref": "#/$defs/positiveInteger" },
+            "requestId": { "type": "null" },
+            "initiation": { "type": "null" }
+          }
+        }
+      ]
+    }
+  }
+}

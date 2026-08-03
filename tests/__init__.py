@@ -1,0 +1,2 @@
+"""Camera-agent harness tests."""
+

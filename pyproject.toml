@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "camera-agent-harness"
+version = "0.1.0"
+description = "Desktop reasoning harness for the HelloCamera iPhone client"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "google-genai>=2.10,<3",
+  "httpx>=0.28,<1",
+  "jsonschema>=4.26,<5",
+  "Pillow>=12,<13",
+  "websockets>=15,<17",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=9,<10"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["asyncio: run this coroutine test in an isolated event loop"]
+
+[tool.setuptools.packages.find]
+include = ["camera_agent*"]
