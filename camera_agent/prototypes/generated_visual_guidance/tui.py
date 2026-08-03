@@ -63,6 +63,8 @@ def main() -> None:
             event = _progress_event(state, Progress.ACHIEVED)
         elif raw == "b":
             event = _progress_event(state, Progress.BLOCKED)
+        elif raw == "k":
+            event = _progress_event(state, Progress.DEVIATING)
         elif raw == "n":
             event = ReplaceInstruction(ALTERNATIVES[alternative_index % len(ALTERNATIVES)])
             alternative_index += 1
@@ -130,11 +132,13 @@ def _render(state, effects: tuple[str, ...]) -> None:
     _field("demonstrates", visible["demonstrates"] or "—")
     _field("provenance", visible["provenance"] or "—")
     _field("suppressed offers", str(len(state.suppressed_offer_keys)))
+    _field("recovery since offer", "yes" if state.improved_since_offer else "no")
     _field("last event", state.last_event)
     _field("effects", "; ".join(effects) if effects else "—")
 
     print(f"\n{BOLD}Coaching evidence{RESET}")
-    print("[e] insufficient  [p] improving  [z] achieved  [b] blocked  [n] next text action")
+    print("[e] insufficient  [p] improving  [k] regressed  [z] achieved  [b] blocked")
+    print("[n] next text action")
     print(f"\n{BOLD}Visual guidance{RESET}")
     controls = ["[u] ask for visual"]
     if visual.status == VisualStatus.OFFERED:

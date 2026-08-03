@@ -45,8 +45,9 @@ Then try `d` (Not now), `c` (Cancel), or `m` (material scene change) followed by
 ### Offering without nagging
 
 - Keep the current Instruction primary. The offer is a separate card: “Would an edited example help?” with **Generate** and **Not now**.
-- Offer once per source Instruction and materially equivalent scene. Recording the offer itself prevents it from reappearing after **Not now**, cancellation, failure dismissal, or artifact dismissal. A later explicit request remains allowed.
-- A materially different action for the same Criterion may inherit the compatible prior failed-action trajectory, but it must receive its own settled `insufficient` result before an offer. Improvement, a different Criterion, or a materially changed scene resets eligibility.
+- Proactively offer at most once per coaching context: task, Criterion, and materially equivalent scene. Recording the offer itself prevents it from reappearing merely because the Instruction wording changes, or after **Not now**, cancellation, failure dismissal, or artifact dismissal. A later explicit user request remains allowed.
+- A materially different action for the same Criterion may inherit the compatible prior failed-action trajectory, but it must receive its own settled `insufficient` result before the first offer.
+- Reset the proactive-offer episode only when the coaching context materially changes: a new task/shot goal, a different Criterion or materially changed scene, or accepted `improving` evidence followed later by accepted `deviating` evidence. Improvement clears the failed-action sequence but only a later regression opens a new episode, which must satisfy the bounded evidence rule again.
 - Do not offer while Ready, paused, disconnected, recovering, another visual job is active, the Criterion is not usefully editable/illustrable, or the required client capabilities are absent.
 
 ### Explicit consent and a fresh still
@@ -78,8 +79,9 @@ The earlier runtime-state prototype already exercises new intention, Instruction
 ## Scenarios that should feel boring
 
 1. The first insufficient evaluation keeps coaching in text; no offer appears.
-2. The user selects **Not now**; unchanged evidence never produces another offer for the same Instruction/scene.
+2. The user selects **Not now**; changed wording and unchanged context never produce another proactive offer for the same task/Criterion/scene.
 3. The user accepts while moving; no still is requested until the scene settles.
 4. Material change during editing invalidates the job; its late output is silently discarded while coaching continues.
 5. Editing fails; the Instruction remains, failure is visible only in the visual area, and Retry/Dismiss are explicit.
 6. A plausible generated image arrives; nothing becomes Ready until fresh live evidence satisfies every must-have Criterion.
+7. After an offer, `improving` alone does not reopen eligibility; a later `deviating` result starts a new episode, and only a fresh bounded insufficient sequence can offer again.

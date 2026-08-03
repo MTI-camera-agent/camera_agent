@@ -77,7 +77,8 @@ class State:
     )
     failed_actions: tuple[str, ...] = ()
     no_progress_streak: int = 0
-    suppressed_offer_keys: frozenset[tuple[str, int]] = frozenset()
+    suppressed_offer_keys: frozenset[tuple[str, str, int]] = frozenset()
+    improved_since_offer: bool = False
     visual: VisualGuidance = field(default_factory=VisualGuidance)
     last_event: str = "initial"
 
@@ -231,6 +232,7 @@ def evolve(state: State, event: Event) -> Transition:
                     settled=False,
                     failed_actions=(),
                     no_progress_streak=0,
+                    improved_since_offer=False,
                     visual=VisualGuidance(),
                     last_event=type(event).__name__,
                 ),
@@ -412,11 +414,32 @@ def _progress_evaluated(state: State, event: ProgressEvaluated) -> Transition:
                 state,
                 failed_actions=(),
                 no_progress_streak=0,
+                improved_since_offer=(
+                    state.improved_since_offer
+                    or _offer_key(state) in state.suppressed_offer_keys
+                ),
                 last_event=type(event).__name__,
             ),
-            ("Keep the current Instruction; improvement restarts proactive-offer eligibility.",),
+            ("Keep the current Instruction; clear the failed-action sequence and remember genuine recovery.",),
         )
-    if event.progress in {Progress.ACHIEVED, Progress.DEVIATING, Progress.BLOCKED}:
+    if event.progress == Progress.DEVIATING:
+        suppressed = set(state.suppressed_offer_keys)
+        effect = "Do not infer a visual offer; the Shot Strategy policy handles regression."
+        if state.improved_since_offer:
+            suppressed.discard(_offer_key(state))
+            effect = "Improvement followed by regression starts a new offer episode; evidence must qualify again."
+        return Transition(
+            replace(
+                state,
+                failed_actions=(),
+                no_progress_streak=0,
+                suppressed_offer_keys=frozenset(suppressed),
+                improved_since_offer=False,
+                last_event=type(event).__name__,
+            ),
+            (effect,),
+        )
+    if event.progress in {Progress.ACHIEVED, Progress.BLOCKED}:
         return Transition(
             replace(
                 state,
@@ -471,6 +494,7 @@ def _offer(state: State, event: Event, reason: str) -> Transition:
             state,
             visual_sequence=sequence,
             suppressed_offer_keys=frozenset(suppressed),
+            improved_since_offer=False,
             visual=visual,
             last_event=type(event).__name__,
         ),
@@ -531,8 +555,8 @@ def _clear_and_suppress(state: State, event: Event, effect: str) -> Transition:
     )
 
 
-def _offer_key(state: State) -> tuple[str, int]:
-    return (state.instruction.id, state.scene_revision)
+def _offer_key(state: State) -> tuple[str, str, int]:
+    return (state.task_id, state.instruction.criterion_id, state.scene_revision)
 
 
 def _action_key(text: str) -> str:
