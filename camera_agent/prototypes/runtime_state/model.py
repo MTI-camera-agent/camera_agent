@@ -69,6 +69,11 @@ class AnalysisKind(StrEnum):
     REPLAN = "replan"
 
 
+class AnalysisStatus(StrEnum):
+    REQUESTED = "requested"
+    RUNNING = "running"
+
+
 class AnalysisOutcome(StrEnum):
     GUIDANCE = "guidance"
     ADVANCE = "advance"
@@ -103,6 +108,7 @@ class InstructionRecord:
 class AnalysisRun:
     id: str
     kind: AnalysisKind
+    status: AnalysisStatus
     task_generation: int
     evidence_revision: int
     prior_readiness: Readiness
@@ -166,6 +172,11 @@ class SettlingObserved:
 @dataclass(frozen=True, slots=True)
 class SettledObserved:
     pass
+
+
+@dataclass(frozen=True, slots=True)
+class AnalysisStarted:
+    run_id: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -258,6 +269,7 @@ Event = (
     | MotionObserved
     | SettlingObserved
     | SettledObserved
+    | AnalysisStarted
     | AnalysisCompleted
     | AnalysisFailed
     | RejectInstruction
@@ -415,10 +427,33 @@ def evolve(state: State, event: Event) -> Transition:
                 )
                 effects.append(started)
 
-    elif isinstance(event, AnalysisCompleted):
+    elif isinstance(event, AnalysisStarted):
         run = state.analysis
         if run is None or run.id != event.run_id:
-            effects.append(f"ignore stale analysis result {event.run_id}")
+            effects.append(f"ignore stale analysis start {event.run_id}")
+        elif run.status is AnalysisStatus.RUNNING:
+            effects.append(f"ignore duplicate analysis start {event.run_id}")
+        elif (
+            run.task_generation != state.task_generation
+            or run.evidence_revision != state.evidence_revision
+        ):
+            next_state = replace(next_state, analysis=None)
+            effects.append(f"invalidate obsolete analysis request {event.run_id}")
+        else:
+            next_state = replace(
+                next_state,
+                analysis=replace(run, status=AnalysisStatus.RUNNING),
+            )
+            effects.append(f"invoke adapter for {event.run_id}")
+
+    elif isinstance(event, AnalysisCompleted):
+        run = state.analysis
+        if (
+            run is None
+            or run.id != event.run_id
+            or run.status is not AnalysisStatus.RUNNING
+        ):
+            effects.append(f"ignore stale or unstarted analysis result {event.run_id}")
         elif (
             run.task_generation != state.task_generation
             or run.evidence_revision != state.evidence_revision
@@ -541,8 +576,12 @@ def evolve(state: State, event: Event) -> Transition:
 
     elif isinstance(event, AnalysisFailed):
         run = state.analysis
-        if run is None or run.id != event.run_id:
-            effects.append(f"ignore stale analysis failure {event.run_id}")
+        if (
+            run is None
+            or run.id != event.run_id
+            or run.status is not AnalysisStatus.RUNNING
+        ):
+            effects.append(f"ignore stale or unstarted analysis failure {event.run_id}")
         else:
             next_state = replace(
                 next_state,
@@ -875,6 +914,7 @@ def _start_analysis(state: State, kind: AnalysisKind) -> tuple[State, str]:
     run = AnalysisRun(
         id=f"analysis-{sequence}",
         kind=kind,
+        status=AnalysisStatus.REQUESTED,
         task_generation=state.task_generation,
         evidence_revision=state.evidence_revision,
         prior_readiness=state.readiness,
@@ -886,7 +926,7 @@ def _start_analysis(state: State, kind: AnalysisKind) -> tuple[State, str]:
             analysis_sequence=sequence,
             coaching_problem=None,
         ),
-        f"start {kind.value} as {run.id}",
+        f"request {kind.value} as {run.id}",
     )
 
 

@@ -9,6 +9,7 @@ from .model import (
     AnalysisCompleted,
     AnalysisFailed,
     AnalysisOutcome,
+    AnalysisStarted,
     CancelVisualGuidance,
     Disconnect,
     InstructionBecameIrrelevant,
@@ -80,6 +81,11 @@ def main() -> None:
             event = SettlingObserved()
         elif raw == "s":
             event = SettledObserved()
+        elif raw == "w":
+            if state.analysis is None:
+                effects = ("No analysis is requested.",)
+                continue
+            event = AnalysisStarted(state.analysis.id)
         elif raw in {"g", "j", "h", "r", "x"}:
             if state.analysis is None:
                 effects = ("No analysis is current; settle a changed/fresh view first.",)
@@ -178,7 +184,11 @@ def _render(state, effects: tuple[str, ...]) -> None:
     )
     _field(
         "analysis",
-        f"{state.analysis.id} ({state.analysis.kind.value})" if state.analysis else "—",
+        (
+            f"{state.analysis.id} ({state.analysis.kind.value}, {state.analysis.status.value})"
+            if state.analysis
+            else "—"
+        ),
     )
     _field("readiness", state.readiness.value)
     _field(
@@ -196,7 +206,7 @@ def _render(state, effects: tuple[str, ...]) -> None:
     _field("effects", "; ".join(effects) if effects else "—")
 
     print(f"\n{BOLD}Events{RESET}")
-    print("[i] intention  [m] material motion  [n] settling  [s] settled")
+    print("[i] intention  [m] material motion  [n] settling  [s] settled  [w] start")
     print("[g] revise  [j] next milestone  [h] hold  [r] ready  [x] analysis fail")
     print("[t] reject current  [e] repeat old reject  [y] mark irrelevant")
     print("[p] pause/resume  [u] user capture  [a] inject late analysis result")
