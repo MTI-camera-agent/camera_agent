@@ -149,6 +149,14 @@ current state + one semantic event -> next state + declarative effects
 Protocol Adapters, tests, and callers MUST NOT receive mutable state lanes or
 coordinate reducer steps themselves.
 
+A composition-root `RuntimeHost` owns only cross-connection lifecycle: atomically
+attach one fresh or matching retained runtime, reject a second active connection,
+detach and retain for 60 seconds, and close expired/evicted runtimes. It treats
+runtime state as opaque. `CoachingRuntime` remains the sole coaching-semantic
+authority and owns session/task IDs, revisions, continuity state, and reconnect
+events. The exact lifecycle Interface and composition live only in
+[HARNESS_ARCHITECTURE.md](HARNESS_ARCHITECTURE.md).
+
 ### 3.2 Authoritative state
 
 The runtime stores orthogonal facts and derives phase and Activity from them:

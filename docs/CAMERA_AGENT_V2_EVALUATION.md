@@ -171,6 +171,8 @@ when the evidence packet reports each requirement separately.
 | U08 | Successful resume | Matching sole detached session within 60 s preserves session/task/Instruction and increasing revision; Recovering until fresh `reconnected` Evidence. |
 | U09 | Failed/evicted resume | Expired, mismatched, evicted, or replaced continuity gets a new session; state rebuilds from repeated intention; old IDs/output rejected; an active second connection is rejected. |
 | U10 | Reconnect with late old completion | Completion/action/state/image from old authority cannot act. |
+| U11 | RuntimeHost lifecycle | Atomic fresh/resume/reject attachment, exactly-once detach, 60-second retention, non-resume eviction, active-connection rejection, and expiry close occur without the host inspecting or mutating coaching state. |
+| U12 | Runtime close | Close with pending/running Reasoner and editor work plus pinned bytes; authority invalidates immediately, late outcomes cannot act or emit, output iteration terminates, and retained images/resources are released without physical cancellation. |
 
 ### 5.5 Generated Visual Guidance
 

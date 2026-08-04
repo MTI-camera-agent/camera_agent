@@ -45,16 +45,47 @@ The Interface guarantees:
 Callers and tests use the same Interface. No caller receives writable state lanes,
 coordinates reducer steps, or bypasses completion admission.
 
+### RuntimeHost lifecycle seam
+
+One composition-root `RuntimeHost` Module owns cross-connection lifecycle without
+becoming a second coaching authority:
+
+```python
+class RuntimeHost:
+    async def attach(self, offer: ConnectionOffer) -> RuntimeLease: ...
+    async def detach(self, lease_id: UUID) -> None: ...
+    async def close(self) -> None: ...
+```
+
+It owns at most one active or detached `CoachingRuntime`, the 60-second detached
+retention timer, active-connection rejection, matching resume attachment versus
+fresh-runtime creation, and closing expired or evicted runtimes. `attach` performs
+that choice atomically and returns a lease bound to exactly one runtime and
+connection. `detach` submits the semantic connection-loss event to that runtime,
+invalidates the connection lease, and begins retention. Expiry, non-resume
+eviction, or host shutdown calls `CoachingRuntime.close()`.
+
+`CoachingRuntime` continues to own session/task identities, state revisions,
+continuity state, reconnect admission effects, and every coaching transition. The
+host treats retained runtime state as opaque and cannot inspect or mutate task,
+Evidence, Instruction, Readiness, or visual state. A Protocol Adapter only
+translates a validated offer into `attach`, binds the returned `RuntimeLease`, and
+translates wire input/output; it makes no continuity decision.
+
 ## Composition
 
 ```text
                      ┌──────────────────────────────┐
 WebSocket bytes ───▶ │ Protocol Adapter            │
-                     │ - v1/v2 validation           │
-                     │ - negotiation/session edge   │
-                     │ - binary framing             │
+                     │ - v1/v2 validation/framing   │
+                     │ - RuntimeLease binding       │
                      └──────────────┬───────────────┘
-                                    │ fragments / actions
+                                    │ attach/detach
+                     ┌──────────────▼───────────────┐
+                     │ RuntimeHost                  │
+                     │ one active/detached runtime  │
+                     └──────────────┬───────────────┘
+                                    │ bound lease / fragments
                      ┌──────────────▼───────────────┐
                      │ ObservationAssembler         │
                      │ bounded metadata/image join  │
@@ -87,8 +118,9 @@ WebSocket bytes ───▶ │ Protocol Adapter            │
 ```
 
 The protocol, provider, and editor implementations are Adapters at real seams.
-Private internal helpers are implementation structure, not separate authorities or
-public semantic seams.
+`RuntimeHost` is a lifecycle Module at the composition root, not a provider Adapter
+or semantic coaching authority. Private internal helpers are implementation
+structure, not separate authorities or public semantic seams.
 
 ## CoachingRuntime implementation
 
@@ -203,16 +235,17 @@ The transport edge owns:
 
 - WebSocket endpoint and size limits;
 - text/binary schema validation;
-- v2 negotiation and connection-local session mode;
+- v2 negotiation framing and connection-local wire mode;
 - one bounded `ObservationAssembler` that joins metadata and bytes by both
   `imageMessageId` and `observationId`;
 - connection-local high-resolution request correlation;
 - one serialized writer preserving protocol order; and
 - client-side/wire freshness checks required by the protocol.
 
-It does **not** own task identity, semantic reconnect continuity, settling,
-scheduling, Instruction, Activity, Readiness, action eligibility, retry, Strategy,
-or visual-job policy.
+It does **not** own task identity, runtime retention, semantic reconnect continuity,
+settling, scheduling, Instruction, Activity, Readiness, action eligibility, retry,
+Strategy, or visual-job policy. Cross-connection attachment belongs to
+`RuntimeHost`; coaching continuity facts belong to the retained `CoachingRuntime`.
 
 ### Protocol-v1 projection
 
@@ -234,18 +267,22 @@ revision, schema, ordering, action-message, and generated-transfer wire contract
 
 ## Authority and data flow
 
-For one accepted input:
+For one connection and accepted input:
 
-1. The Protocol Adapter validates framing and wire shape.
-2. The ObservationAssembler emits only a complete immutable observation context;
+1. The Protocol Adapter validates hello/offer framing and asks `RuntimeHost.attach`
+   for one atomic fresh/resumed/rejected lease decision.
+2. The Adapter binds the returned `RuntimeLease`; disconnect later calls
+   `RuntimeHost.detach` exactly once.
+3. The Adapter validates later framing and wire shape.
+4. The ObservationAssembler emits only a complete immutable observation context;
    action and connection events need no image join.
-3. `CoachingRuntime.submit` admits the semantic event in mailbox order.
-4. The internal reducer commits next state and declarative effects.
-5. The runtime emits committed projections/requests and launches effects.
-6. Reasoner/editor outcomes are translated to typed correlated events and submitted
+5. `CoachingRuntime.submit` admits the semantic event in mailbox order.
+6. The internal reducer commits next state and declarative effects.
+7. The runtime emits committed projections/requests and launches effects.
+8. Reasoner/editor outcomes are translated to typed correlated events and submitted
    to the same mailbox.
-7. The runtime admits or harmlessly discards each completion by current provenance.
-8. The Protocol Adapter renders canonical output and one writer serializes bytes.
+9. The runtime admits or harmlessly discards each completion by current provenance.
+10. The Protocol Adapter renders canonical output and one writer serializes bytes.
 
 This ordering prevents async workers, providers, and protocol handlers from
 allocating state revisions, mutating memory, or racing to update the phone.
@@ -261,11 +298,11 @@ The runtime owns explicit bounds for:
 - at most two recent distinct attempted actions per Criterion;
 - Context Pack structured text capped at 32 KiB plus purpose-specific image counts;
 - active visual job, accepted still, and generated output;
-- run/job pinning of exact image bytes;
-- replay/diagnostic records; and
-- at most one memory-only detached session retained for 60 seconds.
+- run/job pinning of exact image bytes; and
+- replay/diagnostic records.
 
-The transport edge separately bounds unmatched observation metadata/images,
+`RuntimeHost` owns the one-active-or-detached-runtime capacity and 60-second
+detached TTL. The transport edge separately bounds unmatched observation metadata/images,
 message size, connection-local request state, and send buffering. Configuration
 values and calibration status are versioned and recorded by the evaluation
 contract.
