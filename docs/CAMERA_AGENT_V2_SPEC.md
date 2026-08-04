@@ -704,8 +704,10 @@ The runtime MUST expose metrics required by the evaluation contract: event-to-
 Activity, settled-to-useful-Instruction, preemption/replacement, stale discard,
 recovery, capture-to-image and byte completion; calls by purpose; heartbeat calls;
 cancellations; stale completions; retries; failures; and peak physical concurrency.
-Phone/desktop timestamps are diagnostic only; desktop monotonic time establishes
-latency and ordering.
+Phone/desktop wall timestamps are diagnostic only. Ordering uses IDs, revisions,
+and receive order. Latency uses same-owner monotonic segments—desktop for runtime
+and writer work, phone for local render/integrity—and never subtracts clocks across
+devices.
 
 ## 11. Configuration and empirical defaults
 

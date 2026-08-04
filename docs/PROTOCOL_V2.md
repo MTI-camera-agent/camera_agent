@@ -397,8 +397,9 @@ Dispositions:
 - `duplicate`: a new transmission `messageId` invoked an already consumed
   `actionId`;
 - `stale`: the action retired unconsumed because its target or context ended;
-- `unavailable`: the action and target are current, but a scoped precondition or
-  resource failure prevented admission.
+- `unavailable`: the action and target were current, but a scoped precondition or
+  resource failure prevented admission. This retires the opportunity; any later
+  equivalent opportunity receives a fresh action ID.
 
 Retain at most 256 action receipts and 256 action-message receipts for 10 minutes
 by desktop monotonic time. Within that window, exact replay of the same
@@ -411,10 +412,16 @@ longer promised. The current available-action set is authoritative, so an evicte
 ID can never execute again. A message naming another session produces
 `unexpected_message`; it never executes.
 
-The receipt count and duration are versioned, initially uncalibrated bounds.
+Every processed disposition leaves its action non-current: accepted consumes it,
+duplicate refers to an already consumed action, stale is already retired, and
+unavailable retires it. Therefore, after receipt eviction, the current available set
+is sufficient to classify every old invocation as stale without remembering its
+message ID. The receipt count and duration are versioned, initially uncalibrated
+bounds.
+
 Duplicate, stale, and unavailable actions are idempotent no-ops, not protocol
-errors. For an accepted action, enqueue `action_result_v2` before any state snapshot
-caused by that action and before slow reasoning, capture, or editing. The subsequent
+errors. For accepted or unavailable, enqueue `action_result_v2` before any state
+snapshot caused by the disposition and before slow reasoning, capture, or editing. The subsequent
 full state—not the acknowledgement—is authoritative UI state. Intention editing
 and local shutter remain phone-owned controls represented by v1 observation reasons
 rather than action IDs.

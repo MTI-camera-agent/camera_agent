@@ -208,7 +208,7 @@ when the evidence packet reports each requirement separately.
 | W05 | Stale/malformed/contradictory snapshot | Last valid projection/revision retained, including for phase/task/Instruction/action/visual-lane combinations that violate the normative projection matrix. |
 | W06 | Instruction immutability | Same ID may change freshness only; changed content/addressee/kind is rejected. |
 | W07 | Overlay freshness | State applies while stale/mismatched overlay is independently suppressed; zoom clears immediately. |
-| W08 | Action lifecycle | Exercise every permitted/forbidden action combination; monotonic-ordinal UUIDs never reuse; accepted action disappears; exact replay/contradictory reuse/duplicate work within the 256+256 receipt and 10-minute window; expiry/capacity eviction returns non-executing stale; wrong-session never executes; acknowledgement precedes resulting state and slow work. |
+| W08 | Action lifecycle | Exercise every permitted/forbidden combination; ordinal UUIDs never reuse; every processed disposition leaves the action non-current, including unavailable retirement; exact replay/contradictory reuse/duplicate work within the 256+256/10-minute window; after unavailable→receipt eviction, replay is stale by the current-action set; wrong-session never executes; acknowledgement precedes resulting state and slow work. |
 | W09 | Generated image ordering | State announcement before bytes; artifact/job demonstration equality; exact session/job/image/first-revision checks; late bytes dropped; corrupt/media/dimension-mismatched current bytes trigger scoped invalid-message error then failed job with fresh Retry/Dismiss, while stale errors do nothing. |
 | W10 | Disconnect/reconnect negotiation | Phone-local disconnect projection requires no server revision; wire resets to v1; valid pre-accept v1 result or first accepted complete v2 state replaces local projection; exercise sole-session 60-second TTL, active-connection rejection, non-resume eviction, successful/failed resume, and no revision reset on success. |
 | W11 | Unknown text type | Both sides ignore it without state loss or disconnect. |
@@ -351,8 +351,8 @@ The following are editable empirical starting points and MUST be visibly marked
 | Explicit action acknowledgement | Diagnostic p95 ≤ 250 ms |
 | Event to new truthful Activity | Diagnostic p95 ≤ 250 ms |
 | Settled Evidence to useful guidance | Diagnostic p95 ≤ 6 s |
-| Accepted still to available generated image | Diagnostic warm-path p95 ≤ 15 s |
-| Known failure to visible recovery | Diagnostic p95 ≤ 1 s |
+| Accepted still to desktop available-artifact commit | Diagnostic warm-path p95 ≤ 15 s |
+| Known same-owner failure to visible recovery | Diagnostic p95 ≤ 1 s |
 
 Use this metric dictionary; all starts/ends use monotonic time in the named owner:
 
@@ -360,11 +360,14 @@ Use this metric dictionary; all starts/ends use monotonic time in the named owne
 | --- | --- | --- |
 | `action_to_ack_ms` | Protocol Adapter receives one schema-valid current-session `user_action_v2` | Corresponding `action_result_v2` is enqueued; partition accepted/duplicate/stale/unavailable and never pool with Activity |
 | `event_to_activity_ms` | Runtime admits an eligible intention, explicit-action, material-invalidation, reconnect/recovery, or current typed-failure event | First committed snapshot with new truthful coaching Activity; partition by event class; phone-local disconnect Activity is measured separately on phone close callback |
-| `event_to_first_instruction_ms` | Runtime admits a new/changed accepted intention | First committed current actionable or Ready Instruction for that task |
+| `event_to_first_useful_instruction_ms` | Runtime admits a new/changed accepted intention | First committed current actionable or Ready Instruction for that task that meets the usefulness rule below |
 | `settled_to_useful_instruction_ms` | Runtime commits Settled Evidence that creates an orientation/evaluation/replan request | First admitted current-token Instruction/Ready output for that Evidence/purpose that meets the usefulness rule below |
-| `failure_to_recovery_ms` | Runtime admits a current typed failure or phone detects a current generated-byte failure | First committed Recovering/failed-sidecar projection with a concrete next action |
-| `accepted_still_to_available_ms` | Runtime admits the compatible high-resolution still for one visual attempt | First committed available artifact announcement for that attempt |
-| `artifact_to_bytes_ms` | Available artifact announcement is committed | Matching bytes finish transmission and phone integrity admission |
+| `runtime_failure_to_recovery_ms` | Runtime admits a current typed failure | First desktop commit of Recovering/failed-sidecar projection with a concrete next action |
+| `image_failure_to_local_error_ms` | Phone detects current generated-byte decode/media/dimension/integrity failure | Phone renders transient transfer error and queues its protocol-error report, using phone monotonic time only |
+| `image_error_report_to_failed_state_ms` | Desktop receives the current generated-byte protocol-error report | Desktop commits failed visual job with fresh Retry/Dismiss actions |
+| `accepted_still_to_available_ms` | Runtime admits the compatible high-resolution still for one visual attempt | First desktop commit of available artifact announcement for that attempt |
+| `artifact_commit_to_send_complete_ms` | Desktop commits the available artifact announcement | Desktop serialized writer finishes the matching image bytes |
+| `image_receive_to_integrity_ms` | Phone receives the complete matching binary WebSocket message | Phone completes integrity admission or local rejection, using phone monotonic time only |
 | `preemption_ms` | A newer event invalidates an authoritative run | Invalidation commit; record replacement-start separately when a physical slot starts the replacement |
 
 In deterministic replay, “useful” means the scripted expected output is schema-valid,
@@ -398,9 +401,12 @@ Record at least:
 - false/missed/unstable Ready findings against explicit must-haves; and
 - memory/queue/fragment/image high-water marks.
 
-Use desktop monotonic timestamps for latency. Report distributions with count,
-median, p90, p95, maximum, and censored/time-out count where sample size permits;
-never silently drop failures.
+Use one owner's monotonic clock for every duration: desktop for runtime/writer
+segments and phone for local render/integrity segments. Never subtract phone and
+desktop wall or monotonic timestamps. Wall-clock envelope timestamps remain
+correlation diagnostics only. Report distributions with count, median, p90, p95,
+maximum, and censored/time-out count where sample size permits; never silently drop
+failures.
 
 The image editor's first invocation may incur cold start beyond 15 seconds. Record
 cold-start and warm-path samples separately. Exclude only the first invocation from
