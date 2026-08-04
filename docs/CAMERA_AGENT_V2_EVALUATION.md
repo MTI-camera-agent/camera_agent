@@ -150,9 +150,9 @@ when the evidence packet reports each requirement separately.
 | P07 | Try another suggestion | Accepted action acknowledged; Instruction closes `rejected`; equivalent action constrained; unrelated Criteria preserved. |
 | P08 | Replayed or stale rejection | Duplicate/stale no-op; no second strategy mutation. |
 | P09 | Full rebuild boundary | Only changed intention or an admitted `broad_discontinuity` applicability result with confidence ≥ the configured threshold rebuilds; `unknown` requests clearer fresh Evidence; deterministic frame signals and ordinary progress never rebuild; compatible explicit constraints survive. |
-| P10 | Memory bounds | Current plus at most one previous compatible snapshot/image; equivalent outcomes coalesced; raw output excluded. |
+| P10 | Strategy/memory bounds | At most 6 Criteria (4 must-have, 2 nice-to-have), 3 candidate actions each, 2 recent distinct attempted actions each, and current plus at most one previous compatible snapshot/image; equivalent outcomes coalesced; raw output excluded. |
 | P11 | Dependency invalidation | Local patch preserves unaffected Evidence; material change invalidates evidence-scoped records; task change clears task facts. |
-| P12 | Context budget pressure | Mandatory content retained; optional content removed in defined order; visible failure if mandatory pack cannot fit. |
+| P12 | Context budget pressure | Structured text ≤32 KiB; strategy/revision has ≤1 current preview, progress ≤1 current + 1 previous compatible preview, edit exactly 1 accepted still; stricter Adapter bound wins; mandatory content retained or Strategy is simplified/rejected with visible recovery. |
 | P13 | Malformed/stale model output | No partial repair/admission; no raw output in Task Memory; current guidance preserved. |
 
 ### 5.4 User controls and recovery
@@ -322,6 +322,9 @@ The following are editable empirical starting points and MUST be visibly marked
 | Reasoner retry/deadline | 8 s per attempt; at most 1 automatic retry; provider delay capped at 2 s |
 | High-resolution capture deadline | 5 s; no automatic retry |
 | Illustration editor deadline | 60 s; no automatic retry |
+| Strategy size | At most 6 Criteria: 4 must-have and 2 nice-to-have; at most 3 candidate actions each |
+| Context structured text | 32 KiB UTF-8 maximum, excluding images; stricter Adapter bound wins |
+| Context images | Strategy/revision 1 current preview; progress 1 current + 1 previous compatible preview; edit exactly 1 accepted still |
 | No-progress alternative | 2 accepted Settled `insufficient` assessments for one action spanning ≥10 s |
 | Criterion patch / visual-offer eligibility | 2 materially different actions each with accepted `insufficient`, no intervening `improving` |
 | Optional-refinement budget | 0 nice-to-have Instructions in v2 |

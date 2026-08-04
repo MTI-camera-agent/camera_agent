@@ -256,8 +256,10 @@ The runtime owns explicit bounds for:
 
 - one authoritative reasoning run, one newest pending request, and at most two
   physical VLM calls;
+- a Strategy of at most six Criteria with three candidate actions each;
 - current plus one previous compatible Evidence Snapshot and preview;
-- per-Criterion trajectory/alternative records;
+- at most two recent distinct attempted actions per Criterion;
+- Context Pack structured text capped at 32 KiB plus purpose-specific image counts;
 - active visual job, accepted still, and generated output;
 - run/job pinning of exact image bytes;
 - replay/diagnostic records; and

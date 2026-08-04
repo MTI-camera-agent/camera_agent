@@ -291,9 +291,10 @@ and must pass protocol freshness checks.
 
 ### 5.1 Strategy shape
 
-A Shot Strategy is a small, priority-ordered set of observable Criteria, not a
-fixed step list. The strategy and every Criterion have stable application-authored
-identities. A Criterion contains:
+A Shot Strategy is a small, priority-ordered set of at most six observable
+Criteria—at most four must-haves and two nice-to-haves—not a fixed step list. The
+strategy and every Criterion have stable application-authored identities. A
+Criterion contains at most three candidate actions and:
 
 - an observable target;
 - `must_have | nice_to_have` importance;
@@ -404,9 +405,9 @@ model-authored summary.
 Retain the current Evidence Snapshot and at most one previous compatible accepted
 snapshot for improving/deviating comparison. Coalesce equivalent holds and
 no-progress outcomes into counters. Per Criterion, retain only the latest
-assessment and distinct recent action attempts required by the configured policy.
-Promote rejection and infeasibility into typed constraints; drop unreferenced
-history.
+assessment and at most the two most recent distinct attempted actions required by
+the policy. Promote rejection and infeasibility into typed constraints; drop
+unreferenced history.
 
 Do not retain or infer identity, demographics, attractiveness, health,
 personality, or emotion. Scene facts do not cross tasks.
@@ -442,14 +443,22 @@ Every remote call receives an immutable, allowlisted, provenance-tokened pack:
 
 Mandatory content—intention/provenance, all current must-haves, active Instruction,
 applicable constraints, required Evidence/image, and freshness—MUST NOT be dropped.
-Under budget pressure, remove unrelated optional facts first, then replace a prior
+A Context Pack's structured text is capped at 32 KiB UTF-8, excluding image bytes.
+Strategy and revision calls receive at most one current preview; progress receives
+at most one current plus one previous compatible preview; editing receives exactly
+one accepted high-resolution still. An Adapter MAY publish a stricter limit, and
+the runtime MUST use the lower bound.
+
+Under budget pressure, remove unrelated optional facts first, replace the prior
 image with its summary, then coalesce old attempts. If mandatory content cannot
-fit, simplify the Strategy or fail visibly.
+fit, simplify or reject the Strategy or fail visibly; never silently truncate a
+required field.
 
 Task Memory retains at most the current settled preview and one previous compatible
 preview. A run pins its exact bytes only for its lifetime. High-resolution and
 generated images exist only for a valid visual job unless explicitly retained as
-diagnostic artifacts.
+diagnostic artifacts. All Strategy/Context bounds are versioned and initially
+uncalibrated.
 
 ## 7. External reasoning and editing seams
 
