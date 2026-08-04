@@ -204,7 +204,7 @@ when the evidence packet reports each requirement separately.
 | W05 | Stale/malformed/contradictory snapshot | Last valid projection/revision retained, including for phase/task/Instruction/action/visual-lane combinations that violate the normative projection matrix. |
 | W06 | Instruction immutability | Same ID may change freshness only; changed content/addressee/kind is rejected. |
 | W07 | Overlay freshness | State applies while stale/mismatched overlay is independently suppressed; zoom clears immediately. |
-| W08 | Action lifecycle | Exercise every permitted and forbidden phase/target/status combination for Try another, Pause/Resume, Generate/Decline, Cancel, Retry, Dismiss, and Another example; accepted action disappears next snapshot; offered action otherwise persists with same ID; exact replay returns cached disposition; contradictory message-ID reuse errors; consumed/stale/unavailable remain distinct; wrong-session never executes; acknowledgement precedes resulting state and slow work; later opportunity gets a fresh ID. |
+| W08 | Action lifecycle | Exercise every permitted/forbidden action combination; monotonic-ordinal UUIDs never reuse; accepted action disappears; exact replay/contradictory reuse/duplicate work within the 256+256 receipt and 10-minute window; expiry/capacity eviction returns non-executing stale; wrong-session never executes; acknowledgement precedes resulting state and slow work. |
 | W09 | Generated image ordering | State announcement before bytes; exact session/job/image/first-revision checks; late bytes dropped. |
 | W10 | Disconnect/reconnect negotiation | Phone-local disconnect projection requires no server revision; wire resets to v1; valid pre-accept v1 result or first accepted complete v2 state replaces local projection; exercise sole-session 60-second TTL, active-connection rejection, non-resume eviction, successful/failed resume, and no revision reset on success. |
 | W11 | Unknown text type | Both sides ignore it without state loss or disconnect. |
@@ -335,6 +335,7 @@ The following are editable empirical starting points and MUST be visibly marked
 | Strategy size | At most 6 Criteria: 4 must-have and 2 nice-to-have; at most 3 candidate actions each |
 | Context structured text | 32 KiB UTF-8 maximum, excluding images; stricter Adapter bound wins |
 | Context images | Strategy/revision 1 current preview; progress 1 current + 1 previous compatible preview; edit exactly 1 accepted still |
+| Action replay | Monotonic-ordinal UUIDs; 256 action + 256 message receipts retained 10 min; evicted/expired input is stale |
 | No-progress alternative | 2 accepted Settled `insufficient` assessments for one action spanning ≥10 s |
 | Criterion patch / visual-offer eligibility | 2 materially different actions each with accepted `insufficient`, no intervening `improving` |
 | Optional-refinement budget | 0 nice-to-have Instructions in v2 |

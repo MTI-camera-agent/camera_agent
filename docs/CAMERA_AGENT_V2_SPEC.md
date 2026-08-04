@@ -210,6 +210,9 @@ Application-authored UUIDs identify task, strategy revision, Criterion,
 Instruction, Evidence, camera context, reasoning run, visual offer/job/attempt,
 capture request, action opportunity, and generated transfer as applicable.
 Observation identity remains the v1 positive process-local `observationId`.
+Action UUIDs are derived from a session-scoped monotonic ordinal; the runtime keeps
+at most 256 action and 256 action-message receipts for 10 minutes, after which old
+input is safely `stale` rather than historically classified.
 
 Every remote invocation and completion MUST carry an out-of-band provenance
 envelope containing its purpose and all applicable identities. Model-controlled

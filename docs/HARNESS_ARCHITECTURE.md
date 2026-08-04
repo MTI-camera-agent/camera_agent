@@ -298,8 +298,10 @@ The runtime owns explicit bounds for:
 - at most two recent distinct attempted actions per Criterion;
 - Context Pack structured text capped at 32 KiB plus purpose-specific image counts;
 - active visual job, accepted still, and generated output;
-- run/job pinning of exact image bytes; and
-- replay/diagnostic records.
+- run/job pinning of exact image bytes;
+- monotonic action-ID allocation plus at most 256 action and 256 action-message
+  receipts retained for 10 minutes; and
+- configured bounded diagnostic records.
 
 `RuntimeHost` owns the one-active-or-detached-runtime capacity and 60-second
 detached TTL. The transport edge separately bounds unmatched observation metadata/images,

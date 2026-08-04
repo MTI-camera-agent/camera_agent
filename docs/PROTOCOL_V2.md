@@ -319,9 +319,10 @@ set. Persistent text and Activity are not gated by observation age.
 
 Every protocol-owned control is represented by a server-minted `actionId`, semantic
 `kind`, and typed target `{kind, id}`. IDs are globally one-use within a session.
-An ID may persist unchanged while available, but MUST NOT change meaning, reappear
-after retirement, or reappear after consumption. A later equivalent opportunity,
-including Retry, receives a new ID.
+Mint each UUID from a session-scoped monotonically increasing ordinal so non-reuse
+does not require unbounded history. An ID may persist unchanged while available,
+but MUST NOT change meaning, reappear after retirement, or reappear after
+consumption. A later equivalent opportunity, including Retry, receives a new ID.
 
 | Action kind | Required target | Available only when |
 | --- | --- | --- |
@@ -380,11 +381,18 @@ Dispositions:
 - `unavailable`: the action and target are current, but a scoped precondition or
   resource failure prevented admission.
 
-Exact replay of the same `user_action_v2.messageId` and identical payload returns
-the cached original disposition without re-execution. Reuse of that message ID with
-different content produces `protocol_error_v2` code `invalid_message`. A message
-naming another session produces `unexpected_message`; it never executes.
+Retain at most 256 action receipts and 256 action-message receipts for 10 minutes
+by desktop monotonic time. Within that window, exact replay of the same
+`user_action_v2.messageId` and identical payload returns the cached original
+disposition without re-execution; reuse with different content produces
+`protocol_error_v2` code `invalid_message`; and a consumed action invoked under a
+new message ID returns `duplicate`. After expiry or capacity eviction, an old
+message/action returns non-executing `stale` and its historical disposition is no
+longer promised. The current available-action set is authoritative, so an evicted
+ID can never execute again. A message naming another session produces
+`unexpected_message`; it never executes.
 
+The receipt count and duration are versioned, initially uncalibrated bounds.
 Duplicate, stale, and unavailable actions are idempotent no-ops, not protocol
 errors. For an accepted action, enqueue `action_result_v2` before any state snapshot
 caused by that action and before slow reasoning, capture, or editing. The subsequent
