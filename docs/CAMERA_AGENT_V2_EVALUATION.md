@@ -120,6 +120,7 @@ when the evidence packet reports each requirement separately.
 | T08 | Regression after Ready | Motion marks revalidation only; current accepted Evidence may replace Ready with one corrective Instruction. |
 | T09 | Intention replacement during inference | Immediate logical invalidation; obsolete completion discarded; latest task starts after Settled. |
 | T10 | No Instruction during replanning | Truthful replanning Activity; rejected/irrelevant Instruction never resurrected on failure. |
+| T11 | Phase/Activity precedence | Exercise all seven projections and overlapping facts in precedence order: no task; recovery/continuity; paused; evaluating/replanning; Ready; Coaching; Orienting. Reject every forbidden phase/lane combination; visual sidecar never changes phase. |
 
 ### 5.2 Evidence, settling, and scheduling
 
@@ -197,7 +198,7 @@ when the evidence packet reports each requirement separately.
 | W02 | Valid v2 negotiation | Exact v1 hello, offer, acceptance before observation processing; accepted subset and prerequisites. |
 | W03 | Invalid negotiation | Wrong order, missing mandatory bundle, unoffered selection, or missing visual prerequisites yields scoped error/no switch. |
 | W04 | Complete snapshot | Every lane present; null/empty clears; atomic replace only for matching session and greater revision. |
-| W05 | Stale/malformed/contradictory snapshot | Last valid projection/revision retained. |
+| W05 | Stale/malformed/contradictory snapshot | Last valid projection/revision retained, including for phase/task/Instruction/action/visual-lane combinations that violate the normative projection matrix. |
 | W06 | Instruction immutability | Same ID may change freshness only; changed content/addressee/kind is rejected. |
 | W07 | Overlay freshness | State applies while stale/mismatched overlay is independently suppressed; zoom clears immediately. |
 | W08 | Action lifecycle | Offered action persists with same ID; accepted before slow work; duplicate/stale/unavailable semantics; no ID reuse. |

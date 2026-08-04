@@ -242,6 +242,20 @@ Example:
 - `availableActions` is the complete currently valid set.
 - `visualGuidance` is null or the complete offer/job sidecar.
 
+Phase MUST be the first matching runtime projection: no task is
+`needs_intention`; disconnected/continuity-pending/blocking coaching recovery is
+`recovering`; paused mode is `paused`; requested/running evaluation or replanning
+is `evaluating`; a Ready Instruction is `ready`; an actionable Instruction is
+`coaching`; otherwise an existing task awaiting Evidence, Strategy, or Instruction
+is `orienting`. Generated Visual Guidance never changes coaching phase.
+
+Semantic validation rejects `needs_intention` with a task or Instruction; `paused`
+with overlays, active analysis projection, or active visual work; `ready` without a
+Ready Instruction; `coaching` without an actionable Instruction; and action sets
+incompatible with the projected task/phase/visual state. `recovering`,
+`evaluating`, and `orienting` may retain an Instruction when the runtime contract
+requires useful but uncurrent guidance.
+
 ### 6.2 Instruction
 
 An Instruction contains:

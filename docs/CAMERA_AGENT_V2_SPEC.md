@@ -174,6 +174,26 @@ The required semantic authority and facts are specified here. Their private modu
 arrangement is defined only in
 [HARNESS_ARCHITECTURE.md](HARNESS_ARCHITECTURE.md).
 
+Derive coaching phase by the first matching rule:
+
+1. no Task -> `needs_intention`;
+2. disconnected, continuity pending, or blocking coaching failure -> `recovering`;
+3. Mode is paused -> `paused`;
+4. evaluation or replanning is requested/running -> `evaluating`;
+5. the active Instruction has `kind=ready` -> `ready`;
+6. the active Instruction has `kind=action` -> `coaching`;
+7. otherwise a Task exists but needs Evidence, Strategy, or Instruction ->
+   `orienting`.
+
+Generated Visual Guidance never changes coaching phase. Derive coaching Activity
+by connection/recovery first, evaluation/replanning second, and
+orientation/waiting third. The visual sidecar derives its own independent Activity.
+
+Forbidden combinations are rejected by invariant checking: `needs_intention` with
+a Task/Instruction; `paused` with requested/running analysis, overlays, or active
+visual work; `ready` without a Ready Instruction and Readiness record; `coaching`
+without an actionable Instruction; or any exclusive visualizing phase.
+
 ### 3.3 Identities and tokens
 
 Application-authored UUIDs identify task, strategy revision, Criterion,
