@@ -2,11 +2,13 @@
 
 Status: implementation-ready specification for the single-user research prototype.
 
-This document specifies the desktop harness. [PROTOCOL_V2.md](PROTOCOL_V2.md) and
+This document owns normative product/runtime behavior and public Interface
+requirements for the desktop harness. [HARNESS_ARCHITECTURE.md](HARNESS_ARCHITECTURE.md)
+is the sole maintained source for module arrangement, composition, and migration.
+[PROTOCOL_V2.md](PROTOCOL_V2.md) and
 [protocol-v2.schema.json](protocol-v2.schema.json) are normative for the v2 wire
 extension. [CAMERA_AGENT_V2_EVALUATION.md](CAMERA_AGENT_V2_EVALUATION.md) is
-normative for evaluation and release. [HARNESS_ARCHITECTURE.md](HARNESS_ARCHITECTURE.md)
-is the maintained architecture summary. Protocol v1 remains normative in
+normative for evaluation and release. Protocol v1 remains normative in
 [PROTOCOL.md](PROTOCOL.md) and [protocol-v1.schema.json](protocol-v1.schema.json).
 
 The key words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** are
@@ -168,8 +170,9 @@ The runtime stores orthogonal facts and derives phase and Activity from them:
   generating | available | failed`, with visual-job provenance.
 - **Overlays**: transient render artifacts bound to one Instruction and Evidence.
 
-The implementation MAY divide these responsibilities into private modules, but
-none may become an independent authority or public semantic seam.
+The required semantic authority and facts are specified here. Their private module
+arrangement is defined only in
+[HARNESS_ARCHITECTURE.md](HARNESS_ARCHITECTURE.md).
 
 ### 3.3 Identities and tokens
 
@@ -597,26 +600,10 @@ criteria cannot be weakened retrospectively for an active release run.
 
 ## 12. Migration and cutover
 
-1. Freeze v1 wire and behavioral contracts as deterministic characterization
-   traces and integration fixtures.
-2. Build `CoachingRuntime` dormant with the final state, scheduling, memory,
-   projection, visual-job, and Adapter contracts. Reuse only pure helpers whose
-   semantics remain valid: framing, bounded observation assembly, deterministic
-   measurements, image validation, and artifact primitives.
-3. Implement production and scripted Reasoner/Editor Adapters.
-4. Replay recorded input and controlled outcomes offline without client output or
-   duplicate live provider calls.
-5. Exercise both protocol Adapters against the same runtime scenarios.
-6. Perform one composition-root cutover so every newly accepted connection uses
-   `CoachingRuntime`. Roll back by deployment version, never by running two engines
-   for one session.
-7. Delete `CoachingLoop`, `ReferenceWorkflow`, fixed-plan contracts, server-owned
-   coaching state, and implementation-coupled tests.
-
-Do not wrap the legacy loop inside v2 or retain a parallel “v1 runtime.” Exact model
-wording need not match v1; ordering, freshness, cancellation, resource, safety,
-protocol, and runtime contracts must pass the cutover gate and a real-phone smoke
-run.
+The sole migration and module-composition plan is
+[HARNESS_ARCHITECTURE.md](HARNESS_ARCHITECTURE.md). The implementation MUST use its
+single-runtime, offline-characterization, atomic-cutover path; this semantic
+specification does not define a competing file tree or migration sequence.
 
 ## 13. Implementation acceptance
 
