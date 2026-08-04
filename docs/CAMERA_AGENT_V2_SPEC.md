@@ -66,12 +66,13 @@ The runtime derives, rather than independently stores, one of:
 | `needs_intention` | Ask for an intention; do not coach. |
 | `orienting` | Keep the accepted intention visible, require post-intention evidence, and show truthful scene-analysis Activity. |
 | `coaching` | Show exactly one persistent actionable Instruction. |
-| `evaluating` | Keep the prior Instruction visible in a secondary treatment and make “Checking your adjustment—hold still” or equivalent the primary Activity. Continued motion restarts evaluation without scolding. |
+| `evaluating` | Keep a still-valid prior Instruction visible in a secondary treatment and make checking/replanning Activity primary. After rejection or irrelevance has terminally closed the Instruction, Evaluating is Activity-only. Continued motion restarts evaluation without scolding. |
 | `ready` | Show the evidence-backed Ready Instruction; nice-to-have refinements do not block it or the shutter. |
 | `recovering` | State a user-visible problem and one concrete next action while preserving usable guidance when possible. |
 | `paused` | Keep retained guidance visibly inactive; perform no new reasoning, reminders, offers, or capture requests. |
 
-Generated Visual Guidance is a concurrent sidecar, not an exclusive phase.
+The **Visual Guidance Sidecar** is concurrent, not an exclusive phase.
+**Generated Visual Guidance** names only the delivered edited-image artifact.
 
 ### 2.3 Required controls and behavior
 
@@ -176,8 +177,9 @@ The runtime stores orthogonal facts and derives phase and Activity from them:
   replan` and all authority tokens.
 - **Recovery**: independently scoped coaching, connection, capture, reasoner, or
   editor failures.
-- **Generated Visual Guidance**: `idle | offered | waiting_for_settle | capturing |
-  generating | available | failed`, with visual-job provenance.
+- **Visual Guidance Sidecar**: `idle | offered | waiting_for_settle | capturing |
+  generating | available | failed`, with visual-job provenance. Only its delivered
+  edited-image artifact is **Generated Visual Guidance**.
 - **Overlays**: transient render artifacts bound to one Instruction and Evidence.
 
 The required semantic authority and facts are specified here. Their private module
@@ -195,7 +197,7 @@ Derive coaching phase by the first matching rule:
 7. otherwise a Task exists but needs Evidence, Strategy, or Instruction ->
    `orienting`.
 
-Generated Visual Guidance never changes coaching phase. Derive coaching Activity
+The Visual Guidance Sidecar never changes coaching phase. Derive coaching Activity
 by connection/recovery first, evaluation/replanning second, and
 orientation/waiting third. The visual sidecar derives its own independent Activity.
 
@@ -244,17 +246,17 @@ The following invariants are mandatory:
 5. Pause, task change, disconnect, evidence invalidation, and explicit
    cancellation make late work harmless.
 6. Explicit identified actions are idempotent and one-use.
-7. Generated Visual Guidance never changes live Evidence, Shot Strategy,
-   Instruction, or Readiness.
+7. The Visual Guidance Sidecar and any Generated Visual Guidance artifact never
+   change live Evidence, Shot Strategy, Instruction, or Readiness.
 
 ## 4. Observation, Evidence, and scheduling
 
 ### 4.1 Immutable assembly
 
 The transport-edge `ObservationAssembler` MUST correlate observation metadata and
-preview bytes using both `imageMessageId` and `observationId`. It MUST bound and
-expire unmatched fragments. No detector, prompt, or result may combine fields or
-bytes from different observations.
+preview bytes using both `imageMessageId` and `observationId`. Retain at most 16
+unmatched entries per side and expire each after 5 seconds. No detector, prompt, or
+result may combine fields or bytes from different observations.
 
 Each complete context contains exact camera metadata, oriented preview bytes,
 arrival timing, v1 observation reason, and correlation identities.
@@ -582,7 +584,7 @@ Production Gemini/editor Adapters and strict scripted Adapters implement the sam
 interfaces. Scripted Adapters drive deterministic state tests. Provider contract
 checks and live calls are smoke evidence, not deterministic release gates.
 
-## 8. Generated Visual Guidance
+## 8. Visual Guidance Sidecar and Generated Visual Guidance
 
 ### 8.1 Offer eligibility and suppression
 
@@ -694,7 +696,9 @@ source-byte hashes, provenance identities, purpose, timing, accepted/stale/
 superseded/failed disposition, typed outcome, and configured threshold version.
 Generated-image diagnostics additionally record consent/action, capture, still,
 job/attempt, and output identities. Full images and raw provider payloads follow
-run/job retention unless an explicit artifact directory is configured.
+run/job retention unless an explicit artifact directory is configured. One run
+writes at most 200 diagnostic files or 256 MiB, whichever comes first; after the
+bound, record one truncation marker and retain no additional payload artifacts.
 
 The runtime MUST expose metrics required by the evaluation contract: event-to-
 Activity, settled-to-useful-Instruction, preemption/replacement, stale discard,

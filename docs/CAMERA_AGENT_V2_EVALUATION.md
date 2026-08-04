@@ -23,8 +23,12 @@ A candidate release passes only when all are true:
 4. the predeclared five-participant formative-usability gate passes;
 5. no critical trust failure remains in any replay, walkthrough, smoke run, or
    participant session;
-6. no unresolved major Generated Visual Guidance functional failure remains; and
-7. one complete versioned evidence packet is retained.
+6. provider contract and required live Reasoner/Editor smoke evidence passes;
+7. real-phone v1 fallback and v2 cutover smoke passes across all three supported
+   journeys;
+8. no unresolved release-blocking required-functional failure remains, including
+   no major Generated Visual Guidance functional failure; and
+9. one complete versioned evidence packet is retained.
 
 A threshold miss marked diagnostic or **uncalibrated** is investigated and recorded
 but does not independently fail this research-prototype release unless it causes
@@ -127,7 +131,7 @@ when the evidence packet reports each requirement separately.
 
 | ID | Scenario | Required assertions |
 | --- | --- | --- |
-| S01 | Interleaved metadata/image fragments | Join only matching `imageMessageId` and `observationId`; expire/bound unmatched fragments. |
+| S01 | Interleaved metadata/image fragments | Join only matching `imageMessageId` and `observationId`; retain at most 16 unmatched entries per side for 5 s; overflow/expiry never mixes contexts. |
 | S02 | Equivalent routine frames | No new Evidence identity or queued call; latest equivalent view may update. |
 | S03 | Material camera or visual change | Immediate Evidence/run/overlay invalidation; no VLM work before count+dwell settling. |
 | S04 | Relative blur/luminance/clipping signals | Logging works; configured crossing may request revalidation only; no semantic achievement. |
@@ -205,12 +209,12 @@ when the evidence packet reports each requirement separately.
 | W06 | Instruction immutability | Same ID may change freshness only; changed content/addressee/kind is rejected. |
 | W07 | Overlay freshness | State applies while stale/mismatched overlay is independently suppressed; zoom clears immediately. |
 | W08 | Action lifecycle | Exercise every permitted/forbidden action combination; monotonic-ordinal UUIDs never reuse; accepted action disappears; exact replay/contradictory reuse/duplicate work within the 256+256 receipt and 10-minute window; expiry/capacity eviction returns non-executing stale; wrong-session never executes; acknowledgement precedes resulting state and slow work. |
-| W09 | Generated image ordering | State announcement before bytes; exact session/job/image/first-revision checks; late bytes dropped. |
+| W09 | Generated image ordering | State announcement before bytes; artifact/job demonstration equality; exact session/job/image/first-revision checks; late bytes dropped; corrupt/media/dimension-mismatched current bytes trigger scoped invalid-message error then failed job with fresh Retry/Dismiss, while stale errors do nothing. |
 | W10 | Disconnect/reconnect negotiation | Phone-local disconnect projection requires no server revision; wire resets to v1; valid pre-accept v1 result or first accepted complete v2 state replaces local projection; exercise sole-session 60-second TTL, active-connection rejection, non-resume eviction, successful/failed resume, and no revision reset on success. |
 | W11 | Unknown text type | Both sides ignore it without state loss or disconnect. |
 | W12 | Known invalid v2 message | `protocol_error_v2` is scoped and last valid state remains; malformed protocol-error input is logged/dropped without an error loop, while unsafe framing follows connection-failure policy. |
-| W13 | Binary framing/limits | Header bounds, schema, media/dimensions, and 8 MiB cap enforced. |
-| W14 | Serialized ordering | hello→offer→observation, accept→state, and state→image bytes remain ordered under async completion. |
+| W13 | Binary framing/limits | Header bounds, schema, decoded media/header agreement, exact dimensions, integrity, and 8 MiB cap enforced for v1 and visual-guidance images. |
+| W14 | Serialized ordering and backpressure | hello→offer→observation, accept→state, and state→image bytes remain ordered under async completion; queue never exceeds 32 frames/16 MiB and overflow closes/detaches rather than dropping output. |
 
 ## 6. Seeded interleaving runs
 
@@ -336,15 +340,48 @@ The following are editable empirical starting points and MUST be visibly marked
 | Context structured text | 32 KiB UTF-8 maximum, excluding images; stricter Adapter bound wins |
 | Context images | Strategy/revision 1 current preview; progress 1 current + 1 previous compatible preview; edit exactly 1 accepted still |
 | Action replay | Monotonic-ordinal UUIDs; 256 action + 256 message receipts retained 10 min; evicted/expired input is stale |
+| Observation fragments | 16 unmatched entries per side, 5-second expiry |
+| Serialized send queue | 32 frames or 16 MiB; overflow closes/detaches |
+| Diagnostic artifacts | 200 files or 256 MiB per run, then one truncation marker |
 | No-progress alternative | 2 accepted Settled `insufficient` assessments for one action spanning ≥10 s |
 | Criterion patch / visual-offer eligibility | 2 materially different actions each with accepted `insufficient`, no intervening `improving` |
 | Optional-refinement budget | 0 nice-to-have Instructions in v2 |
 | Physical VLM concurrency | Maximum 2 total calls |
 | Ready confidence | Every must-have `achieved` with non-null confidence ≥ 0.75 in one current compatible Evidence Snapshot |
-| Explicit action/new truthful Activity | Diagnostic p95 ≤ 250 ms |
+| Explicit action acknowledgement | Diagnostic p95 ≤ 250 ms |
+| Event to new truthful Activity | Diagnostic p95 ≤ 250 ms |
 | Settled Evidence to useful guidance | Diagnostic p95 ≤ 6 s |
 | Accepted still to available generated image | Diagnostic warm-path p95 ≤ 15 s |
 | Known failure to visible recovery | Diagnostic p95 ≤ 1 s |
+
+Use this metric dictionary; all starts/ends use monotonic time in the named owner:
+
+| Metric | Start | End and eligibility |
+| --- | --- | --- |
+| `action_to_ack_ms` | Protocol Adapter receives one schema-valid current-session `user_action_v2` | Corresponding `action_result_v2` is enqueued; partition accepted/duplicate/stale/unavailable and never pool with Activity |
+| `event_to_activity_ms` | Runtime admits an eligible intention, explicit-action, material-invalidation, reconnect/recovery, or current typed-failure event | First committed snapshot with new truthful coaching Activity; partition by event class; phone-local disconnect Activity is measured separately on phone close callback |
+| `event_to_first_instruction_ms` | Runtime admits a new/changed accepted intention | First committed current actionable or Ready Instruction for that task |
+| `settled_to_useful_instruction_ms` | Runtime commits Settled Evidence that creates an orientation/evaluation/replan request | First admitted current-token Instruction/Ready output for that Evidence/purpose that meets the usefulness rule below |
+| `failure_to_recovery_ms` | Runtime admits a current typed failure or phone detects a current generated-byte failure | First committed Recovering/failed-sidecar projection with a concrete next action |
+| `accepted_still_to_available_ms` | Runtime admits the compatible high-resolution still for one visual attempt | First committed available artifact announcement for that attempt |
+| `artifact_to_bytes_ms` | Available artifact announcement is committed | Matching bytes finish transmission and phone integrity admission |
+| `preemption_ms` | A newer event invalidates an authoritative run | Invalidation commit; record replacement-start separately when a physical slot starts the replacement |
+
+In deterministic replay, “useful” means the scripted expected output is schema-valid,
+current-token, admitted by deterministic policy, and satisfies the scenario's
+expected Criterion/action or Ready result. In live/walkthrough samples, a
+predeclared rubric reviewer marks the output useful only when it is grounded in the
+current compatible view, relevant to the intention, and contains exactly one
+observable action or valid Ready. An emitted non-useful result does not stop the
+sample; it records a qualitative finding and the latency remains censored until a
+useful result or terminal policy deadline.
+
+Eligible events that reach a configured terminal deadline without the named end are
+reported as right-censored/time-out failures at that deadline. Exclude only events
+that never create the relevant semantic purpose (for example duplicate/stale
+actions or equivalent frames), record the exclusion reason, and never drop failures.
+Partition distributions by operation, semantic purpose, event class, disposition,
+and cold/warm state as applicable.
 
 Record at least:
 
@@ -400,13 +437,15 @@ Before atomic cutover, run:
 - opt-in live Reasoner calls for strategy, progress, and revision;
 - cold and warm Editor smoke calls;
 - a real-phone v1 fallback connection; and
-- a real-phone v2 session covering negotiation, one action, pause/resume, one local
-  capture, disconnect/resume, and one visual-guidance path when available.
+- real-phone v2 sessions that collectively complete general composition, portrait
+  composition/posing, and Generate-to-delivery Generated Visual Guidance, including
+  negotiation, one action, pause/resume, one local capture, and disconnect/resume.
 
 Live content need not match deterministic fixture wording. It MUST obey the
 runtime/protocol contracts, remain grounded enough for the walkthrough rubric, and
-produce the required metrics/artifacts. Provider unavailability is recorded; it
-cannot be used to waive deterministic or real-phone cutover evidence.
+produce the required metrics/artifacts. Provider unavailability is recorded and
+reschedules the candidate; the candidate cannot pass until the required provider
+and real-phone evidence completes successfully.
 
 ## 12. Release evidence packet
 
@@ -436,8 +475,11 @@ all required deterministic scenarios pass: yes/no
 all required seeded runs pass:             yes/no
 obsolete results presented as current:     count
 formative usability gate passes:           yes/no
+provider contract/live smoke passes:        yes/no
+real-phone v1/v2 cutover smoke passes:      yes/no
 critical trust failures:                    count
-unresolved major GVG functional failures:   count
+unresolved release-blocking functional:     count
+  of which major GVG failures:              count
 complete evidence packet:                   yes/no
 RELEASE:                                    PASS only if all above permit it
 ```

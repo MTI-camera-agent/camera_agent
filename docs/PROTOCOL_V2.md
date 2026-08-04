@@ -48,9 +48,13 @@ Unknown **text-message types MUST be ignored** for forward compatibility. Known
 invalid messages are not unknown and follow the error rules below. Invalid binary
 framing, size-limit violations, or an unusable socket are connection-level errors.
 
-Phone and desktop each use one serialized send queue. Correctness uses IDs,
-revisions, receive order, and desktop monotonic time—not synchronized wall clocks.
-`timestampMs` is diagnostic Unix epoch milliseconds.
+Phone and desktop each use one serialized send queue, bounded to 32 queued frames
+or 16 MiB of queued bytes, whichever is reached first. A frame that would exceed
+the bound makes the connection unusable: close it and follow normal detach/reconnect
+recovery rather than buffering without limit or silently dropping an ordered
+message. Correctness uses IDs, revisions, receive order, and desktop monotonic
+time—not synchronized wall clocks. `timestampMs` is diagnostic Unix epoch
+milliseconds.
 
 ## 3. Message inventory
 
@@ -266,14 +270,29 @@ Phase MUST be the first matching runtime projection: no task is
 `recovering`; paused mode is `paused`; requested/running evaluation or replanning
 is `evaluating`; a Ready Instruction is `ready`; an actionable Instruction is
 `coaching`; otherwise an existing task awaiting Evidence, Strategy, or Instruction
-is `orienting`. Generated Visual Guidance never changes coaching phase.
+is `orienting`. The visual sidecar never changes coaching phase.
 
-Semantic validation rejects `needs_intention` with a task or Instruction; `paused`
-with overlays, active analysis projection, or active visual work; `ready` without a
-Ready Instruction; `coaching` without an actionable Instruction; and action sets
-incompatible with the projected task/phase/visual state. `recovering`,
-`evaluating`, and `orienting` may retain an Instruction when the runtime contract
-requires useful but uncurrent guidance.
+The complete semantic lane matrix is:
+
+| Phase | Task/intention | Instruction | Coaching Activity | Overlays | Visual sidecar |
+| --- | --- | --- | --- | --- | --- |
+| `needs_intention` | both null | null | required `waiting` | null | null |
+| `orienting` | both non-null | null | required `working` or `waiting` | null | null |
+| `coaching` | both non-null | required `action`, not `may_be_outdated` | null, `working`, or `waiting` | null or matching Instruction | null or sourced to that Instruction |
+| `evaluating` | both non-null | null, `action`, or `ready`; not `may_be_outdated` | required `working` or `waiting` | null or matching retained Instruction | null, or sourced to a retained actionable Instruction |
+| `ready` | both non-null | required `ready`, `current` or `needs_revalidation` | null | null | null |
+| `recovering` | both non-null | null, `action`, or `ready`; any freshness | required `recovering` | null or matching retained Instruction | null, or sourced to a retained actionable Instruction |
+| `paused` | both non-null | null, `action`, or `ready`; `current` or `needs_revalidation` | null only when Instruction exists, otherwise required `waiting` | null | null |
+
+Whenever `instruction` is null, Activity is therefore non-null. Evaluating retains
+a prior Instruction only while it remains valid; rejection or irrelevance closes it
+immediately and yields Activity-only Evaluating. `needs_intention` and `orienting`
+have no protocol actions except phone-owned intention entry plus, for Orienting, a
+valid task Pause action. `paused` exposes only Resume. Other action availability is
+the matrix in section 7.
+
+Semantic validation rejects the whole snapshot for any lane-matrix, source,
+freshness, or action mismatch while retaining the previous valid projection.
 
 ### 6.2 Instruction
 
@@ -442,7 +461,8 @@ The artifact carries:
 - UUID `imageMessageId`;
 - exact `announcedAtStateRevision`, equal to the first state revision that
   references this transfer identity;
-- nonempty `demonstrates`; and
+- nonempty `demonstrates`, exactly equal to the enclosing visual job's
+  `demonstrates`; and
 - fixed `provenanceLabel`: **“Edited illustration based on an earlier still — not
   the live preview.”**
 
@@ -467,7 +487,17 @@ Header `messageId` MUST equal artifact `imageMessageId`; `visualJobId` MUST equa
 its `visualGuidance.visualId`; session and announcement revision MUST match the
 current artifact reference. The phone accepts bytes only while its current state
 references that exact session, job, image ID, and first-announcement revision.
-Clearing or replacing the reference makes late bytes harmless.
+It MUST also decode the complete payload, verify JPEG/PNG media matches `mimeType`,
+verify decoded width/height exactly match the header, and enforce the 8 MiB message
+limit. Clearing or replacing the reference makes late bytes harmless.
+
+On decode, media, dimension, or integrity failure, the phone does not render the
+image, retains unrelated coaching lanes, shows a transient transfer error, and sends
+`protocol_error_v2` code `invalid_message` related to the image `messageId`. On that
+current-job error, the desktop commits the visual job to `failed`, clears the
+artifact reference, and emits fresh Retry/Dismiss actions. Retry follows the normal
+one-attempt rule and retransmits only after a new available announcement. A stale
+error for a cleared/replaced job is a harmless discard.
 
 After reconnect, the desktop MUST either retransmit an available artifact using a
 fresh `imageMessageId` and new first-announcement revision or clear/replace the
@@ -545,7 +575,10 @@ also enforce:
 - current source Instruction for visual offer/job;
 - visual kind/status/activity/artifact/failure combinations;
 - negotiated visual capability before any visual state or image header;
-- artifact image ID, job ID, session, and first-announcement consistency;
+- artifact/job `demonstrates` equality plus image ID, job ID, session, and
+  first-announcement consistency;
+- decoded media/type/dimension/integrity validation and current-job failure
+  recovery after rejected bytes;
 - one serialized writer and state-before-image ordering; and
 - retained-but-unfresh behavior after resume.
 

@@ -141,7 +141,7 @@ locality, but MUST remain behind the one runtime Interface:
 
 - aggregate transition and invariant checking;
 - task, mode, connection, Evidence, Instruction, Readiness, analysis, recovery,
-  overlays, and Generated Visual Guidance state;
+  overlays, and Visual Guidance Sidecar state;
 - application-authored identity and token allocation;
 - deterministic frame measurements, material-change assessment, asymmetric
   Settled hysteresis, heartbeat, and latest-only scheduling;
@@ -153,8 +153,9 @@ locality, but MUST remain behind the one runtime Interface:
   Context Pack assembly;
 - complete user-visible projection, state-revision assignment, available-action
   minting, and duplicate-projection suppression;
-- Generated Visual Guidance eligibility, consent, capture correlation, editing,
-  retry/cancellation, provenance, and delivery admission; and
+- Visual Guidance Sidecar eligibility, consent, capture correlation, editing,
+  retry/cancellation, provenance, and Generated Visual Guidance delivery admission;
+  and
 - bounded metrics, replay facts, diagnostic artifacts, and blob references.
 
 No private helper can expose an independently mutable phase, Activity, Instruction,
@@ -301,19 +302,20 @@ The runtime owns explicit bounds for:
 - run/job pinning of exact image bytes;
 - monotonic action-ID allocation plus at most 256 action and 256 action-message
   receipts retained for 10 minutes; and
-- configured bounded diagnostic records.
+- diagnostic output capped at 200 files or 256 MiB per run.
 
 `RuntimeHost` owns the one-active-or-detached-runtime capacity and 60-second
-detached TTL. The transport edge separately bounds unmatched observation metadata/images,
-message size, connection-local request state, and send buffering. Configuration
-values and calibration status are versioned and recorded by the evaluation
-contract.
+detached TTL. The transport edge retains at most 16 unmatched observation entries
+per side for 5 seconds, caps every message at 8 MiB, and caps each serialized send
+queue at 32 frames or 16 MiB. Crossing a framing/send bound closes and detaches the
+connection rather than silently dropping ordered output. Configuration values and
+calibration status are versioned and recorded by the evaluation contract.
 
 ## Rejected architecture shapes
 
 - Do not wrap `CoachingLoop` or `ReferenceWorkflow` inside v2.
 - Do not run legacy and v2 orchestration simultaneously for one session.
-- Do not turn Generated Visual Guidance into another workflow authority.
+- Do not turn the Visual Guidance Sidecar into another workflow authority.
 - Do not expose reducer lanes or private schedulers as public Interfaces.
 - Do not add a generic transport seam while WebSocket is the only transport.
 - Do not add a learned-probe seam without two justified Adapters.
@@ -326,8 +328,12 @@ Adapters and therefore earn their seams.
 
 ## Migration and atomic cutover
 
-1. Freeze the current v1 wire and observable behavior as deterministic
-   characterization traces and integration fixtures.
+1. Freeze the current v1 wire as regression-enforcing fixtures and current
+   observable behavior as diagnostic characterization traces. The intentional
+   v2-era v1 behavior deltas are explicit: v1 projects the new Strategy/runtime
+   rather than fixed-plan wording/steps, hides Activity whenever an Instruction
+   exists, and disables legacy Generated Visual Guidance because v1 lacks identified
+   Generate consent. Every other observed delta requires disposition before cutover.
 2. Build `CoachingRuntime` as dormant code with the final state, scheduling,
    memory, Reasoner/Editor, projection, and visual-job contracts.
 3. Reuse only pure helpers whose semantics remain valid: wire framing, bounded
@@ -337,8 +343,11 @@ Adapters and therefore earn their seams.
    Interfaces.
 5. Replay recorded input and controlled Adapter outcomes offline. This path sends
    no client output and makes no duplicate live provider calls.
-6. Exercise protocol v1 and v2 Adapters against the same runtime scenarios,
-   including exact fallback, negotiation, ordering, and generated-image behavior.
+6. Exercise protocol v1 and v2 Adapters against the same runtime scenarios.
+   **Exact fallback** means exact v1 schema, framing, camera transport, observation
+   correlation, result/image ordering, overlay freshness, and usable Instruction
+   projection—not legacy fixed-plan or generated-reference feature parity. V2 also
+   covers negotiation, complete state, actions, and generated-image behavior.
 7. Pass the deterministic functional matrix and real-phone cutover smoke run in
    [CAMERA_AGENT_V2_EVALUATION.md](CAMERA_AGENT_V2_EVALUATION.md).
 8. Perform one composition-root cutover so every newly accepted connection uses
@@ -346,6 +355,7 @@ Adapters and therefore earn their seams.
 9. Delete `CoachingLoop`, `ReferenceWorkflow`, fixed-plan request/result contracts,
    server-owned coaching state, and implementation-coupled tests.
 
-Exact model wording and fixed-plan choices do not need parity. Runtime, protocol,
+Exact model wording, fixed-plan choices, and the explicitly accepted v1 projection
+deltas above do not need parity. Unlisted behavioral changes do. Runtime, protocol,
 safety, ordering, freshness, cancellation, bounded-resource, and evaluation
-contracts do.
+contracts remain cutover gates.
