@@ -202,7 +202,7 @@ when the evidence packet reports each requirement separately.
 | W05 | Stale/malformed/contradictory snapshot | Last valid projection/revision retained, including for phase/task/Instruction/action/visual-lane combinations that violate the normative projection matrix. |
 | W06 | Instruction immutability | Same ID may change freshness only; changed content/addressee/kind is rejected. |
 | W07 | Overlay freshness | State applies while stale/mismatched overlay is independently suppressed; zoom clears immediately. |
-| W08 | Action lifecycle | Offered action persists with same ID; accepted before slow work; duplicate/stale/unavailable semantics; no ID reuse. |
+| W08 | Action lifecycle | Offered action persists with same ID; exact message replay returns cached original disposition; contradictory message-ID reuse errors; new-message consumed action is duplicate; stale/unavailable remain distinct; wrong-session never executes; acknowledgement precedes resulting state and slow work; no action-ID reuse. |
 | W09 | Generated image ordering | State announcement before bytes; exact session/job/image/first-revision checks; late bytes dropped. |
 | W10 | Reconnect negotiation | Wire resets to v1; sole-session 60-second TTL, active-connection rejection, non-resume eviction, successful/failed resume semantics, and no revision reset on success. |
 | W11 | Unknown text type | Both sides ignore it without state loss or disconnect. |

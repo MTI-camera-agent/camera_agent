@@ -349,15 +349,23 @@ or editing:
 Dispositions:
 
 - `accepted`: this opportunity was current and consumed;
-- `duplicate`: the same one-use action was already consumed;
-- `stale`: its session or target/opportunity is no longer current;
-- `unavailable`: the action is known but cannot currently execute for a scoped
-  reason.
+- `duplicate`: a new transmission `messageId` invoked an already consumed
+  `actionId`;
+- `stale`: the action retired unconsumed because its target or context ended;
+- `unavailable`: the action and target are current, but a scoped precondition or
+  resource failure prevented admission.
+
+Exact replay of the same `user_action_v2.messageId` and identical payload returns
+the cached original disposition without re-execution. Reuse of that message ID with
+different content produces `protocol_error_v2` code `invalid_message`. A message
+naming another session produces `unexpected_message`; it never executes.
 
 Duplicate, stale, and unavailable actions are idempotent no-ops, not protocol
-errors. A later full state reflects the result of an accepted action. Intention
-editing and local shutter remain phone-owned controls represented by v1 observation
-reasons rather than action IDs.
+errors. For an accepted action, enqueue `action_result_v2` before any state snapshot
+caused by that action and before slow reasoning, capture, or editing. The subsequent
+full state—not the acknowledgement—is authoritative UI state. Intention editing
+and local shutter remain phone-owned controls represented by v1 observation reasons
+rather than action IDs.
 
 ## 8. Generated Visual Guidance
 
@@ -494,6 +502,8 @@ also enforce:
 - one immutable content tuple per Instruction identity;
 - overlay Instruction identity and unique primitive IDs;
 - globally non-reused action IDs and action-kind/target compatibility;
+- exact action-message replay, contradictory message-ID reuse, disposition meaning,
+  and acknowledgement-before-resulting-state ordering;
 - current source Instruction for visual offer/job;
 - visual kind/status/activity/artifact/failure combinations;
 - negotiated visual capability before any visual state or image header;
