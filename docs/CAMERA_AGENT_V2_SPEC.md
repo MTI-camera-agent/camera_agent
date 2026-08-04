@@ -338,6 +338,11 @@ A `CriterionAssessment` contains:
   `temporarily_infeasible`, `action_infeasible`, or `ambiguous`.
 
 Every must-have assessment MUST contain at least one `current` grounding fact.
+The progress output also contains one `StrategyApplicability` record with
+`status: applicable | broad_discontinuity | unknown`, finite `[0,1]` or null
+confidence, and one to four bounded current-view grounding facts. Deterministic
+frame signals may request this semantic check but cannot author its result.
+
 `null` confidence cannot support Ready. Confidence is internal evidence, never a
 user-facing percentage. Ready is derived only when every must-have is `achieved`
 with non-null confidence at or above the configured threshold in one current
@@ -368,11 +373,14 @@ There are three revision scopes:
 1. Instruction refinement changes the action for the same Criterion.
 2. Local strategy patch changes only one affected Criterion, priority,
    alternative, or constraint and preserves compatible unrelated Evidence.
-3. Full strategy rebuild is reserved for a changed intention or broad semantic
-   discontinuity.
+3. Full strategy rebuild is reserved for a changed intention or an accepted
+   `StrategyApplicability(status=broad_discontinuity)` with non-null confidence at
+   or above the configured Ready threshold.
 
-Ordinary motion, achievement, regression, heartbeat, or model wording variation
-MUST NOT rebuild the whole strategy.
+`StrategyApplicability(status=unknown)` requests clearer fresh Evidence and scoped
+recovery; it does not rebuild. Ordinary motion, achievement, regression, heartbeat,
+deterministic frame-signal change, or model wording variation MUST NOT rebuild the
+whole strategy.
 
 ## 6. Task Memory and Context Packs
 
@@ -468,8 +476,10 @@ final Strategy/Instruction state.
 every proposed must-have, feasible actions, and at most one candidate first action.
 Deterministic admission assigns IDs and may derive immediate Ready without a second
 call. `assess_progress` covers every current must-have once against the same
-Evidence and may include at most one candidate action. `propose_revision` is
-limited to an alternative for one Criterion or a one-Criterion patch.
+Evidence, returns one bounded `StrategyApplicability` record, and may include at
+most one candidate action. Only an admitted high-confidence
+`broad_discontinuity` may request a full rebuild. `propose_revision` is limited to
+an alternative for one Criterion or a one-Criterion patch.
 
 Admission MUST validate schema, complete must-have coverage, known unique Criterion
 references, finite confidence, grounding, output bounds, and revision scope

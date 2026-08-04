@@ -149,7 +149,7 @@ when the evidence packet reports each requirement separately.
 | P06 | Blocked action/criterion | `not_observable`/`ambiguous` requests clearer Evidence and scoped recovery; `temporarily_infeasible`/`action_infeasible` may end an irrelevant Instruction and request one-Criterion patch; `blocked` does not trigger visual offer. |
 | P07 | Try another suggestion | Accepted action acknowledged; Instruction closes `rejected`; equivalent action constrained; unrelated Criteria preserved. |
 | P08 | Replayed or stale rejection | Duplicate/stale no-op; no second strategy mutation. |
-| P09 | Full rebuild boundary | Only changed intention or broad semantic discontinuity rebuilds; compatible explicit constraints survive. |
+| P09 | Full rebuild boundary | Only changed intention or an admitted `broad_discontinuity` applicability result with confidence ≥ the configured threshold rebuilds; `unknown` requests clearer fresh Evidence; deterministic frame signals and ordinary progress never rebuild; compatible explicit constraints survive. |
 | P10 | Memory bounds | Current plus at most one previous compatible snapshot/image; equivalent outcomes coalesced; raw output excluded. |
 | P11 | Dependency invalidation | Local patch preserves unaffected Evidence; material change invalidates evidence-scoped records; task change clears task facts. |
 | P12 | Context budget pressure | Mandatory content retained; optional content removed in defined order; visible failure if mandatory pack cannot fit. |
