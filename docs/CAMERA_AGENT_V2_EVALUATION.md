@@ -177,7 +177,7 @@ when the evidence packet reports each requirement separately.
 | --- | --- | --- |
 | G01 | Not yet eligible | Time, motion, capture, one insufficient result, or blocked alone does not offer. |
 | G02 | Eligible proactive offer | Two materially different actions each have current accepted `insufficient` Evidence with no intervening improvement, the Criterion is visualizable, and capabilities are present; a concurrent local patch does not erase the episode; offer once. |
-| G03 | Explicit request | Suitable offer may appear immediately; no capture before separate Generate. |
+| G03 | Explicit request ingress | Accepted intention/`intention_updated` text is interpreted through typed grounded Strategy output, not a phrase allowlist or new v2 message; suitable offer may appear immediately; no capture before separate Generate. |
 | G04 | Not now | Action acknowledged; same-context proactive offer suppressed. |
 | G05 | Generate while unsettled | One job; waiting Activity; no capture until compatible Settled. |
 | G06 | Generate while settled | One fresh transient capture request bound to job/attempt and source tokens. |

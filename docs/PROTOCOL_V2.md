@@ -377,8 +377,11 @@ Semantic combinations:
 | `job/failed` | null | null | required user-facing text |
 
 `sourceInstructionId` MUST name the current Instruction. `demonstrates` is one
-nonempty adjustment. An offer alone MUST NOT request capture. Accepted Generate,
-Retry, or Another example authorizes one job attempt.
+nonempty adjustment. An explicit request for an edited example enters through the
+accepted intention repeated by unchanged v1 observation transport; v2 adds no
+free-form request action. Such a request may cause an offer but is not consent. An
+offer alone MUST NOT request capture. Accepted Generate, Retry, or Another example
+authorizes one job attempt.
 
 ### 8.1 High-resolution capture
 

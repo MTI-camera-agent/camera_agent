@@ -447,7 +447,8 @@ personality, or emotion. Scene facts do not cross tasks.
 Every remote call receives an immutable, allowlisted, provenance-tokened pack:
 
 - **Strategy**: intention, current settled Evidence/image, camera facts, journey,
-  creation/rebuild reason, and surviving constraints.
+  creation/rebuild reason, surviving constraints, and whether this accepted
+  intention/intention update explicitly requests an edited example.
 - **Progress**: current Strategy and every must-have, active Instruction, current
   Evidence/image, one previous compatible summary, relevant trajectory counters,
   and cheap deterministic signals.
@@ -506,9 +507,10 @@ Ready, authoritative IDs, state transitions, Activity, retry policy, consent, or
 final Strategy/Instruction state.
 
 `propose_strategy` returns proposed Criteria, grounded current-view assessments for
-every proposed must-have, feasible actions, and at most one candidate first action.
-Deterministic admission assigns IDs and may derive immediate Ready without a second
-call. `assess_progress` covers every current must-have once against the same
+every proposed must-have, feasible actions, at most one candidate first action, and
+a typed `VisualGuidanceIntent` of `requested | not_requested | unsuitable` grounded
+in the accepted intention text and current Criterion suitability. Deterministic
+admission assigns IDs and may derive immediate Ready without a second call. `assess_progress` covers every current must-have once against the same
 Evidence, returns one bounded `StrategyApplicability` record, and may include at
 most one candidate action. Only an admitted high-confidence
 `broad_discontinuity` may request a full rebuild. `propose_revision` is limited to
@@ -595,8 +597,12 @@ materially changed scene, or accepted improvement followed later by accepted
 regression may begin a new episode; regression must satisfy the full eligibility
 rule again.
 
-An explicit user request MAY make a suitable offer immediately, but is not capture
-consent. Only Generate authorizes the first attempt.
+An explicit user request enters only through the accepted intention or a v1
+`intention_updated` observation. Structured Strategy reasoning returns a typed,
+grounded `VisualGuidanceIntent`; do not use a phrase allowlist or add a new free-form
+v2 action/message. An admitted `requested` result MAY make a suitable, supported
+offer immediately, but it is not capture consent. Only the separate identified
+Generate action authorizes the first attempt.
 
 ### 8.2 Capture, generation, and delivery
 
