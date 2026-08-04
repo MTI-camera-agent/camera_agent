@@ -22,8 +22,9 @@ A candidate release passes only when all are true:
 3. zero obsolete result is presented as current;
 4. the predeclared five-participant formative-usability gate passes;
 5. no critical trust failure remains in any replay, walkthrough, smoke run, or
-   participant session; and
-6. one complete versioned evidence packet is retained.
+   participant session;
+6. no unresolved major Generated Visual Guidance functional failure remains; and
+7. one complete versioned evidence packet is retained.
 
 A threshold miss marked diagnostic or **uncalibrated** is investigated and recorded
 but does not independently fail this research-prototype release unless it causes
@@ -255,8 +256,13 @@ for:
    unrelated content, and correct provenance.
 
 Use severity `critical | major | minor | note`; do not compute an aggregate score.
-A critical trust failure blocks directly. Other findings block only when they show
-required functionality incomplete or cause the usability gate to fail.
+A generated illustration that fails or contradicts its requested single adjustment,
+or corrupts unrelated content enough to defeat the demonstration, is a **major
+functional failure** and blocks release until fixed and rerun. Cosmetic imperfections
+that do not impair the demonstration are non-blocking. Missing provenance or an
+illustration mistaken for live Evidence is a critical trust failure. Other findings
+block only when they show required functionality incomplete or cause the usability
+gate to fail.
 
 ## 8. Formative-usability gate
 
@@ -428,6 +434,7 @@ all required seeded runs pass:             yes/no
 obsolete results presented as current:     count
 formative usability gate passes:           yes/no
 critical trust failures:                    count
+unresolved major GVG functional failures:   count
 complete evidence packet:                   yes/no
 RELEASE:                                    PASS only if all above permit it
 ```

@@ -630,6 +630,13 @@ Delivery MUST state the demonstrated action and the fixed protocol provenance
 label. Dismiss clears the artifact. Another example is new explicit consent for a
 new job and fresh still; it is never automatic.
 
+Runtime does not add a post-edit VLM call. The curated evaluation therefore treats
+an illustration that fails or contradicts the requested single adjustment, or
+corrupts unrelated content enough to defeat the demonstration, as a release-blocking
+major functional failure. Cosmetic imperfections that preserve instructional use
+are non-blocking; missing provenance or confusion with live Evidence is a critical
+trust failure.
+
 ## 9. Protocol projections
 
 Protocol negotiation, schemas, ordering, actions, and image correlation are defined
