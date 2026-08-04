@@ -313,8 +313,8 @@ Each accepted settled view produces one strategy-indexed Evidence Snapshot with:
 - one grounded assessment for every must-have against that same view;
 - relevant nice-to-have assessments;
 - task-relevant observable facts and cheap deterministic signals;
-- observed response to the active Instruction; and
-- confidence, uncertainty, and blocked conditions.
+- the observed response to the active Instruction; and
+- bounded confidence, uncertainty, and blocked-condition records.
 
 Every assessed Criterion has exactly one classification:
 
@@ -324,9 +324,25 @@ Every assessed Criterion has exactly one classification:
 - `deviating`: materially farther away or regressed;
 - `blocked`: cannot currently be judged or completed.
 
-Confidence is internal evidence, not a user-facing percentage. Ready is derived
-by deterministic policy only when every must-have is `achieved` at the configured
-confidence threshold in one current compatible Evidence Snapshot.
+A `CriterionAssessment` contains:
+
+- current `criterion_id` and one classification above;
+- `confidence`: a finite number in `[0, 1]`, or `null` when confidence is unknown;
+- `grounding`: one to four observable-fact records, each at most 160 characters,
+  tagged `current` or `previous`; chain-of-thought and hidden reasoning are
+  prohibited;
+- `uncertainty_reasons`: zero to three values from `occluded`, `blurred`,
+  `poor_lighting`, `out_of_frame`, `ambiguous_subject`, `insufficient_change`,
+  `conflicting_cues`, or `other`; and
+- `blocked_reason`: required only for `blocked`, one of `not_observable`,
+  `temporarily_infeasible`, `action_infeasible`, or `ambiguous`.
+
+Every must-have assessment MUST contain at least one `current` grounding fact.
+`null` confidence cannot support Ready. Confidence is internal evidence, never a
+user-facing percentage. Ready is derived only when every must-have is `achieved`
+with non-null confidence at or above the configured threshold in one current
+compatible Evidence Snapshot. The initial threshold is **0.75**, versioned and
+explicitly **uncalibrated** until the evaluation procedure promotes or changes it.
 
 ### 5.3 Progress response
 
@@ -340,8 +356,10 @@ After atomically admitting an Evidence update:
   Criterion; after alternatives are exhausted, request a local patch.
 - **Deviating**: a regressed must-have may preempt focus and receive one corrective
   Instruction; never stack old and corrective actions.
-- **Blocked**: close an irrelevant Instruction and patch only the affected
-  Criterion while displaying replanning Activity.
+- **Blocked**: `not_observable` or `ambiguous` enters scoped recovery and requests
+  fresh/clearer Evidence without claiming infeasibility. `temporarily_infeasible`
+  or `action_infeasible` closes an irrelevant Instruction and requests a local
+  patch for only the affected Criterion while displaying replanning Activity.
 - **Rejected**: close the targeted Instruction as rejected, record a constraint,
   and request a non-equivalent alternative.
 

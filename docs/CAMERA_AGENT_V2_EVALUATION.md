@@ -141,12 +141,12 @@ when the evidence packet reports each requirement separately.
 
 | ID | Scenario | Required assertions |
 | --- | --- | --- |
-| P01 | Every must-have reassessed | One Evidence Snapshot covers all must-haves from the same view; incomplete output rejected atomically. |
+| P01 | Every must-have reassessed | One Evidence Snapshot covers all must-haves from the same view; each has 1–4 bounded grounding facts, finite `[0,1]` or null confidence, and bounded typed uncertainty; incomplete or malformed output is rejected atomically. |
 | P02 | Nice-to-have unmet | Ready still permitted; optional refinement cannot imply capture was wrong. |
 | P03 | Repeated insufficient | Initial hold, one materially different alternative after budget, then local patch—not endless repetition. |
 | P04 | Improving between failures | Failed-action sequence clears; no visual offer from stale insufficient history. |
 | P05 | Deviating criterion | Regressed higher-priority must-have may preempt; no stacked instructions. |
-| P06 | Blocked action/criterion | Affected Instruction ends if irrelevant; one-Criterion patch; `blocked` does not trigger visual offer. |
+| P06 | Blocked action/criterion | `not_observable`/`ambiguous` requests clearer Evidence and scoped recovery; `temporarily_infeasible`/`action_infeasible` may end an irrelevant Instruction and request one-Criterion patch; `blocked` does not trigger visual offer. |
 | P07 | Try another suggestion | Accepted action acknowledged; Instruction closes `rejected`; equivalent action constrained; unrelated Criteria preserved. |
 | P08 | Replayed or stale rejection | Duplicate/stale no-op; no second strategy mutation. |
 | P09 | Full rebuild boundary | Only changed intention or broad semantic discontinuity rebuilds; compatible explicit constraints survive. |
@@ -319,6 +319,7 @@ The following are editable empirical starting points and MUST be visibly marked
 | Relative sharpness, luminance, clipping | Logging-only until traces justify a versioned threshold |
 | Heartbeat | 15 s, then 30 s, then 60 s; no more than 3 heartbeat calls in 2 minutes |
 | Physical VLM concurrency | Maximum 2 total calls |
+| Ready confidence | Every must-have `achieved` with non-null confidence ≥ 0.75 in one current compatible Evidence Snapshot |
 | Explicit action/new truthful Activity | Diagnostic p95 ≤ 250 ms |
 | Settled Evidence to useful guidance | Diagnostic p95 ≤ 6 s |
 | Accepted still to available generated image | Diagnostic warm-path p95 ≤ 15 s |
