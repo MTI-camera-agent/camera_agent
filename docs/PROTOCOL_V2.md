@@ -142,6 +142,25 @@ absence of acceptance leaves both sides in v1 mode.
 A new connection always resets wire mode to v1 until a new acceptance. Retained
 phone display is read-only during negotiation.
 
+### 4.3 Phone-local disconnect projection
+
+Socket loss cannot be represented by a desktop snapshot. A phone that has accepted
+v2 MUST therefore derive a local presentation immediately on close:
+
+- phase is `recovering`;
+- retain the accepted intention and Instruction but render its freshness as
+  `may_be_outdated`;
+- show recovering Activity “Connection lost—reconnecting…”;
+- clear overlays, every protocol-owned action, and the complete visual-guidance
+  lane/artifact; and
+- keep camera controls, intention editing, and local shutter usable.
+
+This local projection does not allocate or alter `sessionId` or `stateRevision` and
+is never sent to the desktop. On a new connection, a valid v1 result received before
+v2 acceptance replaces it under v1 rules. After acceptance, the first valid complete
+`coaching_state_v2` atomically replaces it. Invalid or stale input leaves the local
+disconnected projection intact.
+
 ## 5. Session continuity
 
 `sessionId` is an opaque random UUID and memory-only continuity handle. It is not a

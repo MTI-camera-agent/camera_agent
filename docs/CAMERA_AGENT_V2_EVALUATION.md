@@ -167,7 +167,7 @@ when the evidence packet reports each requirement separately.
 | U04 | User capture before Ready | Neutral acknowledgement; old evaluation invalidated; no criticism or refusal inference. |
 | U05 | User capture while Ready | Ready does not flicker; fresh Evidence later determines continuation. |
 | U06 | Reasoner failure/retry | 8 s deadline; at most one fresh-pack automatic retry only for deadline/unavailable/throttled/invalid output while purpose remains current; throttle delay capped at 2 s; rejected/misconfigured never auto-retry; exhaustion preserves guidance and requires fresh Evidence or explicit action. |
-| U07 | Disconnect | Immediate work/overlay/visual invalidation; retained Instruction `may_be_outdated`; no blank or shutter impact. |
+| U07 | Disconnect | Runtime invalidates work immediately; phone locally projects Recovering, retained `may_be_outdated` Instruction, connection Activity, and cleared overlays/actions/visual lane without changing session/revision; camera/intention/shutter remain usable. |
 | U08 | Successful resume | Matching sole detached session within 60 s preserves session/task/Instruction and increasing revision; Recovering until fresh `reconnected` Evidence. |
 | U09 | Failed/evicted resume | Expired, mismatched, evicted, or replaced continuity gets a new session; state rebuilds from repeated intention; old IDs/output rejected; an active second connection is rejected. |
 | U10 | Reconnect with late old completion | Completion/action/state/image from old authority cannot act. |
@@ -206,7 +206,7 @@ when the evidence packet reports each requirement separately.
 | W07 | Overlay freshness | State applies while stale/mismatched overlay is independently suppressed; zoom clears immediately. |
 | W08 | Action lifecycle | Exercise every permitted and forbidden phase/target/status combination for Try another, Pause/Resume, Generate/Decline, Cancel, Retry, Dismiss, and Another example; accepted action disappears next snapshot; offered action otherwise persists with same ID; exact replay returns cached disposition; contradictory message-ID reuse errors; consumed/stale/unavailable remain distinct; wrong-session never executes; acknowledgement precedes resulting state and slow work; later opportunity gets a fresh ID. |
 | W09 | Generated image ordering | State announcement before bytes; exact session/job/image/first-revision checks; late bytes dropped. |
-| W10 | Reconnect negotiation | Wire resets to v1; sole-session 60-second TTL, active-connection rejection, non-resume eviction, successful/failed resume semantics, and no revision reset on success. |
+| W10 | Disconnect/reconnect negotiation | Phone-local disconnect projection requires no server revision; wire resets to v1; valid pre-accept v1 result or first accepted complete v2 state replaces local projection; exercise sole-session 60-second TTL, active-connection rejection, non-resume eviction, successful/failed resume, and no revision reset on success. |
 | W11 | Unknown text type | Both sides ignore it without state loss or disconnect. |
 | W12 | Known invalid v2 message | `protocol_error_v2` is scoped and last valid state remains; malformed protocol-error input is logged/dropped without an error loop, while unsafe framing follows connection-failure policy. |
 | W13 | Binary framing/limits | Header bounds, schema, media/dimensions, and 8 MiB cap enforced. |

@@ -668,9 +668,12 @@ in [PROTOCOL_V2.md](PROTOCOL_V2.md).
 ## 10. Recovery and observability
 
 Every wait MUST end in useful guidance, truthful continued Activity, or a specific
-recoverable failure. Connection loss immediately marks retained Instruction
-`may_be_outdated`, clears overlays and pending visual work, and invalidates async
-work.
+recoverable failure. Connection loss immediately invalidates async work in the
+runtime. Because the closed socket cannot carry a new snapshot, the v2 phone also
+performs the normative local disconnect projection from
+[PROTOCOL_V2.md](PROTOCOL_V2.md): retain guidance as `may_be_outdated`, show
+Recovering connection Activity, and clear overlays, actions, and all visual state
+without changing server revision/session identity.
 
 Retain at most one detached session in memory for 60 seconds by desktop monotonic
 time. Reject a second connection while one is active. Resume only when the offered
