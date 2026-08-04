@@ -146,16 +146,22 @@ phone display is read-only during negotiation.
 
 `sessionId` is an opaque random UUID and memory-only continuity handle. It is not a
 device identity, authentication token, or durable session. The phone MAY retain it
-for the lifetime of its process and send it as `resumeSessionId` on reconnect. The
-desktop alone decides whether detached state remains resumable.
+for the lifetime of its process and send it as `resumeSessionId` on reconnect.
+
+The desktop retains at most one detached session for 60 seconds by monotonic time
+and rejects a second connection while one is active. Resume succeeds only when the
+offered ID matches the retained session, the TTL has not expired, and no newer
+connection or task has replaced it. A new non-resume connection evicts detached
+continuity. The 60-second value is versioned and initially uncalibrated.
 
 - On successful resume, `protocol_v2_accept` returns the same `sessionId` and
   `resumed: true`. Task and Instruction identities and monotonic state revisions
   continue. The first state marks retained guidance `may_be_outdated`, uses
   `recovering`, and requires a fresh v1 `reconnected` observation before evidence
   may become current.
-- On failed resume, acceptance returns a fresh `sessionId` and `resumed: false`.
-  The desktop rebuilds from the intention repeated by a later v1 observation.
+- On expired, mismatched, or evicted resume, acceptance returns a fresh `sessionId`
+  and `resumed: false`. The desktop rebuilds from the intention repeated by a later
+  v1 observation.
 - A state revision MUST NOT reset within a resumed session.
 - A state or action naming another session is stale and MUST NOT affect the current
   session.

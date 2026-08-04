@@ -258,7 +258,7 @@ The runtime owns explicit bounds for:
 - active visual job, accepted still, and generated output;
 - run/job pinning of exact image bytes;
 - replay/diagnostic records; and
-- resumable detached session state.
+- at most one memory-only detached session retained for 60 seconds.
 
 The transport edge separately bounds unmatched observation metadata/images,
 message size, connection-local request state, and send buffering. Configuration

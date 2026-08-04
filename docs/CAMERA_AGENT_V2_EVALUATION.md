@@ -166,8 +166,8 @@ when the evidence packet reports each requirement separately.
 | U05 | User capture while Ready | Ready does not flicker; fresh Evidence later determines continuation. |
 | U06 | Reasoner unavailable/timeout/invalid output | Existing guidance preserved; truthful scoped recovery within configured policy; fresh-pack retry only if purpose remains valid. |
 | U07 | Disconnect | Immediate work/overlay/visual invalidation; retained Instruction `may_be_outdated`; no blank or shutter impact. |
-| U08 | Successful resume | Same session/task/Instruction and increasing revision; Recovering until fresh `reconnected` Evidence. |
-| U09 | Failed resume | New session; state rebuilt from repeated intention; old IDs/output rejected. |
+| U08 | Successful resume | Matching sole detached session within 60 s preserves session/task/Instruction and increasing revision; Recovering until fresh `reconnected` Evidence. |
+| U09 | Failed/evicted resume | Expired, mismatched, evicted, or replaced continuity gets a new session; state rebuilds from repeated intention; old IDs/output rejected; an active second connection is rejected. |
 | U10 | Reconnect with late old completion | Completion/action/state/image from old authority cannot act. |
 
 ### 5.5 Generated Visual Guidance
@@ -202,7 +202,7 @@ when the evidence packet reports each requirement separately.
 | W07 | Overlay freshness | State applies while stale/mismatched overlay is independently suppressed; zoom clears immediately. |
 | W08 | Action lifecycle | Offered action persists with same ID; accepted before slow work; duplicate/stale/unavailable semantics; no ID reuse. |
 | W09 | Generated image ordering | State announcement before bytes; exact session/job/image/first-revision checks; late bytes dropped. |
-| W10 | Reconnect negotiation | Wire resets to v1; successful and failed resume semantics; no revision reset on success. |
+| W10 | Reconnect negotiation | Wire resets to v1; sole-session 60-second TTL, active-connection rejection, non-resume eviction, successful/failed resume semantics, and no revision reset on success. |
 | W11 | Unknown text type | Both sides ignore it without state loss or disconnect. |
 | W12 | Known invalid v2 message | `protocol_error_v2` is scoped and last valid state remains. |
 | W13 | Binary framing/limits | Header bounds, schema, media/dimensions, and 8 MiB cap enforced. |
@@ -318,6 +318,7 @@ The following are editable empirical starting points and MUST be visibly marked
 | Settled | At least 2 mutually equivalent post-change observations spanning at least 500 ms; immediate invalidation on material change |
 | Relative sharpness, luminance, clipping | Logging-only until traces justify a versioned threshold |
 | Heartbeat | 15 s, then 30 s, then 60 s; no more than 3 heartbeat calls in 2 minutes |
+| Detached continuity | At most 1 memory-only session retained for 60 s; reject a second active connection |
 | No-progress alternative | 2 accepted Settled `insufficient` assessments for one action spanning ≥10 s |
 | Criterion patch / visual-offer eligibility | 2 materially different actions each with accepted `insufficient`, no intervening `improving` |
 | Optional-refinement budget | 0 nice-to-have Instructions in v2 |

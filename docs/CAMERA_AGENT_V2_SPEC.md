@@ -607,9 +607,18 @@ in [PROTOCOL_V2.md](PROTOCOL_V2.md).
 Every wait MUST end in useful guidance, truthful continued Activity, or a specific
 recoverable failure. Connection loss immediately marks retained Instruction
 `may_be_outdated`, clears overlays and pending visual work, and invalidates async
-work. Successful in-memory resume retains semantic task state but enters Recovering
-until fresh `reconnected` Evidence is accepted. Untrusted or unavailable continuity
-starts a new task from the intention repeated by v1 observation.
+work.
+
+Retain at most one detached session in memory for 60 seconds by desktop monotonic
+time. Reject a second connection while one is active. Resume only when the offered
+session ID matches that retained session, its TTL has not expired, and no newer
+connection or task has replaced it. A new non-resume connection evicts detached
+continuity and starts fresh. Successful resume preserves semantic task and
+Instruction identities, enters Recovering, and cannot restore current Evidence
+until a fresh v1 `reconnected` observation becomes Settled and is accepted.
+Expired, mismatched, or evicted continuity receives a new session and rebuilds from
+the intention repeated by v1 observation. The 60-second bound is versioned and
+initially uncalibrated.
 
 Diagnostics are bounded and opt-in. Every attempted remote call records exact
 source-byte hashes, provenance identities, purpose, timing, accepted/stale/
