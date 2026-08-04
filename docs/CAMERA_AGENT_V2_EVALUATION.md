@@ -267,11 +267,12 @@ Use five first-time participants. Each completes:
 - one general-composition journey; and
 - one portrait-composition/posing journey.
 
-Generated Visual Guidance MUST be exercised in at least three of the five sessions.
-A facilitator may set up equipment and explain the study, but MUST NOT explain the
-meaning of Instruction versus Activity, teach the required controls, identify
-Ready/shutter behavior, or explain generated-image provenance during a measured
-task.
+All five participants MUST receive a Generated Visual Guidance recognition task,
+and at least three MUST additionally complete the full Generate-to-delivery
+interaction. A facilitator may set up equipment and explain the study, but MUST NOT
+explain the meaning of Instruction versus Activity, teach the required controls,
+identify Ready/shutter behavior, or explain generated-image provenance during a
+measured task.
 
 ### 8.2 Required participant outcomes
 
@@ -285,12 +286,12 @@ facilitator intervention:
 5. recognize Generated Visual Guidance as an edited illustration based on an
    earlier still, not the live preview or live-shot Evidence.
 
-For outcome 5, use only participants who exercise visual guidance; at least three
-must exercise it, and at least the same four-of-five overall release rule must be
-satisfied by the study design. If fewer than four participants exercise the
-feature, the candidate has insufficient evidence and does not pass.
+Outcome 5 is measured across all five recognition tasks; at least four must pass
+without intervention. Completing recognition does not count toward the separate
+requirement that at least three participants exercise actual Generate-to-delivery.
 
-Record every intervention against the attempted task/control. Repeating a task
+Record every intervention against the attempted task/control. Explaining generated
+provenance or the recognition distinction counts as intervention. Repeating a task
 after intervention does not convert it into an unassisted pass.
 
 ### 8.3 Critical trust failures
