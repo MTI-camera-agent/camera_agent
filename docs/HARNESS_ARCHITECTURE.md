@@ -187,8 +187,11 @@ misconfigured
 ```
 
 Adapters do not retry or decide semantic retryability. Provider-specific details
-remain inside them. The runtime rebuilds a fresh Context Pack and applies bounded
-policy only if the semantic purpose remains current.
+remain inside them. The runtime owns the approved bounds: an 8-second Reasoner
+attempt with at most one eligible automatic retry and at most 2 seconds of provider
+delay; a 5-second capture deadline; and a 60-second editor attempt with only
+explicit user Retry. Every Reasoner retry rebuilds a fresh Context Pack and runs
+only if the semantic purpose remains current.
 
 ## Protocol Adapter family
 

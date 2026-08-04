@@ -164,7 +164,7 @@ when the evidence packet reports each requirement separately.
 | U03 | Edit intention while paused | New task but remains paused. |
 | U04 | User capture before Ready | Neutral acknowledgement; old evaluation invalidated; no criticism or refusal inference. |
 | U05 | User capture while Ready | Ready does not flicker; fresh Evidence later determines continuation. |
-| U06 | Reasoner unavailable/timeout/invalid output | Existing guidance preserved; truthful scoped recovery within configured policy; fresh-pack retry only if purpose remains valid. |
+| U06 | Reasoner failure/retry | 8 s deadline; at most one fresh-pack automatic retry only for deadline/unavailable/throttled/invalid output while purpose remains current; throttle delay capped at 2 s; rejected/misconfigured never auto-retry; exhaustion preserves guidance and requires fresh Evidence or explicit action. |
 | U07 | Disconnect | Immediate work/overlay/visual invalidation; retained Instruction `may_be_outdated`; no blank or shutter impact. |
 | U08 | Successful resume | Matching sole detached session within 60 s preserves session/task/Instruction and increasing revision; Recovering until fresh `reconnected` Evidence. |
 | U09 | Failed/evicted resume | Expired, mismatched, evicted, or replaced continuity gets a new session; state rebuilds from repeated intention; old IDs/output rejected; an active second connection is rejected. |
@@ -181,8 +181,8 @@ when the evidence packet reports each requirement separately.
 | G05 | Generate while unsettled | One job; waiting Activity; no capture until compatible Settled. |
 | G06 | Generate while settled | One fresh transient capture request bound to job/attempt and source tokens. |
 | G07 | Motion during capture | Request invalidated; late still discarded; fresh request only after settling. |
-| G08 | Capture failure and Retry | Coaching preserved; scoped failure with new Retry ID; capture retry requires fresh still. |
-| G09 | Edit failure and Retry | Coaching preserved; still reused only while all source tokens valid. |
+| G08 | Capture failure and Retry | 5 s deadline; no automatic retry; coaching preserved; scoped failure with new Retry ID; accepted Retry obtains a fresh still. |
+| G09 | Edit failure and Retry | 60 s deadline; no automatic retry; coaching preserved; accepted Retry may reuse the still only while all source tokens remain valid. |
 | G10 | Successful generation | Available artifact announced before bytes; exact provenance and demonstrated action; no live Evidence mutation. |
 | G11 | Cancel/new task/scene change/source closure/pause/disconnect | Logical invalidation immediate; late still/failure/image/bytes harmless; ordinary coaching isolated. |
 | G12 | Dismiss | Artifact alone clears; same-context proactive suppression remains. |
@@ -319,6 +319,9 @@ The following are editable empirical starting points and MUST be visibly marked
 | Relative sharpness, luminance, clipping | Logging-only until traces justify a versioned threshold |
 | Heartbeat | 15 s, then 30 s, then 60 s; no more than 3 heartbeat calls in 2 minutes |
 | Detached continuity | At most 1 memory-only session retained for 60 s; reject a second active connection |
+| Reasoner retry/deadline | 8 s per attempt; at most 1 automatic retry; provider delay capped at 2 s |
+| High-resolution capture deadline | 5 s; no automatic retry |
+| Illustration editor deadline | 60 s; no automatic retry |
 | No-progress alternative | 2 accepted Settled `insufficient` assessments for one action spanning ≥10 s |
 | Criterion patch / visual-offer eligibility | 2 materially different actions each with accepted `insufficient`, no intervening `improving` |
 | Optional-refinement budget | 0 nice-to-have Instructions in v2 |

@@ -372,7 +372,9 @@ Use unchanged v1 `capture_high_resolution` and `high_resolution_image` messages.
 The v1 `requestId` correlates transport. The runtime separately binds the request
 to session, task, source Instruction, Evidence, visual job, and attempt. Late or
 incompatible stills are discarded. Existing v1 `error` remains the capture error
-surface.
+surface. Capture and editor attempts are never retried automatically; a failed job
+snapshot offers a newly minted `retry_visual_guidance` action, and each accepted
+Retry authorizes exactly one attempt.
 
 ### 8.2 Artifact announcement and bytes
 

@@ -519,11 +519,18 @@ misconfigured`.
 
 `throttled` MAY include provider delay. Provider exceptions, HTTP codes, raw error
 text, SDK types, model names, prompts, and provider schemas remain inside Adapters.
-Adapters MUST NOT retry or decide semantic retryability. The runtime applies
-configured budgets and rebuilds a fresh pack only while the purpose remains valid.
-Stale failures are discarded like stale successes. Reasoning failure preserves a
-usable Instruction/Ready projection; editing failure stays scoped to visual
-guidance.
+Adapters MUST NOT retry or decide semantic retryability. The runtime applies an
+8-second Reasoner attempt deadline and at most one automatic retry while the
+semantic purpose and all provenance remain current. Only `deadline_exceeded`,
+`unavailable`, `throttled`, and `invalid_output` are automatically retryable;
+provider throttling delay is honored up to 2 seconds. `rejected` and
+`misconfigured` are never automatically retried. Every retry uses a freshly
+assembled Context Pack.
+
+After exhaustion, preserve any usable Instruction/Ready projection, enter visible
+scoped recovery, and require fresh Evidence or an explicit action before more work.
+Stale failures are discarded like stale successes. Editing failure stays scoped to
+visual guidance. These deadlines/counts are versioned and initially uncalibrated.
 
 Production Gemini/editor Adapters and strict scripted Adapters implement the same
 interfaces. Scripted Adapters drive deterministic state tests. Provider contract
@@ -577,10 +584,12 @@ request general beautification.
 The sidecar reports waiting, capturing, generating, available, or scoped failure
 without blocking camera use or ordinary coaching. New task, source-Instruction
 closure/rejection, material scene change, pause, disconnect, or cancellation
-immediately invalidates pending and delivered visual state. Capture/edit failure
-preserves coaching and exposes Retry/Dismiss. Edit Retry may reuse the accepted
-still only while all provenance remains valid; capture Retry always obtains a fresh
-still.
+immediately invalidates pending and delivered visual state. High-resolution
+capture has a 5-second deadline. The editor has a 60-second attempt deadline and no
+automatic retry. Capture/edit failure preserves coaching and exposes new identified
+Retry/Dismiss actions. Edit Retry may reuse the accepted still only while all
+provenance remains valid; capture Retry always obtains a fresh still. Each explicit
+Retry authorizes one new attempt under the same deadline.
 
 Delivery MUST state the demonstrated action and the fixed protocol provenance
 label. Dismiss clears the artifact. Another example is new explicit consent for a
