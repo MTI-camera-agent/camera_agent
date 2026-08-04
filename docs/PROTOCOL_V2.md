@@ -304,16 +304,22 @@ An ID may persist unchanged while available, but MUST NOT change meaning, reappe
 after retirement, or reappear after consumption. A later equivalent opportunity,
 including Retry, receives a new ID.
 
-| Action kind | Required target |
-| --- | --- |
-| `try_another_suggestion` | `instruction` |
-| `pause_coaching`, `resume_coaching` | `task` |
-| `generate_visual_guidance`, `decline_visual_guidance` | `visual_offer` |
-| `cancel_visual_guidance`, `retry_visual_guidance`, `dismiss_visual_guidance`, `another_visual_example` | `visual_job` |
+| Action kind | Required target | Available only when |
+| --- | --- | --- |
+| `try_another_suggestion` | `instruction` | A current actionable Instruction exists and mode is active; Coaching, Evaluating, and Recovering may expose it |
+| `pause_coaching` | `task` | The task is connected and active |
+| `resume_coaching` | `task` | The task is connected and paused |
+| `generate_visual_guidance`, `decline_visual_guidance` | `visual_offer` | The current visual sidecar is `offer/offered` |
+| `cancel_visual_guidance` | `visual_job` | Job status is `waiting_for_settle`, `capturing`, or `generating` |
+| `retry_visual_guidance` | `visual_job` | Job status is `failed` |
+| `dismiss_visual_guidance` | `visual_job` | Job status is `failed` or `available` |
+| `another_visual_example` | `visual_job` | Job status is `available` |
 
 The target ID MUST name the active matching object in the same snapshot. An action
 kind MUST be valid for that object's current state. Action IDs MUST be unique in a
 snapshot and MUST NOT be reused across prior accepted snapshots in the session.
+An accepted action disappears in the next committed snapshot. A later equivalent
+opportunity receives a fresh action ID.
 
 The phone invokes an offered action:
 
