@@ -134,7 +134,17 @@ xcodebuild -project HelloCamera.xcodeproj \
   CODE_SIGNING_ALLOWED=NO build
 ```
 
-The concise normative contract is [PROTOCOL.md](PROTOCOL.md). Desktop harness
+The concise v1 normative contract is [PROTOCOL.md](PROTOCOL.md). Desktop harness
 development should begin with
-[DESKTOP_AGENT_GUIDE.md](DESKTOP_AGENT_GUIDE.md). The executable contract is
+[DESKTOP_AGENT_GUIDE.md](DESKTOP_AGENT_GUIDE.md). The executable v1 contract is
 [protocol-v1.schema.json](protocol-v1.schema.json).
+
+The implementation-ready v2 planning set is:
+
+- [Camera Agent Harness v2 specification](CAMERA_AGENT_V2_SPEC.md)
+- [maintained harness architecture](HARNESS_ARCHITECTURE.md)
+- [protocol-v2 interaction extension](PROTOCOL_V2.md)
+- [protocol-v2 extension schema](protocol-v2.schema.json)
+- [v2 evaluation and release contract](CAMERA_AGENT_V2_EVALUATION.md)
+
+Protocol v2 is not yet implemented by the current phone or harness.

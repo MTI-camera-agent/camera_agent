@@ -111,8 +111,9 @@ remaining bytes raw image payload
 All known v1 objects are closed. Validate them against
 [protocol-v1.schema.json](protocol-v1.schema.json) with Draft 2020-12 format
 checking enabled. Reject unknown fields, wrong versions, malformed UUIDs,
-invalid enum values, and bad overlay geometry. Unknown text-message types may be
-logged/ignored for forward compatibility.
+invalid enum values, and bad overlay geometry. Unknown text-message types MUST be
+ignored (and MAY be logged) for forward compatibility and protocol-v2 progressive
+negotiation.
 
 The iPhone applies the same strict policy to known server messages. If a result
 contains one malformed overlay, the entire result is rejected—do not expect

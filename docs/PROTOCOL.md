@@ -23,8 +23,8 @@ message at 8 MiB.
 All known v1 messages are closed objects: required fields, types, UUID formats,
 and allowed values must match the schema, and unknown fields are rejected.
 Optional properties may be absent; `null` is accepted only where the schema
-explicitly permits it. Unknown text-message types may be ignored for forward
-compatibility.
+explicitly permits it. Unknown text-message types MUST be ignored for forward
+compatibility and protocol-v2 progressive negotiation.
 
 ## Identity, IDs, and ordering
 

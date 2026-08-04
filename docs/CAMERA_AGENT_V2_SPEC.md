@@ -81,9 +81,11 @@ Generated Visual Guidance is a concurrent sidecar, not an exclusive phase.
   rejected action in a materially equivalent situation unless new evidence makes
   the situation non-equivalent.
 - **Pause coaching** MUST immediately invalidate pending/running reasoning,
-  overlays, reminders, and visual jobs. **Resume coaching** MUST require fresh
-  settled evidence before retained guidance becomes current again. Intention
-  editing while paused MUST NOT implicitly resume.
+  overlays, reminders, and visual jobs. The transport MAY continue receiving and
+  assembling observations while paused, but they cannot become authoritative
+  coaching Evidence. **Resume coaching** MUST require post-Resume fresh settled
+  Evidence before retained guidance becomes current again. Intention editing while
+  paused MUST NOT implicitly resume.
 - Intention editing and the local shutter remain phone-owned and available in all
   phases.
 - Visual offers expose **Generate** and **Not now**. Active or failed visual jobs
@@ -294,9 +296,11 @@ displace user- or evidence-driven work. Equivalent frames update the latest view
 without changing Evidence identity or adding queue entries.
 
 Heartbeat is a bounded safety net for subtle compliance, missed quality changes,
-no progress, and stale readiness. Repeated unchanged `hold` outcomes back off its
-cadence up to an Instruction-age budget. Material change, new Instruction,
-explicit action, adapter failure, and task change reset the cadence.
+no progress, and stale readiness. Repeated unchanged `hold` outcomes back off at
+15, 30, then 60 seconds and remain capped at a 60-second Instruction-age interval,
+with no more than three heartbeat calls in any rolling two minutes. Material
+change, new Instruction, explicit action, adapter failure, and task change reset
+the cadence. These values are versioned and initially uncalibrated.
 
 Logical cancellation is immediate. The runtime requests best-effort physical
 cancellation, then MAY start one replacement alongside one abandoned

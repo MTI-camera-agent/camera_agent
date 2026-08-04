@@ -496,6 +496,11 @@ Codes are:
 MUST NOT clear the last valid state. Stale/duplicate actions use
 `action_result_v2`, not protocol error. Capture failures retain v1 `error`.
 
+Never answer an invalid `protocol_error_v2` with another protocol error: if its
+framing is safely decoded, log and drop it to prevent an error loop. Invalid binary
+framing, an unsafe header length, oversize input, or an otherwise unusable transport
+remains a connection-level failure.
+
 ## 11. Semantic validation checklist
 
 JSON Schema cannot express all cross-message/session rules. Implementations MUST

@@ -206,7 +206,7 @@ when the evidence packet reports each requirement separately.
 | W09 | Generated image ordering | State announcement before bytes; exact session/job/image/first-revision checks; late bytes dropped. |
 | W10 | Reconnect negotiation | Wire resets to v1; sole-session 60-second TTL, active-connection rejection, non-resume eviction, successful/failed resume semantics, and no revision reset on success. |
 | W11 | Unknown text type | Both sides ignore it without state loss or disconnect. |
-| W12 | Known invalid v2 message | `protocol_error_v2` is scoped and last valid state remains. |
+| W12 | Known invalid v2 message | `protocol_error_v2` is scoped and last valid state remains; malformed protocol-error input is logged/dropped without an error loop, while unsafe framing follows connection-failure policy. |
 | W13 | Binary framing/limits | Header bounds, schema, media/dimensions, and 8 MiB cap enforced. |
 | W14 | Serialized ordering | hello→offer→observation, accept→state, and state→image bytes remain ordered under async completion. |
 
