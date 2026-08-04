@@ -142,8 +142,8 @@ when the evidence packet reports each requirement separately.
 | ID | Scenario | Required assertions |
 | --- | --- | --- |
 | P01 | Every must-have reassessed | One Evidence Snapshot covers all must-haves from the same view; each has 1–4 bounded grounding facts, finite `[0,1]` or null confidence, and bounded typed uncertainty; incomplete or malformed output is rejected atomically. |
-| P02 | Nice-to-have unmet | Ready still permitted; optional refinement cannot imply capture was wrong. |
-| P03 | Repeated insufficient | Initial hold, one materially different alternative after budget, then local patch—not endless repetition. |
+| P02 | Nice-to-have unmet | Ready is immediate; v2 emits no nice-to-have Instruction before or after Ready. |
+| P03 | Repeated insufficient | First action is retained through two accepted Settled `insufficient` assessments spanning ≥10 s; one materially different action follows; after two distinct insufficient actions with no improvement, request a local patch—not endless repetition. |
 | P04 | Improving between failures | Failed-action sequence clears; no visual offer from stale insufficient history. |
 | P05 | Deviating criterion | Regressed higher-priority must-have may preempt; no stacked instructions. |
 | P06 | Blocked action/criterion | `not_observable`/`ambiguous` requests clearer Evidence and scoped recovery; `temporarily_infeasible`/`action_infeasible` may end an irrelevant Instruction and request one-Criterion patch; `blocked` does not trigger visual offer. |
@@ -175,7 +175,7 @@ when the evidence packet reports each requirement separately.
 | ID | Scenario | Required assertions |
 | --- | --- | --- |
 | G01 | Not yet eligible | Time, motion, capture, one insufficient result, or blocked alone does not offer. |
-| G02 | Eligible proactive offer | Bounded materially different insufficient actions, no intervening improvement, visualizable Criterion and capabilities; offer once. |
+| G02 | Eligible proactive offer | Two materially different actions each have current accepted `insufficient` Evidence with no intervening improvement, the Criterion is visualizable, and capabilities are present; a concurrent local patch does not erase the episode; offer once. |
 | G03 | Explicit request | Suitable offer may appear immediately; no capture before separate Generate. |
 | G04 | Not now | Action acknowledged; same-context proactive offer suppressed. |
 | G05 | Generate while unsettled | One job; waiting Activity; no capture until compatible Settled. |
@@ -318,6 +318,9 @@ The following are editable empirical starting points and MUST be visibly marked
 | Settled | At least 2 mutually equivalent post-change observations spanning at least 500 ms; immediate invalidation on material change |
 | Relative sharpness, luminance, clipping | Logging-only until traces justify a versioned threshold |
 | Heartbeat | 15 s, then 30 s, then 60 s; no more than 3 heartbeat calls in 2 minutes |
+| No-progress alternative | 2 accepted Settled `insufficient` assessments for one action spanning ≥10 s |
+| Criterion patch / visual-offer eligibility | 2 materially different actions each with accepted `insufficient`, no intervening `improving` |
+| Optional-refinement budget | 0 nice-to-have Instructions in v2 |
 | Physical VLM concurrency | Maximum 2 total calls |
 | Ready confidence | Every must-have `achieved` with non-null confidence ≥ 0.75 in one current compatible Evidence Snapshot |
 | Explicit action/new truthful Activity | Diagnostic p95 ≤ 250 ms |

@@ -303,7 +303,8 @@ identities. A Criterion contains:
 - explicit user/reality constraints.
 
 Current focus and Instruction are runtime facts, not a cursor embedded in the
-strategy. Nice-to-haves may support optional refinement but MUST NOT block Ready.
+strategy. In v2, nice-to-haves are diagnostic context only: they MUST NOT produce
+an Instruction, delay Ready, or replace Ready after it is reached.
 
 ### 5.2 Evidence Snapshot
 
@@ -356,9 +357,12 @@ After atomically admitting an Evidence update:
 - **Achieved**: close the focused Instruction as achieved, then issue one action
   for the highest-priority unmet must-have, or derive Ready.
 - **Improving**: preserve the exact Instruction identity and text.
-- **Insufficient**: initially preserve the action. After bounded settled
-  no-progress evidence, select one materially different action for the same
-  Criterion; after alternatives are exhausted, request a local patch.
+- **Insufficient**: preserve the first action until it has received two accepted
+  Settled `insufficient` assessments spanning at least 10 seconds by desktop
+  monotonic time. Then select one materially different action for the same
+  Criterion. Once two distinct actions have each received accepted `insufficient`
+  Evidence with no intervening `improving`, request a local patch. These values are
+  versioned and initially uncalibrated.
 - **Deviating**: a regressed must-have may preempt focus and receive one corrective
   Instruction; never stack old and corrective actions.
 - **Blocked**: `not_observable` or `ambiguous` enters scoped recovery and requests
@@ -532,11 +536,17 @@ checks and live calls are smoke evidence, not deterministic release gates.
 A proactive offer is eligible only when:
 
 - the active Criterion is a visualizable pose or composition adjustment;
-- a configured bounded sequence of materially different text actions for that
-  Criterion each received current accepted `insufficient` Evidence;
+- two materially different text actions for that Criterion have each received
+  current accepted `insufficient` Evidence under the no-progress policy;
 - no accepted `improving` Evidence intervened; and
 - v2 visual-guidance, v1 high-resolution-request, and v1 sample-image capabilities
   are all negotiated.
+
+The same threshold requests a local Criterion patch. If that patch creates a new
+current Instruction for the same materially stable Criterion/context, the retained
+failed-action episode may make an offer for that new source Instruction eligible;
+patching does not erase the evidence. The offer remains a sidecar and does not
+delay the patch.
 
 Elapsed time, ordinary motion, user capture, facial expression, presumed
 frustration, one failed action, or `blocked` alone MUST NOT trigger an offer.
