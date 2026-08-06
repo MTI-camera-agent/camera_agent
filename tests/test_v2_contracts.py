@@ -67,7 +67,6 @@ from camera_agent.v2 import (
     ReceiptDisposition,
     RemotePurpose,
     RuntimeConfig,
-    RuntimeContractPending,
     RuntimeHost,
     RuntimeVersion,
     ShotStrategy,
@@ -182,10 +181,14 @@ def test_production_composition_root_does_not_import_v2() -> None:
         assert "import camera_agent.v2" not in source
 
 
-def test_build_runtime_raises_until_implementation_lands() -> None:
+def test_build_runtime_returns_coaching_runtime() -> None:
+    # The tracer-bullet runtime (issue #21) lands through the public factory.
+    # It satisfies the ``CoachingRuntime`` Protocol and remains off the
+    # production composition root until the atomic-cutover ticket.
     config = RuntimeConfig()
-    with pytest.raises(RuntimeContractPending):
-        build_runtime(config, reasoner=object(), editor=object())  # type: ignore[arg-type]
+    runtime = build_runtime(config, reasoner=object(), editor=object())  # type: ignore[arg-type]
+    assert isinstance(runtime, CoachingRuntime)
+    assert DORMANT is True
 
 
 # --- Public surface is exactly the approved seams ----------------------------

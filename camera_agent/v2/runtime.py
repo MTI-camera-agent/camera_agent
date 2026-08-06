@@ -141,22 +141,31 @@ def build_runtime(
 ) -> CoachingRuntime:
     """Construct a ``CoachingRuntime`` from immutable config and the two Adapters.
 
-    The runtime implementation is delivered by the runtime-implementation ticket.
     This factory is the sole composition entry point so that the production
-    composition root never wires a second coaching authority. Until the
-    atomic-cutover ticket, the production root does not call it.
+    composition root never wires a second coaching authority. It returns the
+    concrete tracer-bullet runtime (issue #21): ordered admission from no
+    intention through Task creation and initial Strategy completion to one
+    persistent Instruction or immediate evidence-backed Ready.
 
-    Raises ``RuntimeContractPending`` until the runtime implementation lands.
+    The returned runtime implements the first tracer bullet of the v2 coaching
+    surface; subsequent v2 tickets extend the same public Interface. The
+    package remains dormant and off the production composition root until the
+    atomic-cutover ticket, so production never calls this factory yet.
     """
 
-    raise RuntimeContractPending("CoachingRuntime implementation is not yet landed")
+    from ._runtime_impl import _CoachingRuntime
+
+    return _CoachingRuntime(config, reasoner, editor)  # type: ignore[arg-type]
 
 
 class RuntimeContractPending(RuntimeError):
-    """The dormant v2 contract is defined but the runtime implementation is pending.
+    """Reserved for v2 factories whose implementation lands in a later ticket.
 
-    Raised by contract factories whose implementation is delivered by a later
-    ticket in the v2 migration sequence. The contract surface itself is complete.
+    The dormant v2 contract surface is complete; ``build_runtime`` now returns
+    the tracer-bullet runtime. This exception is retained for any future
+    not-yet-landed factory so the staged v2 migration can keep a single public
+    surface marker. It is part of the approved public surface and is not raised
+    by ``build_runtime``.
     """
 
 
