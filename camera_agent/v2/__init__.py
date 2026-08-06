@@ -1,0 +1,227 @@
+"""Dormant v2 canonical runtime contracts and public interfaces.
+
+This package defines the immutable canonical values and final public interfaces
+used by the dormant v2 implementation:
+
+- the sole deep mailbox-style authority ``CoachingRuntime``;
+- the opaque-lifecycle ``RuntimeHost`` composition-root Module; and
+- the only public semantic Adapter seams ``CoachingReasoner`` and
+  ``IllustrationEditor``.
+
+No public reducer lane, scheduler, generic transport port, or independent
+visual-workflow authority is introduced here. The internal pure transition,
+scheduling, memory, and visual-job policy remain behind the ``CoachingRuntime``
+Interface.
+
+The package is **dormant**: it is intentionally not imported by the production
+composition root (``camera_agent.server`` / ``camera_agent.__main__``) until the
+atomic-cutover ticket. It defines the canonical contract surface that later v2
+implementation tickets build against.
+"""
+
+from __future__ import annotations
+
+from .config import RuntimeConfig
+from .contracts import (
+    Effect,
+    EffectKind,
+    EventKind,
+    OutputKind,
+    Receipt,
+    ReceiptDisposition,
+    RuntimeEvent,
+    RuntimeOutput,
+    event_identity,
+    event_kind,
+    output_kind,
+)
+from .identity import (
+    AnalysisPurpose,
+    Provenance,
+    RemotePurpose,
+    RuntimeVersion,
+    new_identity,
+)
+from .runtime import (
+    AttachDecision,
+    ConnectionOffer,
+    CoachingRuntime,
+    RuntimeContractPending,
+    RuntimeHost,
+    RuntimeLease,
+    build_runtime,
+)
+from .seams import (
+    AdapterFailure,
+    AuthorizedIllustrationRequest,
+    ContextImage,
+    ContextPack,
+    CoachingReasoner,
+    EditedIllustration,
+    EditorOutcome,
+    IllustrationEditor,
+    OfferDecisionContextPack,
+    ProgressContextPack,
+    ProgressEvidence,
+    ProposedCriterion,
+    ReasonerOutcome,
+    RetryContextPack,
+    RevisionContextPack,
+    RevisionProposal,
+    StrategyContextPack,
+    StrategyProposal,
+)
+from .values import (
+    GENERATED_VISUAL_GUIDANCE_PROVENANCE_LABEL,
+    ActionDisposition,
+    ActionKind,
+    ActionTarget,
+    ActionTargetKind,
+    Activity,
+    ActivityKind,
+    Addressee,
+    AnalysisState,
+    AvailableAction,
+    BlockedReason,
+    CandidateAction,
+    CoachingPhase,
+    ConnectionState,
+    Criterion,
+    CriterionAssessment,
+    CriterionClassification,
+    CriterionImportance,
+    EvidenceIdentity,
+    EvidenceSnapshot,
+    EvidenceState,
+    GeneratedArtifact,
+    GroundingFact,
+    GroundingTag,
+    Instruction,
+    InstructionDisposition,
+    InstructionFreshness,
+    InstructionKind,
+    Mode,
+    OverlayPrimitive,
+    OverlaySet,
+    Readiness,
+    ReadinessState,
+    Recovery,
+    RecoveryScope,
+    RevisionScope,
+    ShotStrategy,
+    StrategyApplicability,
+    StrategyApplicabilityStatus,
+    Task,
+    TypedFailure,
+    UncertaintyReason,
+    VisualEntityKind,
+    VisualGuidanceIntent,
+    VisualGuidanceSidecar,
+    VisualSidecarStatus,
+    new_action_ordinal_uuid,
+    validate_throttle_delay,
+)
+
+#: Marks this package as dormant v2 contract code. The production composition root
+#: MUST NOT import this package until the atomic-cutover ticket flips it to ``False``.
+DORMANT: bool = True
+
+__all__ = [
+    "DORMANT",
+    # configuration
+    "RuntimeConfig",
+    # identity & provenance
+    "AnalysisPurpose",
+    "Provenance",
+    "RemotePurpose",
+    "RuntimeVersion",
+    "new_identity",
+    # canonical values
+    "GENERATED_VISUAL_GUIDANCE_PROVENANCE_LABEL",
+    "ActionDisposition",
+    "ActionKind",
+    "ActionTarget",
+    "ActionTargetKind",
+    "Activity",
+    "ActivityKind",
+    "Addressee",
+    "AnalysisState",
+    "AvailableAction",
+    "BlockedReason",
+    "CandidateAction",
+    "CoachingPhase",
+    "ConnectionState",
+    "Criterion",
+    "CriterionAssessment",
+    "CriterionClassification",
+    "CriterionImportance",
+    "EvidenceIdentity",
+    "EvidenceSnapshot",
+    "EvidenceState",
+    "GeneratedArtifact",
+    "GroundingFact",
+    "GroundingTag",
+    "Instruction",
+    "InstructionDisposition",
+    "InstructionFreshness",
+    "InstructionKind",
+    "Mode",
+    "OverlayPrimitive",
+    "OverlaySet",
+    "Readiness",
+    "ReadinessState",
+    "Recovery",
+    "RecoveryScope",
+    "RevisionScope",
+    "ShotStrategy",
+    "StrategyApplicability",
+    "StrategyApplicabilityStatus",
+    "Task",
+    "TypedFailure",
+    "UncertaintyReason",
+    "VisualEntityKind",
+    "VisualGuidanceIntent",
+    "VisualGuidanceSidecar",
+    "VisualSidecarStatus",
+    "new_action_ordinal_uuid",
+    "validate_throttle_delay",
+    # events, receipts, outputs, effects
+    "Effect",
+    "EffectKind",
+    "EventKind",
+    "OutputKind",
+    "Receipt",
+    "ReceiptDisposition",
+    "RuntimeEvent",
+    "RuntimeOutput",
+    "event_identity",
+    "event_kind",
+    "output_kind",
+    # adapter seams
+    "AdapterFailure",
+    "AuthorizedIllustrationRequest",
+    "ContextImage",
+    "ContextPack",
+    "CoachingReasoner",
+    "EditedIllustration",
+    "EditorOutcome",
+    "IllustrationEditor",
+    "OfferDecisionContextPack",
+    "ProgressContextPack",
+    "ProgressEvidence",
+    "ProposedCriterion",
+    "ReasonerOutcome",
+    "RetryContextPack",
+    "RevisionContextPack",
+    "RevisionProposal",
+    "StrategyContextPack",
+    "StrategyProposal",
+    # public runtime authority & lifecycle host
+    "AttachDecision",
+    "ConnectionOffer",
+    "CoachingRuntime",
+    "RuntimeContractPending",
+    "RuntimeHost",
+    "RuntimeLease",
+    "build_runtime",
+]
