@@ -6,49 +6,20 @@ import uuid
 
 import pytest
 from websockets.asyncio.client import connect
-from websockets.asyncio.server import serve
 
 from camera_agent.adapters.fake import FakeEditor, ScriptedReasoner
-from camera_agent.config import HarnessConfig
 from camera_agent.domain import VerificationOutcome
 from camera_agent.protocol import decode_binary, encode_binary
-from camera_agent.server import CameraAgentServer
 from tests.helpers import (
     JPEG,
     fixture,
     observation_message,
+    open_test_server,
     planning,
-    preview_header,
+    send_hello,
+    send_observation,
     verification,
 )
-
-
-async def send_hello(connection, capabilities: list[str]) -> None:
-    await connection.send(
-        json.dumps(
-            {
-                "type": "hello",
-                "version": 1,
-                "messageId": str(uuid.uuid4()),
-                "client": "HelloCamera-iOS",
-                "capabilities": capabilities,
-            }
-        )
-    )
-
-
-async def send_observation(connection, observation: dict, image: bytes) -> None:
-    await connection.send(json.dumps(observation))
-    await connection.send(encode_binary(preview_header(observation), image))
-
-
-def open_test_server(reasoner, editor=None):
-    module = CameraAgentServer(
-        reasoner,
-        editor or FakeEditor(),
-        HarnessConfig(host="127.0.0.1", port=0),
-    )
-    return serve(module.handle_client, "127.0.0.1", 0)
 
 
 @pytest.mark.asyncio

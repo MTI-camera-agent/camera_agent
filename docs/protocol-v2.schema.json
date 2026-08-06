@@ -1,0 +1,334 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hellocamera.local/protocol-v2.schema.json",
+  "title": "HelloCamera protocol-v2 interaction extension",
+  "oneOf": [
+    {"$ref": "#/$defs/protocolOffer"},
+    {"$ref": "#/$defs/protocolAccept"},
+    {"$ref": "#/$defs/coachingState"},
+    {"$ref": "#/$defs/userAction"},
+    {"$ref": "#/$defs/actionResult"},
+    {"$ref": "#/$defs/protocolError"},
+    {"$ref": "#/$defs/visualGuidanceImageHeader"}
+  ],
+  "$defs": {
+    "uuid": {"type": "string", "format": "uuid"},
+    "nullableUUID": {
+      "oneOf": [
+        {"$ref": "#/$defs/uuid"},
+        {"type": "null"}
+      ]
+    },
+    "timestamp": {"type": "integer", "minimum": 0},
+    "positiveInteger": {"type": "integer", "minimum": 1},
+    "point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y"],
+      "properties": {
+        "x": {"type": "number", "minimum": 0, "maximum": 1},
+        "y": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
+    "overlay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "points"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["arrow", "line", "rectangle", "circle", "path", "text"]},
+        "points": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/point"}
+        },
+        "text": {"type": "string", "minLength": 1},
+        "color": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"},
+        "lineWidth": {"type": "number", "exclusiveMinimum": 0},
+        "expiresInMilliseconds": {"$ref": "#/$defs/positiveInteger"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"kind": {"enum": ["arrow", "line", "path"]}}, "required": ["kind"]},
+          "then": {"properties": {"points": {"minItems": 2}}}
+        },
+        {
+          "if": {"properties": {"kind": {"enum": ["rectangle", "circle"]}}, "required": ["kind"]},
+          "then": {"properties": {"points": {"minItems": 2, "maxItems": 2}}}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "text"}}, "required": ["kind"]},
+          "then": {"required": ["text"], "properties": {"points": {"minItems": 1, "maxItems": 1}}}
+        }
+      ]
+    },
+    "activity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "text"],
+      "properties": {
+        "kind": {"enum": ["working", "waiting", "recovering"]},
+        "text": {"type": "string", "minLength": 1}
+      }
+    },
+    "instruction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["instructionId", "kind", "text", "addressee", "freshness"],
+      "properties": {
+        "instructionId": {"$ref": "#/$defs/uuid"},
+        "kind": {"enum": ["action", "ready"]},
+        "text": {"type": "string", "minLength": 1},
+        "addressee": {"type": ["string", "null"], "enum": ["photographer", "subject", null]},
+        "freshness": {"enum": ["current", "needs_revalidation", "may_be_outdated"]}
+      }
+    },
+    "overlaySet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["instructionId", "sourceObservationId", "items"],
+      "properties": {
+        "instructionId": {"$ref": "#/$defs/uuid"},
+        "sourceObservationId": {"$ref": "#/$defs/positiveInteger"},
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/overlay"}
+        }
+      }
+    },
+    "actionTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "id"],
+      "properties": {
+        "kind": {"enum": ["task", "instruction", "visual_offer", "visual_job"]},
+        "id": {"$ref": "#/$defs/uuid"}
+      }
+    },
+    "availableAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actionId", "kind", "target"],
+      "properties": {
+        "actionId": {"$ref": "#/$defs/uuid"},
+        "kind": {
+          "enum": [
+            "try_another_suggestion",
+            "pause_coaching",
+            "resume_coaching",
+            "generate_visual_guidance",
+            "decline_visual_guidance",
+            "cancel_visual_guidance",
+            "retry_visual_guidance",
+            "dismiss_visual_guidance",
+            "another_visual_example"
+          ]
+        },
+        "target": {"$ref": "#/$defs/actionTarget"}
+      }
+    },
+    "visualArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["imageMessageId", "announcedAtStateRevision", "demonstrates", "provenanceLabel"],
+      "properties": {
+        "imageMessageId": {"$ref": "#/$defs/uuid"},
+        "announcedAtStateRevision": {"$ref": "#/$defs/positiveInteger"},
+        "demonstrates": {"type": "string", "minLength": 1},
+        "provenanceLabel": {"const": "Edited illustration based on an earlier still — not the live preview."}
+      }
+    },
+    "visualGuidance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["visualId", "kind", "status", "sourceInstructionId", "demonstrates", "activity", "artifact", "failure"],
+      "properties": {
+        "visualId": {"$ref": "#/$defs/uuid"},
+        "kind": {"enum": ["offer", "job"]},
+        "status": {"enum": ["offered", "waiting_for_settle", "capturing", "generating", "available", "failed"]},
+        "sourceInstructionId": {"$ref": "#/$defs/uuid"},
+        "demonstrates": {"type": "string", "minLength": 1},
+        "activity": {
+          "oneOf": [
+            {"$ref": "#/$defs/activity"},
+            {"type": "null"}
+          ]
+        },
+        "artifact": {
+          "oneOf": [
+            {"$ref": "#/$defs/visualArtifact"},
+            {"type": "null"}
+          ]
+        },
+        "failure": {"type": ["string", "null"], "minLength": 1}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"kind": {"const": "offer"}}, "required": ["kind"]},
+          "then": {"properties": {"status": {"const": "offered"}, "activity": {"type": "null"}, "artifact": {"type": "null"}, "failure": {"type": "null"}}}
+        },
+        {
+          "if": {"properties": {"status": {"enum": ["waiting_for_settle", "capturing", "generating"]}}, "required": ["status"]},
+          "then": {"properties": {"kind": {"const": "job"}, "activity": {"$ref": "#/$defs/activity"}, "artifact": {"type": "null"}, "failure": {"type": "null"}}}
+        },
+        {
+          "if": {"properties": {"status": {"const": "available"}}, "required": ["status"]},
+          "then": {"properties": {"kind": {"const": "job"}, "activity": {"type": "null"}, "artifact": {"$ref": "#/$defs/visualArtifact"}, "failure": {"type": "null"}}}
+        },
+        {
+          "if": {"properties": {"status": {"const": "failed"}}, "required": ["status"]},
+          "then": {"properties": {"kind": {"const": "job"}, "activity": {"type": "null"}, "artifact": {"type": "null"}, "failure": {"type": "string", "minLength": 1}}}
+        }
+      ]
+    },
+    "protocolOffer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "version", "messageId", "capabilities", "resumeSessionId"],
+      "properties": {
+        "type": {"const": "protocol_v2_offer"},
+        "version": {"const": 2},
+        "messageId": {"$ref": "#/$defs/uuid"},
+        "capabilities": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"enum": ["camera_agent_interaction_v2", "generated_visual_guidance_v2"]},
+          "contains": {"const": "camera_agent_interaction_v2"}
+        },
+        "resumeSessionId": {"$ref": "#/$defs/nullableUUID"}
+      }
+    },
+    "protocolAccept": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "version", "messageId", "timestampMs", "sessionId", "resumed", "capabilities"],
+      "properties": {
+        "type": {"const": "protocol_v2_accept"},
+        "version": {"const": 2},
+        "messageId": {"$ref": "#/$defs/uuid"},
+        "timestampMs": {"$ref": "#/$defs/timestamp"},
+        "sessionId": {"$ref": "#/$defs/uuid"},
+        "resumed": {"type": "boolean"},
+        "capabilities": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"enum": ["camera_agent_interaction_v2", "generated_visual_guidance_v2"]},
+          "contains": {"const": "camera_agent_interaction_v2"}
+        }
+      }
+    },
+    "coachingState": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type", "version", "messageId", "timestampMs", "sessionId", "stateRevision",
+        "taskId", "acceptedIntention", "phase", "instruction", "activity", "overlays",
+        "availableActions", "visualGuidance"
+      ],
+      "properties": {
+        "type": {"const": "coaching_state_v2"},
+        "version": {"const": 2},
+        "messageId": {"$ref": "#/$defs/uuid"},
+        "timestampMs": {"$ref": "#/$defs/timestamp"},
+        "sessionId": {"$ref": "#/$defs/uuid"},
+        "stateRevision": {"$ref": "#/$defs/positiveInteger"},
+        "taskId": {"$ref": "#/$defs/nullableUUID"},
+        "acceptedIntention": {"type": ["string", "null"]},
+        "phase": {"enum": ["needs_intention", "orienting", "coaching", "evaluating", "ready", "recovering", "paused"]},
+        "instruction": {
+          "oneOf": [
+            {"$ref": "#/$defs/instruction"},
+            {"type": "null"}
+          ]
+        },
+        "activity": {
+          "oneOf": [
+            {"$ref": "#/$defs/activity"},
+            {"type": "null"}
+          ]
+        },
+        "overlays": {
+          "oneOf": [
+            {"$ref": "#/$defs/overlaySet"},
+            {"type": "null"}
+          ]
+        },
+        "availableActions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/availableAction"}
+        },
+        "visualGuidance": {
+          "oneOf": [
+            {"$ref": "#/$defs/visualGuidance"},
+            {"type": "null"}
+          ]
+        }
+      }
+    },
+    "userAction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "version", "messageId", "timestampMs", "sessionId", "actionId"],
+      "properties": {
+        "type": {"const": "user_action_v2"},
+        "version": {"const": 2},
+        "messageId": {"$ref": "#/$defs/uuid"},
+        "timestampMs": {"$ref": "#/$defs/timestamp"},
+        "sessionId": {"$ref": "#/$defs/uuid"},
+        "actionId": {"$ref": "#/$defs/uuid"}
+      }
+    },
+    "actionResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "version", "messageId", "timestampMs", "sessionId", "actionMessageId", "actionId", "disposition", "detail"],
+      "properties": {
+        "type": {"const": "action_result_v2"},
+        "version": {"const": 2},
+        "messageId": {"$ref": "#/$defs/uuid"},
+        "timestampMs": {"$ref": "#/$defs/timestamp"},
+        "sessionId": {"$ref": "#/$defs/uuid"},
+        "actionMessageId": {"$ref": "#/$defs/uuid"},
+        "actionId": {"$ref": "#/$defs/uuid"},
+        "disposition": {"enum": ["accepted", "duplicate", "stale", "unavailable"]},
+        "detail": {"type": ["string", "null"], "minLength": 1}
+      }
+    },
+    "protocolError": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "version", "messageId", "timestampMs", "sessionId", "relatedMessageId", "code", "detail"],
+      "properties": {
+        "type": {"const": "protocol_error_v2"},
+        "version": {"const": 2},
+        "messageId": {"$ref": "#/$defs/uuid"},
+        "timestampMs": {"$ref": "#/$defs/timestamp"},
+        "sessionId": {"$ref": "#/$defs/nullableUUID"},
+        "relatedMessageId": {"$ref": "#/$defs/nullableUUID"},
+        "code": {"enum": ["invalid_message", "unexpected_message", "unsupported_capability"]},
+        "detail": {"type": "string", "minLength": 1}
+      }
+    },
+    "visualGuidanceImageHeader": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "version", "messageId", "timestampMs", "sessionId", "visualJobId", "announcedAtStateRevision", "mimeType", "width", "height"],
+      "properties": {
+        "type": {"const": "visual_guidance_image_v2"},
+        "version": {"const": 2},
+        "messageId": {"$ref": "#/$defs/uuid"},
+        "timestampMs": {"$ref": "#/$defs/timestamp"},
+        "sessionId": {"$ref": "#/$defs/uuid"},
+        "visualJobId": {"$ref": "#/$defs/uuid"},
+        "announcedAtStateRevision": {"$ref": "#/$defs/positiveInteger"},
+        "mimeType": {"enum": ["image/jpeg", "image/png"]},
+        "width": {"$ref": "#/$defs/positiveInteger"},
+        "height": {"$ref": "#/$defs/positiveInteger"}
+      }
+    }
+  }
+}

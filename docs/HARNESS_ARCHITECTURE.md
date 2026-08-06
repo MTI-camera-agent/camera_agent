@@ -1,177 +1,361 @@
 # Camera Agent Harness Architecture
 
-This is the maintained description of the desktop harness. Protocol v1 remains
-normative in [protocol-v1.schema.json](protocol-v1.schema.json); the iPhone
-handoff is [DESKTOP_AGENT_GUIDE.md](DESKTOP_AGENT_GUIDE.md).
+This is the sole maintained source for Camera Agent Harness v2 module arrangement,
+seams, composition, and migration. Product/runtime behavior and public interface
+requirements are normative in [CAMERA_AGENT_V2_SPEC.md](CAMERA_AGENT_V2_SPEC.md).
+Protocol contracts remain normative in [PROTOCOL.md](PROTOCOL.md),
+[protocol-v1.schema.json](protocol-v1.schema.json),
+[PROTOCOL_V2.md](PROTOCOL_V2.md), and
+[protocol-v2.schema.json](protocol-v2.schema.json). Evaluation and release evidence
+are normative in [CAMERA_AGENT_V2_EVALUATION.md](CAMERA_AGENT_V2_EVALUATION.md).
 
-## Contract
+This document describes the target v2 architecture. The current fixed-plan
+`CoachingLoop` and independent `ReferenceWorkflow` are legacy implementation to be
+replaced atomically; they are not an alternative architecture.
 
-The iPhone alone controls camera direction, zoom, focus, exposure, shutter, and
-saving photos. The harness can only return text, overlays, and an optional
-generated reference image. The harness is deterministic orchestration; Gemini
-and the image editor are tools behind typed interfaces.
+## Architectural contract
 
-One connection owns one fresh coaching task. A disconnect discards that task,
-and a concurrent second iPhone is rejected.
+One deep, mailbox-style **`CoachingRuntime` Module** is the sole semantic authority
+for a live coaching session. A large amount of orchestration behavior sits behind
+one small ordered Interface:
 
-## Core interaction
-
-`CoachingLoop` is the single owner of task, plan, step, instruction, readiness,
-baseline frame, settling candidate, and inference serialization.
-
-```text
-new nonempty intention
-  → clear old state and show “Analyzing new shot…”
-  → Gemini creates one fixed ordered plan (one to five steps)
-  → show the first instruction
-  → compare each observation with the last analyzed frame
-  → ignore insignificant change
-  → require two mutually similar changed frames
-  → Gemini verifies only the active fixed step
-       hold    → preserve the displayed instruction exactly
-       revise  → refine the instruction for the same observable criterion
-       advance → move to the next fixed step and show its instruction
-       ready   → show “Ready—take the shot.”
-       resume  → after readiness, reopen the first failed fixed step
+```python
+class CoachingRuntime:
+    async def submit(self, event: RuntimeEvent) -> Receipt: ...
+    def outputs(self) -> AsyncIterator[RuntimeOutput]: ...
+    async def close(self) -> None: ...
 ```
 
-The fixed plan is replaced only by a new intention. There are no no-progress
-timers, reminders, refusal detection, dormant states, rolling action histories,
-periodic polling, or readiness streaks.
+Construction receives immutable versioned configuration and the selected
+`CoachingReasoner` and `IllustrationEditor` Adapters. Those are the only public
+semantic Adapter seams inside the runtime.
 
-At most one VLM call runs at once. Frames received during a call update the
-latest view. Ordinary held-preview drift does not invalidate a useful answer
-and the newest equivalent frame becomes the baseline. A lens/zoom/control event
-or a much larger visual change makes the result stale; the newest view must then
-pass the same two-frame settling rule before another call. No camera or visual
-change bypasses settling: inference starts only after the changed view is held
-stable.
+The Interface guarantees:
 
-While later verification is running, the phone receives no pending text and
-the existing instruction stays visible. Pending text appears only when a new
-task has no instruction yet.
+- `submit` acknowledges admission without waiting for remote work;
+- concurrent submissions receive one authoritative mailbox order;
+- state is committed before effects launch or outputs become deliverable;
+- async work never mutates state or writes to a phone directly;
+- every completion re-enters the mailbox as a correlated semantic event;
+- outputs are emitted in committed order as complete immutable projections or
+  correlated phone-bound requests; and
+- `close` invalidates authority and releases bounded retention without depending
+  on physical cancellation.
 
-## Modules
+Callers and tests use the same Interface. No caller receives writable state lanes,
+coordinates reducer steps, or bypasses completion admission.
 
-| Module | Responsibility |
-| --- | --- |
-| `coaching.py` | Deep state machine: `start`, `submit`, `flush`, `close` |
-| `change_detection.py` | Cheap metadata and visual difference assessment |
-| `domain.py` | Fixed-plan requests, decisions, events, and images |
-| `ports.py` | `Reasoner.create_plan`, `Reasoner.verify_step`, `ImageEditor.edit` |
-| `adapters/gemini.py` | Structured prompts, schemas, and strict parsing |
-| `server.py` | Protocol session, capabilities, and event rendering |
-| `reference.py` | Isolated, optional generated-reference workflow |
-| `artifacts.py` | Bounded exact input/outcome evidence |
+### RuntimeHost lifecycle seam
 
-Observation metadata and images can arrive in either order.
-`ObservationAssembler` joins them using both `imageMessageId` and
-`observationId`, expires unmatched entries after five seconds, and retains at
-most 16 unmatched entries per side.
+One composition-root `RuntimeHost` Module owns cross-connection lifecycle without
+becoming a second coaching authority:
 
-## Change detection
-
-The baseline is the frame most recently analyzed. Automatic ISO, exposure
-duration, and white-balance changes are ignored. The detector combines:
-
-- lens, orientation, dimensions, zoom, crop, focus/exposure points, and attitude;
-- a mean-centered and blurred 64×64 grayscale thumbnail;
-- translation-tolerant global and block-local mean absolute error;
-- a difference hash that requires pixel-difference support.
-
-Two changed observations must also be similar to each other. This distinguishes
-a deliberate settled composition from one frame captured during movement.
-Zoom/focus/exposure events and large visual changes use the same settling rule;
-continued operation during inference invalidates that result, then the newest
-view must settle before retrying. Decode failure fails open and reaches the
-ordinary analysis/error path.
-
-All tuning values live in
-[`camera_agent/config.py`](../camera_agent/config.py) and have matching CLI
-flags:
-
-| Config / flag | Default | Increasing it |
-| --- | ---: | --- |
-| `zoom_relative_delta` / `--zoom-relative-delta` | `0.01` | Requires more zoom change |
-| `focus_point_distance` / `--focus-point-distance` | `0.03` | Requires more normalized movement |
-| `exposure_point_distance` / `--exposure-point-distance` | `0.03` | Requires more normalized movement |
-| `exposure_bias_delta_ev` / `--exposure-bias-delta-ev` | `0.10` | Requires more EV change |
-| `crop_aspect_ratio_delta` / `--crop-aspect-ratio-delta` | `0.001` | Requires more crop change |
-| `attitude_delta_degrees` / `--attitude-delta-degrees` | `2.0` | Requires more roll/pitch |
-| `visual_global_mae` / `--visual-global-mae` | `0.04` | Requires more whole-frame change |
-| `visual_block_mae` / `--visual-block-mae` | `0.10` | Requires more local change |
-| `visual_hash_distance` / `--visual-hash-distance` | `6` | Requires more structural change |
-| `visual_thumbnail_size` / `--visual-thumbnail-size` | `64` | Uses more detail and CPU |
-| `visual_blur_radius` / `--visual-blur-radius` | `1.0` | Ignores more fine shimmer |
-| `visual_alignment_radius` / `--visual-alignment-radius` | `2` | Ignores more tiny translation |
-| `routine_change_confirmations` / `--routine-change-confirmations` | `2` | Waits for more settled frames |
-| `inference_stale_global_mae` / `--inference-stale-global-mae` | `0.12` | Tolerates more whole-frame drift during inference |
-| `inference_stale_block_mae` / `--inference-stale-block-mae` | `0.24` | Tolerates more local drift during inference |
-
-Run with `--log-level DEBUG` to see the measured reasons and scores.
-
-## Model rules
-
-Initial planning prioritizes finding and centering the named target before shot
-scale or focus. A target at the left edge means pan/turn left; a target at the
-right edge means right. A close shot is satisfied once the target dominates the
-frame without unwanted clipping. Unless the intention explicitly requests a
-detail, texture, macro, pattern, or named part, every meaningful boundary of
-the complete object must remain visible with a small margin. A `focus_changed`
-observation is evidence of a tap and focus advice must not repeat without clear
-visual evidence.
-
-Verification receives exactly two images: the analyzed baseline and current
-settled frame. It also receives the immutable plan, active index, current
-instruction, intention, observation reason, and current camera metadata.
-`revise` updates guidance without replacing the criterion. Harmless model
-variations are normalized: an instructed `hold` becomes `revise`, an `advance`
-from the final step becomes `ready`, and irrelevant step indices are ignored.
-Only ready-state verification can `resume`; a premature instructed `resume`
-becomes same-step revised guidance.
-
-On initial VLM failure, the phone shows a temporary-unavailable result. It does
-not tight-loop. A later clearly changed, settled frame may retry. Failures and
-stale results never alter an existing instruction.
-
-## Generated references
-
-Editing is allowed only when the intention explicitly asks for a reference,
-example, sample, pose visualization, or result visualization—including wording
-such as “with a reference image”—and the phone advertises both required
-capabilities. Explicit permission guarantees an edit instruction even if the
-model omits its optional wording.
-
-After ordinary guidance is displayed, `ReferenceWorkflow` may request one
-correlated high-resolution still, edit it asynchronously, and return the image
-with the same guidance text. It sends no “generating” pending text and never
-changes the coaching plan, baseline, step, or readiness. A new task,
-disconnect, timeout, client error, stale step, or edit failure silently cancels
-delivery while ordinary coaching continues.
-
-## Debug evidence
-
-`--debug-artifacts DIR` creates one bounded run directory. Every attempted VLM
-call records:
-
-- the exact current image bytes and SHA-256;
-- phase, task ID, normalized intention, observation/image IDs;
-- baseline image ID, reason, camera metadata;
-- accepted, stale, superseded, or failed disposition;
-- the parsed result or error.
-
-At most 200 files are written. This makes it possible to prove which image and
-intention were paired without relying on log timing.
-
-## Network and security
-
-The listener matches the verified mock server:
-
-```text
-WSL 0.0.0.0:8765/camera
-← Windows portproxy 192.168.137.1:8766
-← iPhone ws://192.168.137.1:8766/camera
+```python
+class RuntimeHost:
+    async def attach(self, offer: ConnectionOffer) -> RuntimeLease: ...
+    async def detach(self, lease_id: UUID) -> None: ...
+    async def close(self) -> None: ...
 ```
 
-See [IPHONE_WSL_CONNECTION_GUIDE.md](IPHONE_WSL_CONNECTION_GUIDE.md). This is
-an unauthenticated, unencrypted trusted-LAN development service.
+It owns at most one active or detached `CoachingRuntime`, the 60-second detached
+retention timer, active-connection rejection, matching resume attachment versus
+fresh-runtime creation, and closing expired or evicted runtimes. `attach` performs
+that choice atomically and returns a lease bound to exactly one runtime and
+connection. `detach` submits the semantic connection-loss event to that runtime,
+invalidates the connection lease, and begins retention. Expiry, non-resume
+eviction, or host shutdown calls `CoachingRuntime.close()`.
+
+`CoachingRuntime` continues to own session/task identities, state revisions,
+continuity state, reconnect admission effects, and every coaching transition. The
+host treats retained runtime state as opaque and cannot inspect or mutate task,
+Evidence, Instruction, Readiness, or visual state. A Protocol Adapter only
+translates a validated offer into `attach`, binds the returned `RuntimeLease`, and
+translates wire input/output; it makes no continuity decision.
+
+## Composition
+
+```text
+                     ┌──────────────────────────────┐
+WebSocket bytes ───▶ │ Protocol Adapter            │
+                     │ - v1/v2 validation/framing   │
+                     │ - RuntimeLease binding       │
+                     └──────────────┬───────────────┘
+                                    │ attach/detach
+                     ┌──────────────▼───────────────┐
+                     │ RuntimeHost                  │
+                     │ one active/detached runtime  │
+                     └──────────────┬───────────────┘
+                                    │ bound lease / fragments
+                     ┌──────────────▼───────────────┐
+                     │ ObservationAssembler         │
+                     │ bounded metadata/image join  │
+                     └──────────────┬───────────────┘
+                                    │ complete RuntimeEvent
+                     ┌──────────────▼───────────────┐
+                     │ CoachingRuntime              │
+                     │ sole serialized authority    │
+                     │                              │
+                     │ internal reducer + effects   │
+                     │ scheduling, memory, strategy │
+                     │ projection, visual sidecar   │
+                     └───────┬──────────────┬───────┘
+                             │              │
+              ┌──────────────▼───┐      ┌──▼────────────────────┐
+              │ CoachingReasoner │      │ IllustrationEditor     │
+              │ Adapter          │      │ Adapter                │
+              └──────────────┬───┘      └──┬────────────────────┘
+                             │ completion   │ completion
+                             └──────────┬────┘
+                                        │ correlated RuntimeEvent
+                     ┌──────────────────▼────────────┐
+                     │ CoachingRuntime output stream │
+                     └──────────────────┬────────────┘
+                                        │ canonical RuntimeOutput
+                     ┌──────────────────▼────────────┐
+                     │ Protocol Adapter + one writer │
+                     │ v1 lossy / v2 complete        │
+                     └───────────────────────────────┘
+```
+
+The protocol, provider, and editor implementations are Adapters at real seams.
+`RuntimeHost` is a lifecycle Module at the composition root, not a provider Adapter
+or semantic coaching authority. Private internal helpers are implementation
+structure, not separate authorities or public semantic seams.
+
+## CoachingRuntime implementation
+
+The pure aggregate transition remains internal:
+
+```text
+current state + one semantic event -> next state + declarative effects
+```
+
+The runtime owns effect execution. Starting, succeeding, failing, timing out, or
+logically cancelling an effect always produces a correlated event or disposition
+through the same mailbox.
+
+### Internal responsibilities
+
+The following responsibilities MAY be split across private files/modules for
+locality, but MUST remain behind the one runtime Interface:
+
+- aggregate transition and invariant checking;
+- task, mode, connection, Evidence, Instruction, Readiness, analysis, recovery,
+  overlays, and Visual Guidance Sidecar state;
+- application-authored identity and token allocation;
+- deterministic frame measurements, material-change assessment, asymmetric
+  Settled hysteresis, heartbeat, and latest-only scheduling;
+- two-call physical-cap enforcement, logical cancellation, and completion
+  admission;
+- Shot Strategy/Criterion identity, deterministic progress policy, local revision,
+  full-rebuild admission, Instruction lifecycle, and Readiness derivation;
+- typed Task Memory, dependency invalidation, bounded trajectories, and immutable
+  Context Pack assembly;
+- complete user-visible projection, state-revision assignment, available-action
+  minting, and duplicate-projection suppression;
+- Visual Guidance Sidecar eligibility, consent, capture correlation, editing,
+  retry/cancellation, provenance, and Generated Visual Guidance delivery admission;
+  and
+- bounded metrics, replay facts, diagnostic artifacts, and blob references.
+
+No private helper can expose an independently mutable phase, Activity, Instruction,
+Readiness, Strategy, queue, or visual-job state.
+
+Clock driving, diagnostic sinks, blob storage, artifact storage, and deterministic
+ID generation MAY have private mechanical substitutions for tests. They are not
+public semantic seams.
+
+## External semantic seams
+
+### CoachingReasoner
+
+```python
+class CoachingReasoner(Protocol):
+    async def propose_strategy(
+        self, context: StrategyContextPack
+    ) -> StrategyProposal: ...
+
+    async def assess_progress(
+        self, context: ProgressContextPack
+    ) -> ProgressEvidence: ...
+
+    async def propose_revision(
+        self, context: RevisionContextPack
+    ) -> RevisionProposal: ...
+```
+
+Production Gemini and strict scripted implementations are Adapters at this seam.
+The Interface contains domain proposals and Evidence, not provider prompts, SDK
+objects, model names, HTTP errors, or authoritative runtime state.
+
+The runtime owns IDs, scheduling, retry, freshness, validation, admission, strategy
+revision, Instruction identity, and Readiness. Provider output is inert until a
+current-token completion passes atomic admission.
+
+### IllustrationEditor
+
+```python
+class IllustrationEditor(Protocol):
+    async def render(
+        self, request: AuthorizedIllustrationRequest
+    ) -> EditedIllustration: ...
+```
+
+Production HTTP/editor and strict scripted implementations are Adapters at this
+seam. Only the runtime may construct an authorized request after identified
+consent and fresh compatible capture. The editor cannot choose whether to offer,
+request capture, select an adjustment, change coaching state, or create Evidence.
+
+### Failure values
+
+Both Interfaces return typed dependency outcomes carrying invocation identity:
+
+```text
+deadline_exceeded
+unavailable
+throttled        (optional provider delay)
+rejected
+invalid_output
+misconfigured
+```
+
+Adapters do not retry or decide semantic retryability. Provider-specific details
+remain inside them. The runtime owns the approved bounds: an 8-second Reasoner
+attempt with at most one eligible automatic retry and at most 2 seconds of provider
+delay; a 5-second capture deadline; and a 60-second editor attempt with only
+explicit user Retry. Every Reasoner retry rebuilds a fresh Context Pack and runs
+only if the semantic purpose remains current.
+
+## Protocol Adapter family
+
+Protocol v1 and v2 are Adapters over one runtime, never separate coaching engines.
+They validate and translate wire messages to canonical `RuntimeEvent` values, and
+translate canonical `RuntimeOutput` values to their wire dialects.
+
+The transport edge owns:
+
+- WebSocket endpoint and size limits;
+- text/binary schema validation;
+- v2 negotiation framing and connection-local wire mode;
+- one bounded `ObservationAssembler` that joins metadata and bytes by both
+  `imageMessageId` and `observationId`;
+- connection-local high-resolution request correlation;
+- one serialized writer preserving protocol order; and
+- client-side/wire freshness checks required by the protocol.
+
+It does **not** own task identity, runtime retention, semantic reconnect continuity,
+settling, scheduling, Instruction, Activity, Readiness, action eligibility, retry,
+Strategy, or visual-job policy. Cross-connection attachment belongs to
+`RuntimeHost`; coaching continuity facts belong to the retained `CoachingRuntime`.
+
+### Protocol-v1 projection
+
+V1 is intentionally lossy:
+
+- the current persistent Instruction wins over transient Activity;
+- Activity renders as result text only when no Instruction exists;
+- Ready renders as the current Instruction;
+- existing observation correlation and overlay freshness remain;
+- v2-only phase, freshness, identified actions, and separate Activity are omitted;
+- Generated Visual Guidance is disabled because v1 cannot carry identified
+  Generate consent.
+
+### Protocol-v2 projection
+
+V2 renders the complete immutable user-visible projection after negotiated
+acceptance. The runtime decides semantic state; the Adapter enforces session,
+revision, schema, ordering, action-message, and generated-transfer wire contracts.
+
+## Authority and data flow
+
+For one connection and accepted input:
+
+1. The Protocol Adapter validates hello/offer framing and asks `RuntimeHost.attach`
+   for one atomic fresh/resumed/rejected lease decision.
+2. The Adapter binds the returned `RuntimeLease`; disconnect later calls
+   `RuntimeHost.detach` exactly once.
+3. The Adapter validates later framing and wire shape.
+4. The ObservationAssembler emits only a complete immutable observation context;
+   action and connection events need no image join.
+5. `CoachingRuntime.submit` admits the semantic event in mailbox order.
+6. The internal reducer commits next state and declarative effects.
+7. The runtime emits committed projections/requests and launches effects.
+8. Reasoner/editor outcomes are translated to typed correlated events and submitted
+   to the same mailbox.
+9. The runtime admits or harmlessly discards each completion by current provenance.
+10. The Protocol Adapter renders canonical output and one writer serializes bytes.
+
+This ordering prevents async workers, providers, and protocol handlers from
+allocating state revisions, mutating memory, or racing to update the phone.
+
+## Resource ownership
+
+The runtime owns explicit bounds for:
+
+- one authoritative reasoning run, one newest pending request, and at most two
+  physical VLM calls;
+- a Strategy of at most six Criteria with three candidate actions each;
+- current plus one previous compatible Evidence Snapshot and preview;
+- at most two recent distinct attempted actions per Criterion;
+- Context Pack structured text capped at 32 KiB plus purpose-specific image counts;
+- active visual job, accepted still, and generated output;
+- run/job pinning of exact image bytes;
+- monotonic action-ID allocation plus at most 256 action and 256 action-message
+  receipts retained for 10 minutes; and
+- diagnostic output capped at 200 files or 256 MiB per run.
+
+`RuntimeHost` owns the one-active-or-detached-runtime capacity and 60-second
+detached TTL. The transport edge retains at most 16 unmatched observation entries
+per side for 5 seconds, caps every message at 8 MiB, and caps each serialized send
+queue at 32 frames or 16 MiB. Crossing a framing/send bound closes and detaches the
+connection rather than silently dropping ordered output. Configuration values and
+calibration status are versioned and recorded by the evaluation contract.
+
+## Rejected architecture shapes
+
+- Do not wrap `CoachingLoop` or `ReferenceWorkflow` inside v2.
+- Do not run legacy and v2 orchestration simultaneously for one session.
+- Do not turn the Visual Guidance Sidecar into another workflow authority.
+- Do not expose reducer lanes or private schedulers as public Interfaces.
+- Do not add a generic transport seam while WebSocket is the only transport.
+- Do not add a learned-probe seam without two justified Adapters.
+- Do not wrap deterministic policies in fakeable public Interfaces only to enable
+  narrow unit tests.
+
+One Adapter can be a useful implementation, but it does not justify a speculative
+seam. `CoachingReasoner` and `IllustrationEditor` each have production and scripted
+Adapters and therefore earn their seams.
+
+## Migration and atomic cutover
+
+1. Freeze the current v1 wire as regression-enforcing fixtures and current
+   observable behavior as diagnostic characterization traces. The intentional
+   v2-era v1 behavior deltas are explicit: v1 projects the new Strategy/runtime
+   rather than fixed-plan wording/steps, hides Activity whenever an Instruction
+   exists, and disables legacy Generated Visual Guidance because v1 lacks identified
+   Generate consent. Every other observed delta requires disposition before cutover.
+2. Build `CoachingRuntime` as dormant code with the final state, scheduling,
+   memory, Reasoner/Editor, projection, and visual-job contracts.
+3. Reuse only pure helpers whose semantics remain valid: wire framing, bounded
+   observation assembly, deterministic frame measurements, image validation, and
+   artifact primitives.
+4. Implement production and scripted Reasoner/Editor Adapters against the final
+   Interfaces.
+5. Replay recorded input and controlled Adapter outcomes offline. This path sends
+   no client output and makes no duplicate live provider calls.
+6. Exercise protocol v1 and v2 Adapters against the same runtime scenarios.
+   **Exact fallback** means exact v1 schema, framing, camera transport, observation
+   correlation, result/image ordering, overlay freshness, and usable Instruction
+   projection—not legacy fixed-plan or generated-reference feature parity. V2 also
+   covers negotiation, complete state, actions, and generated-image behavior.
+7. Pass the deterministic functional matrix and real-phone cutover smoke run in
+   [CAMERA_AGENT_V2_EVALUATION.md](CAMERA_AGENT_V2_EVALUATION.md).
+8. Perform one composition-root cutover so every newly accepted connection uses
+   `CoachingRuntime`. Roll back by deployment version, not a live dual-engine flag.
+9. Delete `CoachingLoop`, `ReferenceWorkflow`, fixed-plan request/result contracts,
+   server-owned coaching state, and implementation-coupled tests.
+
+Exact model wording, fixed-plan choices, and the explicitly accepted v1 projection
+deltas above do not need parity. Unlisted behavioral changes do. Runtime, protocol,
+safety, ordering, freshness, cancellation, bounded-resource, and evaluation
+contracts remain cutover gates.
