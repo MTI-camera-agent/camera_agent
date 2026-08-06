@@ -1,0 +1,84 @@
+{
+  "$comment": "Golden conversation for the HelloCamera phone-client conformance kit. Meta-format: docs/conformance/README.md. invalid conversations carry a 'rejection' block naming the executable checker.",
+  "id": "STATE-I01",
+  "area": "state-replacement",
+  "title": "A non-increasing stateRevision is rejected; the last valid projection is retained",
+  "assertions": ["W04", "W05"],
+  "valid": false,
+  "rejection": {
+    "at": 3,
+    "kind": "semantic",
+    "checker": "check_state_admission",
+    "rule": "A snapshot applies only when sessionId matches and stateRevision is strictly greater than the last applied revision. (PROTOCOL_V2.md §6)",
+    "effect": "The phone retains the last valid projection (revision 7) and ignores the equal-revision snapshot. No lane changes."
+  },
+  "summary": "After a valid revision-7 snapshot, the desktop sends another revision-7 snapshot. The phone MUST NOT apply it; the last valid projection and revision remain unchanged.",
+  "steps": [
+    {
+      "n": 1,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "protocol_v2_accept",
+        "version": 2,
+        "messageId": "22222222-2222-4222-8222-222222222222",
+        "timestampMs": 1785123456000,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "resumed": false,
+        "capabilities": ["camera_agent_interaction_v2", "generated_visual_guidance_v2"]
+      },
+      "note": "Accepted sessionId. (PROTOCOL_V2.md §4.2)"
+    },
+    {
+      "n": 2,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "coaching_state_v2",
+        "version": 2,
+        "messageId": "44444444-4444-4444-8444-444444444461",
+        "timestampMs": 1785123456700,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "stateRevision": 7,
+        "taskId": "55555555-5555-4555-8555-555555555555",
+        "acceptedIntention": "A confident full-body portrait at sunset",
+        "phase": "coaching",
+        "instruction": {"instructionId": "66666666-6666-4666-8666-666666666666", "kind": "action", "text": "Photographer: move one step to your left.", "addressee": "photographer", "freshness": "current"},
+        "activity": null,
+        "overlays": null,
+        "availableActions": [{"actionId": "77777777-7777-4777-8777-777777777777", "kind": "try_another_suggestion", "target": {"kind": "instruction", "id": "66666666-6666-4666-8666-666666666666"}}],
+        "visualGuidance": null
+      },
+      "note": "Valid revision-7 snapshot is admitted; last applied revision becomes 7."
+    },
+    {
+      "n": 3,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "coaching_state_v2",
+        "version": 2,
+        "messageId": "44444444-4444-4444-8444-444444444462",
+        "timestampMs": 1785123456800,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "stateRevision": 7,
+        "taskId": "55555555-5555-4555-8555-555555555555",
+        "acceptedIntention": "A confident full-body portrait at sunset",
+        "phase": "coaching",
+        "instruction": {"instructionId": "66666666-6666-4666-8666-666666666667", "kind": "action", "text": "Photographer: move two steps left.", "addressee": "photographer", "freshness": "current"},
+        "activity": null,
+        "overlays": null,
+        "availableActions": [],
+        "visualGuidance": null
+      },
+      "note": "stateRevision 7 is not strictly greater than the last applied revision 7. The phone rejects the whole snapshot and retains revision 7's projection. (PROTOCOL_V2.md §6)"
+    }
+  ],
+  "outcome": "Last valid projection (revision 7) retained. The phone MUST NOT apply the equal-revision snapshot regardless of its lane contents."
+}

@@ -146,8 +146,15 @@ The implementation-ready v2 planning set is:
 - [protocol-v2 interaction extension](PROTOCOL_V2.md)
 - [protocol-v2 extension schema](protocol-v2.schema.json)
 - [v2 evaluation and release contract](CAMERA_AGENT_V2_EVALUATION.md)
+- [phone-client conformance kit](conformance/README.md): normative handoff, pinned schema hashes, and valid/invalid golden conversations for the companion client
 
-Protocol v2 is not yet implemented by the current phone or harness.
+Protocol v2 is not yet implemented by the current phone or harness. The
+[phone-client conformance kit](conformance/README.md) turns the approved protocol-v2
+handoff into executable and reviewable companion-client material: it records the
+schema hashes, captures the phase/lane and action-availability matrices, the
+phone-local disconnect projection, overlay suppression, image admission, the
+exact provenance label, and the always-available shutter, and defines the evidence
+a companion implementation must return for phone-owned W01–W14 assertions.
 
 The frozen protocol-v1 baseline and the per-behavior v2 delta classification
 live in [V1_BASELINE_DELTAS.md](V1_BASELINE_DELTAS.md).

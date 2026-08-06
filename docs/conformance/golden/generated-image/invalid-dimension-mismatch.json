@@ -1,0 +1,95 @@
+{
+  "$comment": "Golden conversation for the HelloCamera phone-client conformance kit. Meta-format: docs/conformance/README.md.",
+  "id": "IMG-I03",
+  "area": "generated-image",
+  "title": "Decoded dimensions that do not exactly match the header are rejected",
+  "assertions": ["W09", "W13"],
+  "valid": false,
+  "rejection": {
+    "at": 3,
+    "kind": "semantic",
+    "checker": "admit_visual_guidance_bytes",
+    "rule": "The phone verifies decoded width and height exactly match the header. (PROTOCOL_V2.md §8.2, §2)",
+    "effect": "The phone does not render the image, retains unrelated coaching lanes, shows a transient transfer error, and sends protocol_error_v2 invalid_message. The desktop commits the visual job to failed with fresh Retry/Dismiss."
+  },
+  "summary": "An available artifact is announced with a header declaring 768x1024, but the payload decodes to 100x100. The dimension mismatch is a current-job byte failure.",
+  "steps": [
+    {
+      "n": 1,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "protocol_v2_accept",
+        "version": 2,
+        "messageId": "22222222-2222-4222-8222-222222222222",
+        "timestampMs": 1785123456000,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "resumed": false,
+        "capabilities": ["camera_agent_interaction_v2", "generated_visual_guidance_v2"]
+      },
+      "note": "Accepted sessionId and the visual bundle. (PROTOCOL_V2.md §4.2)"
+    },
+    {
+      "n": 2,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "coaching_state_v2",
+        "version": 2,
+        "messageId": "44444444-4444-4444-8444-444444444731",
+        "timestampMs": 1785123461800,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "stateRevision": 11,
+        "taskId": "55555555-5555-4555-8555-555555555555",
+        "acceptedIntention": "A confident full-body portrait at sunset",
+        "phase": "coaching",
+        "instruction": {"instructionId": "66666666-6666-4666-8666-666666666666", "kind": "action", "text": "Photographer: move one step to your left.", "addressee": "photographer", "freshness": "current"},
+        "activity": null,
+        "overlays": null,
+        "availableActions": [{"actionId": "dddddddd-dddd-4ddd-8ddd-dddddddddd31", "kind": "dismiss_visual_guidance", "target": {"kind": "visual_job", "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc"}}],
+        "visualGuidance": {
+          "visualId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+          "kind": "job",
+          "status": "available",
+          "sourceInstructionId": "66666666-6666-4666-8666-666666666666",
+          "demonstrates": "Move the subject one step left",
+          "activity": null,
+          "artifact": {
+            "imageMessageId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            "announcedAtStateRevision": 11,
+            "demonstrates": "Move the subject one step left",
+            "provenanceLabel": "Edited illustration based on an earlier still — not the live preview."
+          },
+          "failure": null
+        }
+      },
+      "note": "Available artifact announced; current reference established. (PROTOCOL_V2.md §8.2)"
+    },
+    {
+      "n": 3,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "binary",
+      "schema": "v2",
+      "header": {
+        "type": "visual_guidance_image_v2",
+        "version": 2,
+        "messageId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        "timestampMs": 1785123462000,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "visualJobId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        "announcedAtStateRevision": 11,
+        "mimeType": "image/png",
+        "width": 768,
+        "height": 1024
+      },
+      "payload": {"kind": "png", "width": 100, "height": 100},
+      "note": "Header declares 768x1024 but the payload decodes to 100x100. Dimension validation fails. (PROTOCOL_V2.md §8.2, §2)"
+    }
+  ],
+  "outcome": "The phone rejects the current-job bytes, does not render the image, and sends protocol_error_v2 invalid_message. The desktop commits the visual job to failed with fresh Retry/Dismiss."
+}

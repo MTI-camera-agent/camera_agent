@@ -1,0 +1,136 @@
+{
+  "$comment": "Golden conversation for the HelloCamera phone-client conformance kit. Meta-format: docs/conformance/README.md.",
+  "id": "RECON-I01",
+  "area": "reconnect",
+  "title": "A revision that resets within a resumed session is rejected",
+  "assertions": ["W10", "W05"],
+  "valid": false,
+  "rejection": {
+    "at": 7,
+    "kind": "semantic",
+    "checker": "check_state_admission",
+    "rule": "A state revision MUST NOT reset within a resumed session; revisions continue strictly increasing. (PROTOCOL_V2.md §5, §6)",
+    "effect": "The phone retains the resumed session's last valid projection (revision 10) and ignores the lower-revision snapshot. The resumed identities are preserved."
+  },
+  "summary": "Before disconnect the last applied server revision was 10. On a successful resume, the desktop sends a coaching_state_v2 with revision 8, which is not strictly greater than 10. The phone MUST reject it; a resumed session never resets revisions.",
+  "steps": [
+    {
+      "n": 1,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "protocol_v2_accept",
+        "version": 2,
+        "messageId": "22222222-2222-4222-8222-222222222225",
+        "timestampMs": 1785123506000,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "resumed": false,
+        "capabilities": ["camera_agent_interaction_v2", "generated_visual_guidance_v2"]
+      },
+      "note": "First connection accepted session 333.... (PROTOCOL_V2.md §4.2)"
+    },
+    {
+      "n": 2,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "coaching_state_v2",
+        "version": 2,
+        "messageId": "44444444-4444-4444-8444-444444444531",
+        "timestampMs": 1785123506200,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "stateRevision": 10,
+        "taskId": "55555555-5555-4555-8555-555555555555",
+        "acceptedIntention": "A confident full-body portrait at sunset",
+        "phase": "coaching",
+        "instruction": {"instructionId": "66666666-6666-4666-8666-666666666666", "kind": "action", "text": "Photographer: move one step to your left.", "addressee": "photographer", "freshness": "current"},
+        "activity": null,
+        "overlays": null,
+        "availableActions": [],
+        "visualGuidance": null
+      },
+      "note": "Last applied server revision before disconnect is 10."
+    },
+    {
+      "n": 3,
+      "event": "socket_loss",
+      "note": "The connection is lost; the phone locally projects recovering and retains revision 10 / sessionId 333... unchanged. (PROTOCOL_V2.md §4.3)"
+    },
+    {
+      "n": 4,
+      "from": "phone",
+      "to": "desktop",
+      "frame": "text",
+      "schema": "v1",
+      "message": {
+        "type": "hello",
+        "version": 1,
+        "messageId": "11111111-1111-4111-8111-111111111141",
+        "client": "HelloCamera-iOS",
+        "capabilities": ["preview_jpeg", "high_resolution_request", "overlay_primitives", "sample_image"]
+      },
+      "note": "Reconnect: exact v1 hello; wire resets to v1. (PROTOCOL_V2.md §4.1)"
+    },
+    {
+      "n": 5,
+      "from": "phone",
+      "to": "desktop",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "protocol_v2_offer",
+        "version": 2,
+        "messageId": "11111111-1111-4111-8111-111111111142",
+        "capabilities": ["camera_agent_interaction_v2", "generated_visual_guidance_v2"],
+        "resumeSessionId": "33333333-3333-4333-8333-333333333333"
+      },
+      "note": "Resume offers the retained session. (PROTOCOL_V2.md §5)"
+    },
+    {
+      "n": 6,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "protocol_v2_accept",
+        "version": 2,
+        "messageId": "22222222-2222-4222-8222-222222222226",
+        "timestampMs": 1785123509000,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "resumed": true,
+        "capabilities": ["camera_agent_interaction_v2", "generated_visual_guidance_v2"]
+      },
+      "note": "Successful resume: same sessionId, resumed: true, revisions continue from 10. (PROTOCOL_V2.md §5)"
+    },
+    {
+      "n": 7,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "coaching_state_v2",
+        "version": 2,
+        "messageId": "44444444-4444-4444-8444-444444444532",
+        "timestampMs": 1785123509200,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "stateRevision": 8,
+        "taskId": "55555555-5555-4555-8555-555555555555",
+        "acceptedIntention": "A confident full-body portrait at sunset",
+        "phase": "recovering",
+        "instruction": {"instructionId": "66666666-6666-4666-8666-666666666666", "kind": "action", "text": "Photographer: move one step to your left.", "addressee": "photographer", "freshness": "may_be_outdated"},
+        "activity": {"kind": "recovering", "text": "Reconnected—checking the view before coaching resumes."},
+        "overlays": null,
+        "availableActions": [],
+        "visualGuidance": null
+      },
+      "note": "stateRevision 8 is not strictly greater than the resumed session's last revision 10. The phone rejects the snapshot and retains revision 10's projection. (PROTOCOL_V2.md §5, §6)"
+    }
+  ],
+  "outcome": "The phone retains the resumed session's last valid projection (revision 10). A resumed session never accepts a revision that resets."
+}

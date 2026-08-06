@@ -1,0 +1,59 @@
+{
+  "$comment": "Golden conversation for the HelloCamera phone-client conformance kit. Meta-format: docs/conformance/README.md.",
+  "id": "RECON-V02",
+  "area": "reconnect",
+  "title": "An expired, mismatched, or evicted resume starts a fresh session",
+  "assertions": ["W10"],
+  "valid": true,
+  "summary": "When the offered resumeSessionId does not match a retained session, the TTL has expired, or a newer connection or task has replaced it, acceptance returns a fresh sessionId and resumed: false. The desktop rebuilds from the intention repeated by a later v1 observation; old IDs and output are rejected.",
+  "steps": [
+    {
+      "n": 1,
+      "from": "phone",
+      "to": "desktop",
+      "frame": "text",
+      "schema": "v1",
+      "message": {
+        "type": "hello",
+        "version": 1,
+        "messageId": "11111111-1111-4111-8111-111111111131",
+        "client": "HelloCamera-iOS",
+        "capabilities": ["preview_jpeg", "high_resolution_request", "overlay_primitives", "sample_image"]
+      },
+      "note": "Exact closed v1 hello on the new connection. Wire mode resets to v1. (PROTOCOL_V2.md §4.1, §5)"
+    },
+    {
+      "n": 2,
+      "from": "phone",
+      "to": "desktop",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "protocol_v2_offer",
+        "version": 2,
+        "messageId": "11111111-1111-4111-8111-111111111132",
+        "capabilities": ["camera_agent_interaction_v2", "generated_visual_guidance_v2"],
+        "resumeSessionId": "33333333-3333-4333-8333-333333333333"
+      },
+      "note": "resumeSessionId names a session that is expired, mismatched, or evicted. (PROTOCOL_V2.md §5)"
+    },
+    {
+      "n": 3,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "protocol_v2_accept",
+        "version": 2,
+        "messageId": "22222222-2222-4222-8222-222222222224",
+        "timestampMs": 1785123496000,
+        "sessionId": "44444444-4444-4444-8444-444444444444",
+        "resumed": false,
+        "capabilities": ["camera_agent_interaction_v2", "generated_visual_guidance_v2"]
+      },
+      "note": "Fresh sessionId, resumed: false. Old IDs and output from the prior session are stale and MUST NOT affect this session. (PROTOCOL_V2.md §5)"
+    }
+  ],
+  "outcome": "A fresh session starts. The phone MUST treat any prior-session state, action, or image as stale and harmless."
+}

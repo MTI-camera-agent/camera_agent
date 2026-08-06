@@ -1,0 +1,58 @@
+{
+  "$comment": "Golden conversation for the HelloCamera phone-client conformance kit. Meta-format: docs/conformance/README.md.",
+  "id": "STATE-I03",
+  "area": "state-replacement",
+  "title": "A snapshot missing required fields is rejected atomically by the schema",
+  "assertions": ["W05", "W13"],
+  "valid": false,
+  "rejection": {
+    "at": 2,
+    "kind": "schema",
+    "checker": null,
+    "rule": "V2 objects are closed: missing required fields reject the whole object. The phone retains the last valid projection. (PROTOCOL_V2.md §2, §6; protocol-v2.schema.json coachingState)",
+    "effect": "The malformed snapshot does not switch wire mode or mutate any lane. The last valid projection and revision remain unchanged."
+  },
+  "summary": "A coaching_state_v2 object missing stateRevision and sessionId fails schema validation. The phone MUST NOT apply it and MUST NOT emit a competing projection.",
+  "steps": [
+    {
+      "n": 1,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "protocol_v2_accept",
+        "version": 2,
+        "messageId": "22222222-2222-4222-8222-222222222222",
+        "timestampMs": 1785123456000,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "resumed": false,
+        "capabilities": ["camera_agent_interaction_v2", "generated_visual_guidance_v2"]
+      },
+      "note": "Accepted sessionId. (PROTOCOL_V2.md §4.2)"
+    },
+    {
+      "n": 2,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "coaching_state_v2",
+        "version": 2,
+        "messageId": "44444444-4444-4444-8444-444444444481",
+        "timestampMs": 1785123458100,
+        "taskId": "55555555-5555-4555-8555-555555555555",
+        "acceptedIntention": "A confident full-body portrait at sunset",
+        "phase": "coaching",
+        "instruction": {"instructionId": "66666666-6666-4666-8666-666666666666", "kind": "action", "text": "Photographer: move one step to your left.", "addressee": "photographer", "freshness": "current"},
+        "activity": null,
+        "overlays": null,
+        "availableActions": [],
+        "visualGuidance": null
+      },
+      "note": "Required fields sessionId and stateRevision are absent. The closed v2 object is rejected by the schema; the phone retains the last valid projection (the accepted session, no prior coaching state). (PROTOCOL_V2.md §2, §6)"
+    }
+  ],
+  "outcome": "The malformed snapshot is rejected atomically. No lane is applied; no protocol-owned revision is allocated."
+}

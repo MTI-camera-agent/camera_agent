@@ -1,0 +1,75 @@
+{
+  "$comment": "Golden conversation for the HelloCamera phone-client conformance kit. Meta-format: docs/conformance/README.md.",
+  "id": "ACT-I01",
+  "area": "actions",
+  "title": "A schema-invalid user_action_v2 returns protocol_error_v2 invalid_message",
+  "assertions": ["W12", "W13"],
+  "valid": false,
+  "rejection": {
+    "at": 3,
+    "kind": "schema",
+    "checker": null,
+    "rule": "V2 objects are closed: missing required fields reject the whole object. A known invalid v2 message yields a scoped protocol_error_v2 invalid_message and the last valid state remains. (PROTOCOL_V2.md §2, §10; protocol-v2.schema.json userAction)",
+    "effect": "The phone sends protocol_error_v2 code invalid_message related to the offending messageId. The current coaching state is unchanged."
+  },
+  "summary": "A user_action_v2 object missing the required sessionId field fails schema validation. The phone MUST NOT execute it and MUST NOT clear valid state.",
+  "steps": [
+    {
+      "n": 1,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "protocol_v2_accept",
+        "version": 2,
+        "messageId": "22222222-2222-4222-8222-222222222222",
+        "timestampMs": 1785123456000,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "resumed": false,
+        "capabilities": ["camera_agent_interaction_v2", "generated_visual_guidance_v2"]
+      },
+      "note": "Accepted sessionId. (PROTOCOL_V2.md §4.2)"
+    },
+    {
+      "n": 2,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "coaching_state_v2",
+        "version": 2,
+        "messageId": "44444444-4444-4444-8444-4444444444d1",
+        "timestampMs": 1785123463100,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "stateRevision": 1,
+        "taskId": "55555555-5555-4555-8555-555555555555",
+        "acceptedIntention": "A confident full-body portrait at sunset",
+        "phase": "coaching",
+        "instruction": {"instructionId": "66666666-6666-4666-8666-666666666666", "kind": "action", "text": "Photographer: move one step to your left.", "addressee": "photographer", "freshness": "current"},
+        "activity": null,
+        "overlays": null,
+        "availableActions": [{"actionId": "77777777-7777-4777-8777-777777777777", "kind": "try_another_suggestion", "target": {"kind": "instruction", "id": "66666666-6666-4666-8666-666666666666"}}],
+        "visualGuidance": null
+      },
+      "note": "A valid coaching state is applied; the last valid projection is established."
+    },
+    {
+      "n": 3,
+      "from": "phone",
+      "to": "desktop",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "user_action_v2",
+        "version": 2,
+        "messageId": "99999999-9999-4999-8999-9999999999a1",
+        "timestampMs": 1785123463300,
+        "actionId": "77777777-7777-4777-8777-777777777777"
+      },
+      "note": "Required sessionId is absent. The closed v2 object is rejected by the schema. (PROTOCOL_V2.md §2, §10)"
+    }
+  ],
+  "outcome": "The phone emits protocol_error_v2 invalid_message related to messageId 99999999-.... The last valid coaching state (revision 1) remains unchanged."
+}

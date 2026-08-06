@@ -1,0 +1,60 @@
+{
+  "$comment": "Golden conversation for the HelloCamera phone-client conformance kit. Meta-format: docs/conformance/README.md.",
+  "id": "STATE-I04",
+  "area": "state-replacement",
+  "title": "A phase/lane matrix violation is rejected semantically",
+  "assertions": ["W05"],
+  "valid": false,
+  "rejection": {
+    "at": 2,
+    "kind": "semantic",
+    "checker": "check_phase_lane_matrix",
+    "rule": "ready requires a ready Instruction with freshness current or needs_revalidation and Activity null; the visual sidecar is forbidden. (PROTOCOL_V2.md §6.1)",
+    "effect": "The phone retains the last valid projection and revision. The matrix-violating snapshot does not mutate any lane."
+  },
+  "summary": "A schema-valid coaching_state_v2 declares phase ready with instruction null and a working Activity. This passes the schema but violates the §6.1 phase/lane matrix. The phone MUST reject the whole snapshot.",
+  "steps": [
+    {
+      "n": 1,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "protocol_v2_accept",
+        "version": 2,
+        "messageId": "22222222-2222-4222-8222-222222222222",
+        "timestampMs": 1785123456000,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "resumed": false,
+        "capabilities": ["camera_agent_interaction_v2", "generated_visual_guidance_v2"]
+      },
+      "note": "Accepted sessionId. (PROTOCOL_V2.md §4.2)"
+    },
+    {
+      "n": 2,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "coaching_state_v2",
+        "version": 2,
+        "messageId": "44444444-4444-4444-8444-444444444491",
+        "timestampMs": 1785123459100,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "stateRevision": 1,
+        "taskId": "55555555-5555-4555-8555-555555555555",
+        "acceptedIntention": "A confident full-body portrait at sunset",
+        "phase": "ready",
+        "instruction": null,
+        "activity": {"kind": "working", "text": "Almost there."},
+        "overlays": null,
+        "availableActions": [],
+        "visualGuidance": null
+      },
+      "note": "Schema-valid but semantically invalid: ready requires a ready Instruction and Activity null. The phone rejects the snapshot and retains the last valid projection. (PROTOCOL_V2.md §6.1)"
+    }
+  ],
+  "outcome": "The matrix violation is rejected atomically. The phone never renders a Ready phase without an evidence-backed ready Instruction."
+}

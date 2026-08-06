@@ -1,0 +1,113 @@
+{
+  "$comment": "Golden conversation for the HelloCamera phone-client conformance kit. Meta-format: docs/conformance/README.md. Binary steps carry a JSON 'header' (validated against the v2 schema) and a 'payload' descriptor materialized by the kit's admission checker.",
+  "id": "IMG-V01",
+  "area": "generated-image",
+  "title": "An available artifact is announced in state before its bytes are sent",
+  "assertions": ["W09"],
+  "valid": true,
+  "summary": "The desktop first announces an available artifact in a committed full coaching_state_v2. The artifact carries imageMessageId, announcedAtStateRevision (equal to the first state revision referencing this transfer), demonstrates (exactly equal to the enclosing visual job's demonstrates), and the fixed provenance label. The desktop then sends one binary envelope whose header messageId equals the artifact imageMessageId, visualJobId equals the visual job, and session and announcement revision match the current artifact reference. The phone accepts the bytes only while its current state references that exact session, job, image identity, and first-announcement revision, and after decoding verifies media, dimensions, and integrity.",
+  "steps": [
+    {
+      "n": 1,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "protocol_v2_accept",
+        "version": 2,
+        "messageId": "22222222-2222-4222-8222-222222222222",
+        "timestampMs": 1785123456000,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "resumed": false,
+        "capabilities": ["camera_agent_interaction_v2", "generated_visual_guidance_v2"]
+      },
+      "note": "Accepted sessionId and the visual bundle. (PROTOCOL_V2.md §4.2)"
+    },
+    {
+      "n": 2,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "coaching_state_v2",
+        "version": 2,
+        "messageId": "44444444-4444-4444-8444-444444444611",
+        "timestampMs": 1785123461500,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "stateRevision": 10,
+        "taskId": "55555555-5555-4555-8555-555555555555",
+        "acceptedIntention": "A confident full-body portrait at sunset",
+        "phase": "coaching",
+        "instruction": {"instructionId": "66666666-6666-4666-8666-666666666666", "kind": "action", "text": "Photographer: move one step to your left.", "addressee": "photographer", "freshness": "current"},
+        "activity": null,
+        "overlays": null,
+        "availableActions": [],
+        "visualGuidance": null
+      },
+      "note": "An actionable current Instruction; the visual sidecar is not yet offered."
+    },
+    {
+      "n": 3,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "coaching_state_v2",
+        "version": 2,
+        "messageId": "44444444-4444-4444-8444-444444444612",
+        "timestampMs": 1785123461800,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "stateRevision": 11,
+        "taskId": "55555555-5555-4555-8555-555555555555",
+        "acceptedIntention": "A confident full-body portrait at sunset",
+        "phase": "coaching",
+        "instruction": {"instructionId": "66666666-6666-4666-8666-666666666666", "kind": "action", "text": "Photographer: move one step to your left.", "addressee": "photographer", "freshness": "current"},
+        "activity": null,
+        "overlays": null,
+        "availableActions": [{"actionId": "dddddddd-dddd-4ddd-8ddd-dddddddddd11", "kind": "dismiss_visual_guidance", "target": {"kind": "visual_job", "id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc"}}],
+        "visualGuidance": {
+          "visualId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+          "kind": "job",
+          "status": "available",
+          "sourceInstructionId": "66666666-6666-4666-8666-666666666666",
+          "demonstrates": "Move the subject one step left",
+          "activity": null,
+          "artifact": {
+            "imageMessageId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+            "announcedAtStateRevision": 11,
+            "demonstrates": "Move the subject one step left",
+            "provenanceLabel": "Edited illustration based on an earlier still — not the live preview."
+          },
+          "failure": null
+        }
+      },
+      "note": "Available artifact announced in committed full state before bytes. artifact.demonstrates equals job.demonstrates; provenanceLabel is the exact fixed string. (PROTOCOL_V2.md §8.2)"
+    },
+    {
+      "n": 4,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "binary",
+      "schema": "v2",
+      "header": {
+        "type": "visual_guidance_image_v2",
+        "version": 2,
+        "messageId": "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        "timestampMs": 1785123462000,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "visualJobId": "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+        "announcedAtStateRevision": 11,
+        "mimeType": "image/png",
+        "width": 768,
+        "height": 1024
+      },
+      "payload": {"kind": "png", "width": 768, "height": 1024},
+      "admit": true,
+      "note": "Header messageId equals artifact.imageMessageId; visualJobId equals visualGuidance.visualId; session and announcement revision match the current artifact reference. Payload is a valid PNG matching the declared mimeType and exact dimensions. (PROTOCOL_V2.md §8.2)"
+    }
+  ],
+  "outcome": "The phone decodes the payload, verifies media/type/dimensions/integrity, and renders the labeled illustration outside the live preview and saved-photo flow. Generated imagery is never treated as current live Evidence."
+}

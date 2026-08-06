@@ -1,0 +1,88 @@
+{
+  "$comment": "Golden conversation for the HelloCamera phone-client conformance kit. Meta-format: docs/conformance/README.md.",
+  "id": "ACT-V02",
+  "area": "actions",
+  "title": "A duplicate transmission returns disposition duplicate and is a no-op",
+  "assertions": ["W08"],
+  "valid": true,
+  "summary": "Within the 256+256/10-minute receipt window, a new transmission messageId invoking an already-consumed actionId returns the cached original disposition classified as duplicate. It is an idempotent no-op, not a protocol error. The consumed actionId is never re-executed.",
+  "steps": [
+    {
+      "n": 1,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "protocol_v2_accept",
+        "version": 2,
+        "messageId": "22222222-2222-4222-8222-222222222222",
+        "timestampMs": 1785123456000,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "resumed": false,
+        "capabilities": ["camera_agent_interaction_v2", "generated_visual_guidance_v2"]
+      },
+      "note": "Accepted sessionId. (PROTOCOL_V2.md §4.2)"
+    },
+    {
+      "n": 2,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "coaching_state_v2",
+        "version": 2,
+        "messageId": "44444444-4444-4444-8444-4444444444c1",
+        "timestampMs": 1785123462100,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "stateRevision": 1,
+        "taskId": "55555555-5555-4555-8555-555555555555",
+        "acceptedIntention": "A confident full-body portrait at sunset",
+        "phase": "coaching",
+        "instruction": {"instructionId": "66666666-6666-4666-8666-666666666666", "kind": "action", "text": "Photographer: move one step to your left.", "addressee": "photographer", "freshness": "current"},
+        "activity": null,
+        "overlays": null,
+        "availableActions": [{"actionId": "77777777-7777-4777-8777-777777777777", "kind": "try_another_suggestion", "target": {"kind": "instruction", "id": "66666666-6666-4666-8666-666666666666"}}],
+        "visualGuidance": null
+      },
+      "note": "Offered action 77777777-...."
+    },
+    {
+      "n": 3,
+      "from": "phone",
+      "to": "desktop",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "user_action_v2",
+        "version": 2,
+        "messageId": "99999999-9999-4999-8999-999999999991",
+        "timestampMs": 1785123462300,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "actionId": "77777777-7777-4777-8777-777777777777"
+      },
+      "note": "First transmission; consumed as accepted (not shown). (PROTOCOL_V2.md §7)"
+    },
+    {
+      "n": 4,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "action_result_v2",
+        "version": 2,
+        "messageId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2",
+        "timestampMs": 1785123462400,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "actionMessageId": "99999999-9999-4999-8999-999999999992",
+        "actionId": "77777777-7777-4777-8777-777777777777",
+        "disposition": "duplicate",
+        "detail": null
+      },
+      "note": "A NEW messageId re-invokes the already-consumed actionId. Disposition is duplicate; no slow work runs again. (PROTOCOL_V2.md §7)"
+    }
+  ],
+  "outcome": "Duplicate is an idempotent no-op. The consumed actionId is not re-executed; the current available-action set remains authoritative."
+}

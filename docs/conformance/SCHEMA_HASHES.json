@@ -1,0 +1,22 @@
+{
+  "$comment": "Pinned SHA-256 hashes of the normative JSON Schemas that govern the HelloCamera phone-client wire contract. A companion implementation MUST pin these exact schema versions. The executable kit (tests/test_conformance_kit.py) re-computes these hashes from docs/protocol-v{1,2}.schema.json on every run, so editing a schema without re-freezing it here fails the kit. Hashes cover the file bytes as committed (UTF-8, no trailing newline normalization). The landing commit on v1.0.0 is recorded by git history; this file pins bytes, not a commit SHA.",
+  "branch": "v1.0.0",
+  "schemas": [
+    {
+      "name": "protocol-v1",
+      "path": "docs/protocol-v1.schema.json",
+      "$id": "https://hellocamera.local/protocol-v1.schema.json",
+      "draft": "2020-12",
+      "sha256": "b28e564685dc34feda9d24c237c145c2331bd3d7480a6a0ee14ccee86b0621aa",
+      "governs": "Closed v1 camera transport: hello, observation, preview/high-resolution image headers, capture request, client errors, and result/result_image ordering. Negotiated v2 rides the same endpoint and binary envelope."
+    },
+    {
+      "name": "protocol-v2",
+      "path": "docs/protocol-v2.schema.json",
+      "$id": "https://hellocamera.local/protocol-v2.schema.json",
+      "draft": "2020-12",
+      "sha256": "d6c724684b5216fb756914bcabca05019e1be3334ee35d2a3a62d4c3ee275deb",
+      "governs": "V2 interaction extension: protocol_v2_offer, protocol_v2_accept, coaching_state_v2, user_action_v2, action_result_v2, protocol_error_v2, and the visual_guidance_image_v2 binary header."
+    }
+  ]
+}

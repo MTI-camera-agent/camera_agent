@@ -1,0 +1,115 @@
+{
+  "$comment": "Golden conversation for the HelloCamera phone-client conformance kit. Meta-format: docs/conformance/README.md.",
+  "id": "ACT-V01",
+  "area": "actions",
+  "title": "An accepted action is acknowledged before the resulting state",
+  "assertions": ["W08"],
+  "valid": true,
+  "summary": "The phone invokes an offered action by its one-use actionId. The desktop immediately acknowledges with action_result_v2 disposition accepted before any slow reasoning and before the resulting full state. The accepted action disappears in the next committed snapshot; a later equivalent opportunity receives a fresh action ID.",
+  "steps": [
+    {
+      "n": 1,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "protocol_v2_accept",
+        "version": 2,
+        "messageId": "22222222-2222-4222-8222-222222222222",
+        "timestampMs": 1785123456000,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "resumed": false,
+        "capabilities": ["camera_agent_interaction_v2", "generated_visual_guidance_v2"]
+      },
+      "note": "Accepted sessionId. (PROTOCOL_V2.md §4.2)"
+    },
+    {
+      "n": 2,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "coaching_state_v2",
+        "version": 2,
+        "messageId": "44444444-4444-4444-8444-4444444444b1",
+        "timestampMs": 1785123461100,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "stateRevision": 1,
+        "taskId": "55555555-5555-4555-8555-555555555555",
+        "acceptedIntention": "A confident full-body portrait at sunset",
+        "phase": "coaching",
+        "instruction": {"instructionId": "66666666-6666-4666-8666-666666666666", "kind": "action", "text": "Photographer: move one step to your left.", "addressee": "photographer", "freshness": "current"},
+        "activity": null,
+        "overlays": null,
+        "availableActions": [
+          {"actionId": "77777777-7777-4777-8777-777777777777", "kind": "try_another_suggestion", "target": {"kind": "instruction", "id": "66666666-6666-4666-8666-666666666666"}},
+          {"actionId": "88888888-8888-4888-8888-888888888888", "kind": "pause_coaching", "target": {"kind": "task", "id": "55555555-5555-4555-8555-555555555555"}}
+        ],
+        "visualGuidance": null
+      },
+      "note": "The current available-action set is authoritative. (PROTOCOL_V2.md §7)"
+    },
+    {
+      "n": 3,
+      "from": "phone",
+      "to": "desktop",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "user_action_v2",
+        "version": 2,
+        "messageId": "99999999-9999-4999-8999-999999999991",
+        "timestampMs": 1785123461300,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "actionId": "77777777-7777-4777-8777-777777777777"
+      },
+      "note": "messageId identifies this transmission; actionId identifies the semantic opportunity. (PROTOCOL_V2.md §7)"
+    },
+    {
+      "n": 4,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "action_result_v2",
+        "version": 2,
+        "messageId": "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1",
+        "timestampMs": 1785123461310,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "actionMessageId": "99999999-9999-4999-8999-999999999991",
+        "actionId": "77777777-7777-4777-8777-777777777777",
+        "disposition": "accepted",
+        "detail": null
+      },
+      "note": "Acknowledgement precedes the resulting state and any slow reasoning. (PROTOCOL_V2.md §7)"
+    },
+    {
+      "n": 5,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "coaching_state_v2",
+        "version": 2,
+        "messageId": "44444444-4444-4444-8444-4444444444b2",
+        "timestampMs": 1785123461500,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "stateRevision": 2,
+        "taskId": "55555555-5555-4555-8555-555555555555",
+        "acceptedIntention": "A confident full-body portrait at sunset",
+        "phase": "coaching",
+        "instruction": {"instructionId": "66666666-6666-4666-8666-666666666667", "kind": "action", "text": "Photographer: move two steps back.", "addressee": "photographer", "freshness": "current"},
+        "activity": null,
+        "overlays": null,
+        "availableActions": [{"actionId": "88888888-8888-4888-8888-888888888888", "kind": "pause_coaching", "target": {"kind": "task", "id": "55555555-5555-4555-8555-555555555555"}}],
+        "visualGuidance": null
+      },
+      "note": "The consumed action 77777777-... is gone; a new Instruction identity carries the non-equivalent alternative. The subsequent full state—not the acknowledgement—is authoritative UI state. (PROTOCOL_V2.md §7)"
+    }
+  ],
+  "outcome": "accepted consumes the one-use actionId; the acknowledgement is serialized before the resulting state; the action never reappears."
+}

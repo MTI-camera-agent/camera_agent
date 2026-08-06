@@ -1,0 +1,95 @@
+{
+  "$comment": "Golden conversation for the HelloCamera phone-client conformance kit. Meta-format: docs/conformance/README.md.",
+  "id": "ACT-I03",
+  "area": "actions",
+  "title": "Reusing a messageId with different content yields protocol_error_v2 invalid_message",
+  "assertions": ["W08"],
+  "valid": false,
+  "rejection": {
+    "at": 4,
+    "kind": "semantic",
+    "checker": "check_action_message_id_reuse",
+    "rule": "Exact replay of the same user_action_v2.messageId with identical payload returns the cached disposition; reuse with different content produces protocol_error_v2 invalid_message. (PROTOCOL_V2.md §7)",
+    "effect": "The phone's contradictory retransmission is rejected. The actionId in the first transmission is not re-executed."
+  },
+  "summary": "The phone transmits a user_action_v2, then reuses the same messageId with a different actionId. The second transmission is a contradictory reuse, not a replay; it yields protocol_error_v2 invalid_message.",
+  "steps": [
+    {
+      "n": 1,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "protocol_v2_accept",
+        "version": 2,
+        "messageId": "22222222-2222-4222-8222-222222222222",
+        "timestampMs": 1785123456000,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "resumed": false,
+        "capabilities": ["camera_agent_interaction_v2", "generated_visual_guidance_v2"]
+      },
+      "note": "Accepted sessionId. (PROTOCOL_V2.md §4.2)"
+    },
+    {
+      "n": 2,
+      "from": "desktop",
+      "to": "phone",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "coaching_state_v2",
+        "version": 2,
+        "messageId": "44444444-4444-4444-8444-4444444444f1",
+        "timestampMs": 1785123465100,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "stateRevision": 1,
+        "taskId": "55555555-5555-4555-8555-555555555555",
+        "acceptedIntention": "A confident full-body portrait at sunset",
+        "phase": "coaching",
+        "instruction": {"instructionId": "66666666-6666-4666-8666-666666666666", "kind": "action", "text": "Photographer: move one step to your left.", "addressee": "photographer", "freshness": "current"},
+        "activity": null,
+        "overlays": null,
+        "availableActions": [
+          {"actionId": "77777777-7777-4777-8777-777777777777", "kind": "try_another_suggestion", "target": {"kind": "instruction", "id": "66666666-6666-4666-8666-666666666666"}},
+          {"actionId": "88888888-8888-4888-8888-888888888888", "kind": "pause_coaching", "target": {"kind": "task", "id": "55555555-5555-4555-8555-555555555555"}}
+        ],
+        "visualGuidance": null
+      },
+      "note": "A valid coaching state with two offered actions."
+    },
+    {
+      "n": 3,
+      "from": "phone",
+      "to": "desktop",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "user_action_v2",
+        "version": 2,
+        "messageId": "99999999-9999-4999-8999-9999999999c1",
+        "timestampMs": 1785123465300,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "actionId": "77777777-7777-4777-8777-777777777777"
+      },
+      "note": "First transmission of messageId 99999999-...c1 invokes actionId 77777777-...."
+    },
+    {
+      "n": 4,
+      "from": "phone",
+      "to": "desktop",
+      "frame": "text",
+      "schema": "v2",
+      "message": {
+        "type": "user_action_v2",
+        "version": 2,
+        "messageId": "99999999-9999-4999-8999-9999999999c1",
+        "timestampMs": 1785123465400,
+        "sessionId": "33333333-3333-4333-8333-333333333333",
+        "actionId": "88888888-8888-4888-8888-888888888888"
+      },
+      "note": "Same messageId, different actionId content. This is a contradictory reuse, not an exact replay. The desktop returns protocol_error_v2 invalid_message. (PROTOCOL_V2.md §7)"
+    }
+  ],
+  "outcome": "The contradictory retransmission is rejected with protocol_error_v2 invalid_message. Neither actionId is executed twice."
+}
