@@ -1,9 +1,14 @@
-"""The first tracer-bullet ``CoachingRuntime`` implementation (issue #21).
+"""The tracer-bullet ``CoachingRuntime`` implementation (issues #21–#23).
 
 This is the concrete realization of the dormant v2 ``CoachingRuntime``
-Interface for the *first* coaching tracer bullet: ordered admission from no
-intention through Task creation and initial Strategy completion to one
-persistent Instruction or immediate evidence-backed Ready.
+Interface. The first tracer bullet (#21) admitted ordered semantic events from
+no intention through Task creation and initial Strategy completion to one
+persistent Instruction or immediate evidence-backed Ready. Issue #22 added
+deterministic frame-signal measurement and asymmetric Settled hysteresis. Issue
+#23 adds progress assessment: every accepted settled view produces one
+Evidence Snapshot assessing each Must-have once, and the achieved / improving /
+deviating / Ready policies preserve immutable Instruction semantics while
+keeping Nice-to-haves from instructing or blocking Ready.
 
 Scope (issue #21 acceptance criteria):
 
@@ -42,12 +47,14 @@ from .contracts import (
     CoachingProjection,
     IntentionAcceptedEvent,
     ObservationReceivedEvent,
+    ReasonerProgressEvent,
     Receipt,
     ReceiptDisposition,
     ReasonerStrategyEvent,
     RuntimeEvent,
     RuntimeOutput,
     TaskEndedEvent,
+    UserCaptureEvent,
 )
 from .identity import (
     AnalysisPurpose,
@@ -58,6 +65,8 @@ from .identity import (
 from .seams import (
     AdapterFailure,
     ContextImage,
+    ProgressContextPack,
+    ProgressEvidence,
     StrategyContextPack,
     StrategyProposal,
 )
@@ -77,6 +86,7 @@ from .values import (
     EvidenceState,
     FrameSignals,
     Instruction,
+    InstructionDisposition,
     InstructionFreshness,
     InstructionKind,
     Mode,
@@ -149,11 +159,14 @@ class _CoachingRuntime:
         self._evidence: EvidenceIdentity | None = None
         self._strategy: ShotStrategy | None = None
         self._instruction: Instruction | None = None
+        self._instruction_criterion_id: UUID | None = None
+        self._instruction_dispositions: dict[UUID, InstructionDisposition] = {}
         self._readiness: Readiness | None = None
         self._analysis = AnalysisState.IDLE
         self._analysis_purpose: AnalysisPurpose | None = None
         self._authoritative_run: Provenance | None = None
         self._last_snapshot: EvidenceSnapshot | None = None
+        self._previous_snapshot: EvidenceSnapshot | None = None
 
         # Settling hysteresis (spec §4.3). The runtime emits a new Evidence
         # identity only when configurable mutually equivalent post-change
@@ -196,11 +209,17 @@ class _CoachingRuntime:
             if self._closed:
                 # Closed runtime: authority is invalidated; any late submission
                 # is a harmless stale discard.
-                return Receipt(event_id=event.event_id, order=order,
-                                disposition=ReceiptDisposition.STALE)
+                return Receipt(
+                    event_id=event.event_id,
+                    order=order,
+                    disposition=ReceiptDisposition.STALE,
+                )
             if event.event_id in self._seen_event_ids:
-                return Receipt(event_id=event.event_id, order=order,
-                                disposition=ReceiptDisposition.DUPLICATE)
+                return Receipt(
+                    event_id=event.event_id,
+                    order=order,
+                    disposition=ReceiptDisposition.DUPLICATE,
+                )
             self._seen_event_ids.add(event.event_id)
             effect_specs, outputs, disposition = self._apply(event)
             for output in outputs:
@@ -209,7 +228,7 @@ class _CoachingRuntime:
         # Launch effects only after state commit + output enqueue so async work
         # never mutates state or writes ahead of the committed projection.
         for spec in pending:
-            self._launch_strategy_effect(spec[0], spec[1])
+            self._launch_reasoner_effect(spec[0], spec[1])
         return Receipt(event_id=event.event_id, order=order, disposition=disposition)
 
     async def outputs(self):
@@ -304,23 +323,35 @@ class _CoachingRuntime:
 
         instruction = projection.instruction
         instruction_key = (
-            instruction.instruction_id,
-            instruction.kind,
-            instruction.text,
-            instruction.addressee,
-            instruction.freshness,
-        ) if instruction is not None else None
+            (
+                instruction.instruction_id,
+                instruction.kind,
+                instruction.text,
+                instruction.addressee,
+                instruction.freshness,
+            )
+            if instruction is not None
+            else None
+        )
         readiness = projection.readiness
         readiness_key = (
-            readiness.state,
-            readiness.evidence_snapshot_id,
-            readiness.supporting_evidence_id,
-        ) if readiness is not None else None
+            (
+                readiness.state,
+                readiness.evidence_snapshot_id,
+                readiness.supporting_evidence_id,
+            )
+            if readiness is not None
+            else None
+        )
         task = projection.task
         task_key = (
-            task.task_id,
-            task.strategy_revision,
-        ) if task is not None else None
+            (
+                task.task_id,
+                task.strategy_revision,
+            )
+            if task is not None
+            else None
+        )
         activity = projection.activity
         activity_key = (activity.kind, activity.text) if activity is not None else None
         return (
@@ -358,18 +389,19 @@ class _CoachingRuntime:
 
     def _derive_activity(self, phase: str) -> Activity:
         if phase == CoachingPhase.NEEDS_INTENTION:
-            return Activity(ActivityKind.WAITING,
-                            "Tell me what you'd like to photograph.")
+            return Activity(
+                ActivityKind.WAITING, "Tell me what you'd like to photograph."
+            )
         if phase == CoachingPhase.RECOVERING:
-            return Activity(ActivityKind.RECOVERING,
-                            "Reconnecting — hold still.")
+            return Activity(ActivityKind.RECOVERING, "Reconnecting — hold still.")
         if phase == CoachingPhase.PAUSED:
             return Activity(ActivityKind.WAITING, "Coaching is paused.")
         if phase == CoachingPhase.EVALUATING:
             return Activity(ActivityKind.WORKING, "Checking your progress.")
         if phase == CoachingPhase.ORIENTING:
-            return Activity(ActivityKind.WORKING,
-                            "Looking at the scene to plan your shot.")
+            return Activity(
+                ActivityKind.WORKING, "Looking at the scene to plan your shot."
+            )
         if phase == CoachingPhase.READY:
             return Activity(ActivityKind.WORKING, "Ready.")
         return Activity(ActivityKind.WORKING, "Coaching.")
@@ -389,13 +421,17 @@ class _CoachingRuntime:
             return self._apply_observation(event)
         if isinstance(event, ReasonerStrategyEvent):
             return self._apply_reasoner_strategy(event)
+        if isinstance(event, ReasonerProgressEvent):
+            return self._apply_reasoner_progress(event)
         if isinstance(event, AdapterFailureEvent):
             return self._apply_adapter_failure(event)
+        if isinstance(event, UserCaptureEvent):
+            return self._apply_user_capture(event)
         if isinstance(event, TaskEndedEvent):
             return self._apply_task_ended(event)
-        # Events outside the tracer-bullet scope (pause/resume/capture/disconnect/
-        # progress/revision/editor/high-res) are admitted as harmless no-ops and
-        # land in later v2 tickets. They never mutate coaching state here.
+        # Events outside the current scope (pause/resume/disconnect/revision/
+        # editor/high-res) are admitted as harmless no-ops and land in later
+        # v2 tickets. They never mutate coaching state here.
         return [], [], ReceiptDisposition.ADMITTED
 
     def _apply_intention(self, event: IntentionAcceptedEvent):
@@ -404,6 +440,7 @@ class _CoachingRuntime:
         # allocates a fresh application-owned Task. Post-intention Evidence is
         # required before any reasoning, so evidence is cleared too.
         self._task_epoch += 1
+        self._close_instruction(InstructionDisposition.TASK_ENDED)
         self._task = Task(
             task_epoch=self._task_epoch,
             task_id=new_identity(),
@@ -427,8 +464,10 @@ class _CoachingRuntime:
         self._evidence = None
         self._strategy = None
         self._instruction = None
+        self._instruction_criterion_id = None
         self._readiness = None
         self._last_snapshot = None
+        self._previous_snapshot = None
         self._analysis = AnalysisState.IDLE
         self._analysis_purpose = None
         self._authoritative_run = None
@@ -539,7 +578,9 @@ class _CoachingRuntime:
         self._settling_first_arrival = now
 
     def _maybe_settle(
-        self, observation: Observation, now: float,
+        self,
+        observation: Observation,
+        now: float,
     ) -> tuple[list, list, ReceiptDisposition]:
         policy = self._config.settled
         span = (
@@ -547,7 +588,10 @@ class _CoachingRuntime:
             if self._settling_first_arrival is not None
             else 0.0
         )
-        if self._settling_count < policy.confirmation_count or span < policy.dwell_seconds:
+        if (
+            self._settling_count < policy.confirmation_count
+            or span < policy.dwell_seconds
+        ):
             return [], self._emit(), ReceiptDisposition.ADMITTED
         # Settled: allocate an application-authored Evidence identity bound to
         # this exact observation and admit it. Overlays remain bound to this
@@ -568,22 +612,24 @@ class _CoachingRuntime:
         return effects, self._emit(), ReceiptDisposition.ADMITTED
 
     def _request_work_for_settled_evidence(
-        self, evidence: EvidenceIdentity,
+        self,
+        evidence: EvidenceIdentity,
     ) -> list[tuple[Provenance, StrategyContextPack]]:
         """Request the priority-appropriate reasoning run for fresh Evidence.
 
         With no Strategy yet, fresh settled Evidence requests orientation. With
-        an admitted Strategy and an active Instruction, a material evaluation
-        would be requested here; full progress evaluation admission lands in a
-        later ticket (#23), so for now a fresh Evidence simply revalidates the
-        active Instruction's support (issue #22 AC4: deterministic signals may
-        request work) without launching a second VLM call.
+        an admitted Strategy, fresh settled Evidence requests a material progress
+        evaluation (#23): every accepted settled view produces one Evidence
+        Snapshot assessing each Must-have once, and the achieved / improving /
+        deviating / Ready policies preserve immutable Instruction semantics.
         """
 
         effects: list[tuple[Provenance, StrategyContextPack]] = []
-        if (self._strategy is None
-                and self._analysis is AnalysisState.IDLE
-                and self._authoritative_run is None):
+        if (
+            self._strategy is None
+            and self._analysis is AnalysisState.IDLE
+            and self._authoritative_run is None
+        ):
             run_id = new_identity()
             provenance = Provenance(
                 purpose=RemotePurpose.STRATEGY,
@@ -597,6 +643,26 @@ class _CoachingRuntime:
             self._analysis_purpose = AnalysisPurpose.ORIENT
             self._authoritative_run = provenance
             pack = self._build_strategy_pack(provenance, evidence)
+            effects.append((provenance, pack))
+        elif (
+            self._strategy is not None
+            and self._analysis is AnalysisState.IDLE
+            and self._authoritative_run is None
+        ):
+            run_id = new_identity()
+            provenance = Provenance(
+                purpose=RemotePurpose.PROGRESS,
+                run_id=run_id,
+                identities={
+                    "task": self._task.task_id,
+                    "evidence": evidence.evidence_id,
+                    "strategy": self._strategy.strategy_id,
+                },
+            )
+            self._analysis = AnalysisState.REQUESTED
+            self._analysis_purpose = AnalysisPurpose.EVALUATE
+            self._authoritative_run = provenance
+            pack = self._build_progress_pack(provenance, evidence)
             effects.append((provenance, pack))
         return effects
 
@@ -612,6 +678,7 @@ class _CoachingRuntime:
 
         self._evidence = None
         self._last_snapshot = None
+        self._previous_snapshot = None
         self._evidence_state = EvidenceState.MISSING
         self._settled_observation = None
         self._settling_baseline = None
@@ -628,7 +695,8 @@ class _CoachingRuntime:
             self._instruction.freshness is InstructionFreshness.CURRENT
         ):
             self._instruction = replace(
-                self._instruction, freshness=InstructionFreshness.NEEDS_REVALIDATION,
+                self._instruction,
+                freshness=InstructionFreshness.NEEDS_REVALIDATION,
             )
         if self._readiness is not None and (
             self._readiness.state is ReadinessState.READY
@@ -640,7 +708,8 @@ class _CoachingRuntime:
             self._instruction.freshness is InstructionFreshness.CURRENT
         ):
             self._instruction = replace(
-                self._instruction, freshness=InstructionFreshness.MAY_BE_OUTDATED,
+                self._instruction,
+                freshness=InstructionFreshness.MAY_BE_OUTDATED,
             )
         if self._readiness is not None and (
             self._readiness.state is ReadinessState.READY
@@ -678,18 +747,56 @@ class _CoachingRuntime:
         return [], outputs, ReceiptDisposition.ADMITTED
 
     def _apply_adapter_failure(self, event: AdapterFailureEvent):
-        # Tracer-bullet failure handling: a current failure clears the
-        # authoritative run and preserves any usable guidance; full scoped
-        # recovery/retry (U06) lands in a later ticket.
-        if (self._authoritative_run is not None
-                and event.provenance.run_id == self._authoritative_run.run_id):
-            self._reset_dependent_state()
+        # Failure handling: a current failure clears the authoritative run and
+        # either preserves usable guidance (progress failures mark the active
+        # Instruction/Readiness for revalidation without revoking it, per T08)
+        # or, for a strategy failure with no admitted guidance yet, clears
+        # dependent coaching state. Full scoped recovery/retry (U06) lands in a
+        # later ticket.
+        if (
+            self._authoritative_run is not None
+            and event.provenance.run_id == self._authoritative_run.run_id
+        ):
+            purpose = self._authoritative_run.purpose
+            if purpose is RemotePurpose.PROGRESS:
+                self._analysis = AnalysisState.IDLE
+                self._analysis_purpose = None
+                self._authoritative_run = None
+                self._mark_needs_revalidation()
+            else:
+                self._reset_dependent_state()
             return [], self._emit(), ReceiptDisposition.ADMITTED
         return [], [], ReceiptDisposition.STALE
+
+    def _apply_user_capture(self, event: UserCaptureEvent):
+        # A local user capture is neutrally acknowledged, invalidates analysis
+        # tied to an older view, and requires fresh live Evidence. It MUST NOT
+        # be interpreted as achievement, rejection, refusal, or "too soon."
+        # Capture marks any Ready for revalidation without revoking it (T08);
+        # fresh Settled Evidence later reconfirms or replaces it through a
+        # progress assessment. The full neutral acknowledgement output (U04/U05)
+        # lands in a later ticket; this handler owns only the state transition.
+        if self._task is None or event.task_id != self._task.task_id:
+            return [], [], ReceiptDisposition.STALE
+        self._evidence = None
+        self._last_snapshot = None
+        self._previous_snapshot = None
+        self._evidence_state = EvidenceState.MISSING
+        self._settled_observation = None
+        self._settling_baseline = None
+        self._settling_count = 0
+        self._settling_first_arrival = None
+        if self._authoritative_run is not None:
+            self._analysis = AnalysisState.IDLE
+            self._analysis_purpose = None
+            self._authoritative_run = None
+        self._mark_needs_revalidation()
+        return [], self._emit(), ReceiptDisposition.ADMITTED
 
     def _apply_task_ended(self, event: TaskEndedEvent):
         if self._task is None or event.task_id != self._task.task_id:
             return [], [], ReceiptDisposition.STALE
+        self._close_instruction(InstructionDisposition.TASK_ENDED)
         self._task = None
         self._reset_dependent_state()
         return [], self._emit(), ReceiptDisposition.ADMITTED
@@ -697,7 +804,9 @@ class _CoachingRuntime:
     # --- strategy admission (assigns application-authored IDs) -----------
 
     def _build_strategy_pack(
-        self, provenance: Provenance, evidence: EvidenceIdentity,
+        self,
+        provenance: Provenance,
+        evidence: EvidenceIdentity,
     ) -> StrategyContextPack:
         # Tracer-bullet limitation: the ObservationAssembler that supplies real
         # preview dimensions lands in a later ticket. The scripted Reasoner is
@@ -721,7 +830,9 @@ class _CoachingRuntime:
             explicit_visual_request=False,
         )
 
-    def _admit_strategy(self, proposal: StrategyProposal) -> tuple[ShotStrategy, EvidenceSnapshot]:
+    def _admit_strategy(
+        self, proposal: StrategyProposal
+    ) -> tuple[ShotStrategy, EvidenceSnapshot]:
         """Atomically validate the proposal and assign application-authored IDs.
 
         The Reasoner proposes Criteria (no ids) and must-have assessments. The
@@ -741,17 +852,21 @@ class _CoachingRuntime:
                 CandidateAction(text=action_text)
                 for action_text in proposed.candidate_actions
             )
-            criteria.append(Criterion(
-                criterion_id=criterion_id,
-                importance=CriterionImportance(proposed.importance),
-                priority=proposed.priority,
-                observable_target=proposed.observable_target,
-                candidate_actions=actions,
-                responsible_actor=actor,
-                constraints=tuple(proposed.constraints),
-            ))
+            criteria.append(
+                Criterion(
+                    criterion_id=criterion_id,
+                    importance=CriterionImportance(proposed.importance),
+                    priority=proposed.priority,
+                    observable_target=proposed.observable_target,
+                    candidate_actions=actions,
+                    responsible_actor=actor,
+                    constraints=tuple(proposed.constraints),
+                )
+            )
         if len(must_have_indices) != len(proposal.must_have_assessments):
-            raise ValueError("must-have assessments must cover every proposed must-have")
+            raise ValueError(
+                "must-have assessments must cover every proposed must-have"
+            )
         strategy_id = new_identity()
         strategy = ShotStrategy(
             strategy_id=strategy_id,
@@ -786,6 +901,10 @@ class _CoachingRuntime:
         return True
 
     def _derive_ready(self, snapshot: EvidenceSnapshot) -> None:
+        # A ready Instruction is immutable for its identity. On reconfirmation
+        # the caller preserves the exact identity (T08); this helper allocates a
+        # *new* ready Instruction, used on first derivation from Strategy or
+        # from an accepted regression that replaces a prior Ready.
         evidence_id = self._evidence.evidence_id  # type: ignore[union-attr]
         self._instruction = Instruction(
             instruction_id=new_identity(),
@@ -798,44 +917,316 @@ class _CoachingRuntime:
             evidence_snapshot_id=snapshot.snapshot_id,
             supporting_evidence_id=evidence_id,
         )
+        self._instruction_criterion_id = None
 
-    def _derive_first_action(self, strategy: ShotStrategy, snapshot: EvidenceSnapshot) -> None:
+    def _derive_first_action(
+        self, strategy: ShotStrategy, snapshot: EvidenceSnapshot
+    ) -> None:
         # Issue one actionable Instruction for the highest-priority unmet
         # must-have (lowest priority value = highest priority). If every
         # must-have is achieved the admission path would have derived Ready.
-        unmet: list[Criterion] = []
-        for criterion in strategy.criteria:
-            if criterion.importance is not CriterionImportance.MUST_HAVE:
-                continue
-            assessment = self._find_assessment(snapshot, criterion.criterion_id)
-            if (assessment is None
-                    or assessment.classification is not CriterionClassification.ACHIEVED):
-                unmet.append(criterion)
-        if not unmet:
+        if self._can_derive_ready(snapshot):
             self._derive_ready(snapshot)
             return
-        target = min(unmet, key=lambda c: c.priority)
-        if not target.candidate_actions:
+        target = self._highest_unmet_must_have(snapshot)
+        if target is None or not target.candidate_actions:
             # No feasible action available; keep orienting truthfully rather
             # than fabricating an Instruction. Full blocked-action handling
             # (P06) lands in a later ticket.
             self._instruction = None
+            self._instruction_criterion_id = None
             self._readiness = None
             return
-        action = target.candidate_actions[0]
-        self._instruction = Instruction(
-            instruction_id=new_identity(),
-            kind=InstructionKind.ACTION,
-            text=action.text,
-            addressee=action.responsible_actor or target.responsible_actor,
-        )
-        self._readiness = None
+        self._derive_action_for_criterion(target)
 
     def _find_assessment(self, snapshot: EvidenceSnapshot, criterion_id: UUID):
         for assessment in snapshot.must_have_assessments:
             if assessment.criterion_id == criterion_id:
                 return assessment
         return None
+
+    # --- progress assessment and policy (#23) ----------------------------
+
+    def _build_progress_pack(
+        self,
+        provenance: Provenance,
+        evidence: EvidenceIdentity,
+    ) -> ProgressContextPack:
+        # Same tracer-bullet limitation as the strategy pack: a structurally
+        # valid placeholder ContextImage keeps provenance correct without
+        # fabricating semantic content. The previous compatible preview is
+        # the prior snapshot's source bytes when one is retained.
+        current_image = ContextImage(
+            image_id=new_identity(),
+            bytes_hash=evidence.source_bytes_hash,
+            width=1,
+            height=1,
+        )
+        previous_image: ContextImage | None = None
+        if self._previous_snapshot is not None:
+            previous_image = ContextImage(
+                image_id=new_identity(),
+                bytes_hash=self._previous_snapshot.evidence.source_bytes_hash,
+                width=1,
+                height=1,
+            )
+        active_text = self._instruction.text if self._instruction is not None else None
+        return ProgressContextPack(
+            provenance=provenance,
+            strategy=self._strategy,  # type: ignore[arg-type]
+            active_instruction_text=active_text,
+            evidence=evidence,
+            current_image=current_image,
+            previous_image=previous_image,
+        )
+
+    def _apply_reasoner_progress(self, event: ReasonerProgressEvent):
+        # Only a current-token progress completion may act. Stale, late, or
+        # orphaned completions are harmless dispositions.
+        if not self._is_current_run(event.provenance):
+            return [], [], ReceiptDisposition.STALE
+        assert (
+            self._task is not None
+            and self._evidence is not None
+            and self._strategy is not None
+        )
+        try:
+            snapshot = self._admit_progress(event.evidence)
+        except (ValueError, TypeError):
+            # Atomic admission: malformed/incomplete progress is rejected, not
+            # partially repaired. Prior guidance is preserved (issue #23 P01)
+            # and the authoritative run is cleared so a fresh Settled Evidence
+            # may request a new evaluation.
+            self._analysis = AnalysisState.IDLE
+            self._analysis_purpose = None
+            self._authoritative_run = None
+            return [], self._emit(), ReceiptDisposition.MALFORMED
+        # Retain at most one previous compatible snapshot for the next
+        # progress Context Pack (spec §4.4 / §6.4).
+        self._previous_snapshot = self._last_snapshot
+        self._last_snapshot = snapshot
+        self._analysis = AnalysisState.IDLE
+        self._analysis_purpose = None
+        self._authoritative_run = None
+        self._apply_progress_policy(snapshot)
+        outputs = self._emit()
+        return [], outputs, ReceiptDisposition.ADMITTED
+
+    def _admit_progress(self, evidence: ProgressEvidence) -> EvidenceSnapshot:
+        """Atomically validate progress and assign the application-authored
+        Snapshot identity.
+
+        Every Must-have is assessed exactly once against the same current
+        compatible Evidence, with bounded grounding, finite or null
+        confidence, bounded typed uncertainty, and a typed blocked reason when
+        applicable. ``CriterionAssessment`` construction enforces the per-row
+        bounds; this method enforces must-have coverage, unique references, and
+        valid criterion references. Nice-to-have assessments are diagnostic only
+        and never block Ready or produce an Instruction (P02). Malformed output
+        raises and is rejected atomically (P01).
+        """
+        strategy = self._strategy  # type: ignore[assignment]
+        must_have_ids = {
+            c.criterion_id
+            for c in strategy.criteria
+            if c.importance is CriterionImportance.MUST_HAVE
+        }
+        assessed_ids = [a.criterion_id for a in evidence.must_have_assessments]
+        if len(set(assessed_ids)) != len(assessed_ids):
+            raise ValueError("must-have criterion references must be unique")
+        if set(assessed_ids) != must_have_ids:
+            raise ValueError("progress must assess every must-have exactly once")
+        nice_ids = {
+            c.criterion_id
+            for c in strategy.criteria
+            if c.importance is CriterionImportance.NICE_TO_HAVE
+        }
+        nice_assessed_ids = [a.criterion_id for a in evidence.nice_to_have_assessments]
+        if len(set(nice_assessed_ids)) != len(nice_assessed_ids):
+            raise ValueError("nice-to-have criterion references must be unique")
+        for cid in nice_assessed_ids:
+            if cid not in nice_ids:
+                raise ValueError("nice-to-have assessment references unknown criterion")
+        return EvidenceSnapshot(
+            snapshot_id=new_identity(),
+            evidence=self._evidence,  # type: ignore[arg-type]
+            task_id=self._task.task_id,  # type: ignore[union-attr]
+            strategy_id=strategy.strategy_id,
+            must_have_assessments=evidence.must_have_assessments,
+            nice_to_have_assessments=evidence.nice_to_have_assessments,
+            applicability=evidence.applicability,
+        )
+
+    def _apply_progress_policy(self, snapshot: EvidenceSnapshot) -> None:
+        """Apply the achieved / improving / deviating / Ready policies.
+
+        Nice-to-haves never instruct or block Ready (P02). Ready is derived only
+        when every Must-have is achieved at the configured threshold in the same
+        Evidence (T07). Improving preserves the exact Instruction identity and
+        text (T05). Achieved closes once and advances to the highest-priority
+        unmet Must-have (T06). A higher-priority deviating Must-have may preempt
+        with one corrective Instruction (P05). Ready regression may replace Ready
+        with one corrective Instruction; reconfirmation preserves identity
+        (T08). At most one Instruction is ever active (no stacked instructions).
+        """
+        if self._can_derive_ready(snapshot):
+            self._reconfirm_or_derive_ready(snapshot)
+            return
+        active = self._instruction
+        if active is not None and active.kind is InstructionKind.READY:
+            # T08 accepted regression: replace Ready with one corrective action
+            # Instruction for the highest-priority non-achieved Must-have.
+            self._close_instruction(InstructionDisposition.SUPERSEDED)
+            self._readiness = None
+            target = self._highest_unmet_must_have(snapshot)
+            if target is not None and target.candidate_actions:
+                self._derive_action_for_criterion(target)
+            else:
+                self._instruction_criterion_id = None
+            return
+        # active is an action Instruction (or none).
+        preempt = self._highest_deviating_above(
+            snapshot, self._instruction_criterion_id
+        )
+        if preempt is not None:
+            # P05: a higher-priority deviating Must-have preempts the current
+            # action Instruction with one corrective Instruction.
+            self._close_instruction(InstructionDisposition.SUPERSEDED)
+            self._readiness = None
+            self._derive_action_for_criterion(preempt)
+            return
+        active_criterion_id = self._instruction_criterion_id
+        if active_criterion_id is not None:
+            assessment = self._find_assessment(snapshot, active_criterion_id)
+            if (
+                assessment is not None
+                and assessment.classification is CriterionClassification.ACHIEVED
+            ):
+                # T06: close the achieved Instruction once and advance to the
+                # highest-priority unmet Must-have. Ready was already ruled
+                # out at the top of this method, so at least one other
+                # Must-have remains unmet here.
+                self._close_instruction(InstructionDisposition.ACHIEVED)
+                target = self._highest_unmet_must_have(snapshot)
+                if target is not None and target.candidate_actions:
+                    self._derive_action_for_criterion(target)
+                else:
+                    self._instruction_criterion_id = None
+                return
+            # T05: improving or still-insufficient — preserve the exact
+            # Instruction identity and text. Revalidation against fresh
+            # Evidence restores freshness to CURRENT (Activity may change;
+            # trajectory coalesces boundedly).
+            self._refresh_current_freshness()
+            return
+        # No active Instruction but a Strategy exists (e.g., a prior blocked
+        # Criterion had no feasible action): derive an action for the
+        # highest-priority unmet Must-have, or Ready (handled above).
+        self._derive_first_action(self._strategy, snapshot)  # type: ignore[arg-type]
+
+    def _reconfirm_or_derive_ready(self, snapshot: EvidenceSnapshot) -> None:
+        active = self._instruction
+        if active is not None and active.kind is InstructionKind.READY:
+            # T08 reconfirmation: preserve the exact ready Instruction identity
+            # and text; refresh freshness to CURRENT and re-bind Readiness to
+            # the new current compatible Evidence Snapshot.
+            self._instruction = replace(
+                active,
+                freshness=InstructionFreshness.CURRENT,
+            )
+            self._readiness = Readiness(
+                state=ReadinessState.READY,
+                evidence_snapshot_id=snapshot.snapshot_id,
+                supporting_evidence_id=self._evidence.evidence_id,  # type: ignore[union-attr]
+            )
+            return
+        # First Ready derivation from progress: close any active action
+        # Instruction as superseded, then allocate a new ready Instruction.
+        if active is not None:
+            self._close_instruction(InstructionDisposition.SUPERSEDED)
+        self._derive_ready(snapshot)
+
+    def _refresh_current_freshness(self) -> None:
+        if (
+            self._instruction is not None
+            and self._instruction.freshness is not InstructionFreshness.CURRENT
+        ):
+            self._instruction = replace(
+                self._instruction,
+                freshness=InstructionFreshness.CURRENT,
+            )
+
+    def _close_instruction(self, disposition: InstructionDisposition) -> None:
+        """Record exactly one terminal disposition for the active Instruction.
+
+        A closed Instruction records exactly one disposition (achieved,
+        superseded, rejected, irrelevant, or task_ended). The active lane is
+        cleared; the disposition history is retained for invariant checking.
+        """
+        if self._instruction is None:
+            return
+        iid = self._instruction.instruction_id
+        if iid not in self._instruction_dispositions:
+            self._instruction_dispositions[iid] = disposition
+        self._instruction = None
+        self._instruction_criterion_id = None
+
+    def _derive_action_for_criterion(self, criterion: Criterion) -> None:
+        action = criterion.candidate_actions[0]
+        self._instruction = Instruction(
+            instruction_id=new_identity(),
+            kind=InstructionKind.ACTION,
+            text=action.text,
+            addressee=action.responsible_actor or criterion.responsible_actor,
+        )
+        self._instruction_criterion_id = criterion.criterion_id
+        self._readiness = None
+
+    def _highest_unmet_must_have(
+        self,
+        snapshot: EvidenceSnapshot,
+    ) -> Criterion | None:
+        unmet: list[Criterion] = []
+        for criterion in self._strategy.criteria:  # type: ignore[union-attr]
+            if criterion.importance is not CriterionImportance.MUST_HAVE:
+                continue
+            assessment = self._find_assessment(snapshot, criterion.criterion_id)
+            if (
+                assessment is None
+                or assessment.classification is not CriterionClassification.ACHIEVED
+            ):
+                unmet.append(criterion)
+        if not unmet:
+            return None
+        return min(unmet, key=lambda c: c.priority)
+
+    def _highest_deviating_above(
+        self,
+        snapshot: EvidenceSnapshot,
+        active_criterion_id: UUID | None,
+    ) -> Criterion | None:
+        # P05: a Must-have with strictly higher priority (lower priority value)
+        # than the active Criterion that classifies ``deviating`` may preempt.
+        active_priority: int | None = None
+        if active_criterion_id is not None:
+            for criterion in self._strategy.criteria:  # type: ignore[union-attr]
+                if criterion.criterion_id == active_criterion_id:
+                    active_priority = criterion.priority
+                    break
+        deviating: list[Criterion] = []
+        for criterion in self._strategy.criteria:  # type: ignore[union-attr]
+            if criterion.importance is not CriterionImportance.MUST_HAVE:
+                continue
+            assessment = self._find_assessment(snapshot, criterion.criterion_id)
+            if (
+                assessment is not None
+                and assessment.classification is CriterionClassification.DEVIATING
+                and (active_priority is None or criterion.priority < active_priority)
+            ):
+                deviating.append(criterion)
+        if not deviating:
+            return None
+        return min(deviating, key=lambda c: c.priority)
 
     def _map_actor(self, actor: str | None):
         if actor is None:
@@ -860,19 +1251,31 @@ class _CoachingRuntime:
             current["task"] = self._task.task_id
         if self._evidence is not None:
             current["evidence"] = self._evidence.evidence_id
+        if self._strategy is not None:
+            current["strategy"] = self._strategy.strategy_id
         return provenance.is_current(current)
 
     # --- effect execution ------------------------------------------------
 
-    def _launch_strategy_effect(
-        self, provenance: Provenance, pack: StrategyContextPack,
+    def _launch_reasoner_effect(
+        self,
+        provenance: Provenance,
+        pack: StrategyContextPack | ProgressContextPack,
     ) -> None:
-        task = asyncio.create_task(self._run_strategy(provenance, pack))
+        if provenance.purpose is RemotePurpose.STRATEGY:
+            task = asyncio.create_task(self._run_strategy(provenance, pack))  # type: ignore[arg-type]
+        elif provenance.purpose is RemotePurpose.PROGRESS:
+            task = asyncio.create_task(self._run_progress(provenance, pack))  # type: ignore[arg-type]
+        else:
+            # Revision/other reasoner effects land in later tickets.
+            return
         self._effect_tasks.add(task)
         task.add_done_callback(self._effect_tasks.discard)
         task.add_done_callback(_retrieve_exception)
 
-    async def _run_strategy(self, provenance: Provenance, pack: StrategyContextPack) -> None:
+    async def _run_strategy(
+        self, provenance: Provenance, pack: StrategyContextPack
+    ) -> None:
         try:
             outcome = await self._reasoner.propose_strategy(pack)
         except asyncio.CancelledError:
@@ -883,25 +1286,70 @@ class _CoachingRuntime:
                 provenance=provenance,
             )
         if isinstance(outcome, AdapterFailure):
-            await self.submit(AdapterFailureEvent(
-                event_id=new_identity(),
-                provenance=provenance,
-                failure=outcome.failure,
-                throttle_delay_seconds=outcome.throttle_delay_seconds,
-            ))
+            await self.submit(
+                AdapterFailureEvent(
+                    event_id=new_identity(),
+                    provenance=provenance,
+                    failure=outcome.failure,
+                    throttle_delay_seconds=outcome.throttle_delay_seconds,
+                )
+            )
         elif isinstance(outcome, StrategyProposal):
-            await self.submit(ReasonerStrategyEvent(
-                event_id=new_identity(),
-                provenance=provenance,
-                proposal=outcome,
-            ))
+            await self.submit(
+                ReasonerStrategyEvent(
+                    event_id=new_identity(),
+                    provenance=provenance,
+                    proposal=outcome,
+                )
+            )
         else:
             # Wrong outcome type for a strategy call is a contract violation.
-            await self.submit(AdapterFailureEvent(
-                event_id=new_identity(),
-                provenance=provenance,
+            await self.submit(
+                AdapterFailureEvent(
+                    event_id=new_identity(),
+                    provenance=provenance,
+                    failure=TypedFailure.INVALID_OUTPUT,
+                )
+            )
+
+    async def _run_progress(
+        self, provenance: Provenance, pack: ProgressContextPack
+    ) -> None:
+        try:
+            outcome = await self._reasoner.assess_progress(pack)
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # provider contract violation
+            outcome = AdapterFailure(
                 failure=TypedFailure.INVALID_OUTPUT,
-            ))
+                provenance=provenance,
+            )
+        if isinstance(outcome, AdapterFailure):
+            await self.submit(
+                AdapterFailureEvent(
+                    event_id=new_identity(),
+                    provenance=provenance,
+                    failure=outcome.failure,
+                    throttle_delay_seconds=outcome.throttle_delay_seconds,
+                )
+            )
+        elif isinstance(outcome, ProgressEvidence):
+            await self.submit(
+                ReasonerProgressEvent(
+                    event_id=new_identity(),
+                    provenance=provenance,
+                    evidence=outcome,
+                )
+            )
+        else:
+            # Wrong outcome type for a progress call is a contract violation.
+            await self.submit(
+                AdapterFailureEvent(
+                    event_id=new_identity(),
+                    provenance=provenance,
+                    failure=TypedFailure.INVALID_OUTPUT,
+                )
+            )
 
 
 __all__ = ["_CoachingRuntime"]

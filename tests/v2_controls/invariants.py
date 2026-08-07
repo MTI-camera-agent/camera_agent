@@ -60,8 +60,12 @@ def assert_coaching_projection_well_formed(projection: CoachingProjection) -> No
         raise InvariantViolation("Activity text must be nonempty")
     instruction = projection.instruction
     if instruction is not None and instruction.kind is InstructionKind.READY:
-        if projection.readiness is None or projection.readiness.state is not ReadinessState.READY:
-            raise InvariantViolation("a ready Instruction requires a READY Readiness record")
+        if projection.readiness is None:
+            raise InvariantViolation("a ready Instruction requires a Readiness record")
+        # The Ready *state* (ready vs needs_revalidation) is asserted by
+        # ``assert_ready_cites_current_evidence``; here we only require that
+        # a ready Instruction carries its Readiness record at all. Motion and
+        # capture may mark Ready for revalidation without revoking it (T08).
 
 
 def assert_at_most_one_active_instruction(projection: CoachingProjection) -> None:
@@ -79,7 +83,8 @@ def assert_at_most_one_active_instruction(projection: CoachingProjection) -> Non
     from camera_agent.v2.values import ActionTargetKind
 
     targeting = [
-        a for a in projection.available_actions
+        a
+        for a in projection.available_actions
         if a.target.kind is ActionTargetKind.INSTRUCTION
     ]
     for action in targeting:
@@ -102,9 +107,7 @@ def assert_instruction_immutable_for_identity(
     if a.instruction_id != b.instruction_id:
         raise InvariantViolation("identity must match to assert immutability")
     if a.content_tuple() != b.content_tuple():
-        raise InvariantViolation(
-            "Instruction content changed for the same identity"
-        )
+        raise InvariantViolation("Instruction content changed for the same identity")
 
 
 def assert_single_terminal_disposition(
@@ -118,7 +121,9 @@ def assert_single_terminal_disposition(
         )
 
 
-def assert_truthful_activity_when_no_instruction(projection: CoachingProjection) -> None:
+def assert_truthful_activity_when_no_instruction(
+    projection: CoachingProjection,
+) -> None:
     """Invariant §4.4: no Instruction implies truthful Activity or scoped recovery.
 
     When no persistent Instruction exists the projection MUST carry Activity
@@ -154,7 +159,10 @@ def assert_ready_cites_current_evidence(
         raise InvariantViolation("READY must be carried by a ready Instruction")
     if instruction.source_evidence_id is None:
         raise InvariantViolation("a ready Instruction must cite its source Evidence")
-    if readiness.evidence_snapshot_id is None or readiness.supporting_evidence_id is None:
+    if (
+        readiness.evidence_snapshot_id is None
+        or readiness.supporting_evidence_id is None
+    ):
         raise InvariantViolation("Ready requires a supporting Snapshot and Evidence")
     if snapshot is None:
         raise InvariantViolation("a supporting Evidence Snapshot must be supplied")
