@@ -36,9 +36,9 @@ from .values import (
     ActionTarget,
     Activity,
     AvailableAction,
-    EvidenceIdentity,
     GeneratedArtifact,
     Instruction,
+    Observation,
     OverlaySet,
     Readiness,
     Task,
@@ -52,7 +52,7 @@ class EventKind(StrEnum):
     """Discriminating kind for canonical ``RuntimeEvent`` values."""
 
     INTENTION_ACCEPTED = "intention_accepted"
-    EVIDENCE_SETTLED = "evidence_settled"
+    OBSERVATION_RECEIVED = "observation_received"
     USER_ACTION = "user_action"
     USER_CAPTURE = "user_capture"
     PAUSE_COACHING = "pause_coaching"
@@ -153,12 +153,21 @@ class IntentionAcceptedEvent:
 
 
 @dataclass(frozen=True, slots=True)
-class EvidenceSettledEvent:
-    """One accepted settled Evidence view admitted to the mailbox."""
+class ObservationReceivedEvent:
+    """One complete immutable observation admitted to the mailbox.
+
+    The transport-edge ``ObservationAssembler`` correlates observation metadata
+    and preview bytes using both ``imageMessageId`` and ``observationId`` and
+    emits exactly one complete context per joined observation. The runtime owns
+    deterministic frame measurement, material-change assessment, and asymmetric
+    Settled hysteresis: a new Evidence identity is emitted only when configurable
+    mutually equivalent post-change observations meet both a confirmation count
+    and a dwell duration. No detector, prompt, or result may combine fields or
+    bytes from different observations.
+    """
 
     event_id: UUID
-    evidence: EvidenceIdentity
-    task_id: UUID
+    observation: Observation
 
 
 @dataclass(frozen=True, slots=True)
@@ -301,7 +310,7 @@ class TaskEndedEvent:
 
 RuntimeEvent = Union[
     IntentionAcceptedEvent,
-    EvidenceSettledEvent,
+    ObservationReceivedEvent,
     UserActionEvent,
     UserCaptureEvent,
     PauseCoachingEvent,
@@ -323,7 +332,7 @@ def event_kind(event: RuntimeEvent) -> EventKind:
 
     mapping: dict[type, EventKind] = {
         IntentionAcceptedEvent: EventKind.INTENTION_ACCEPTED,
-        EvidenceSettledEvent: EventKind.EVIDENCE_SETTLED,
+        ObservationReceivedEvent: EventKind.OBSERVATION_RECEIVED,
         UserActionEvent: EventKind.USER_ACTION,
         UserCaptureEvent: EventKind.USER_CAPTURE,
         PauseCoachingEvent: EventKind.PAUSE_COACHING,
@@ -493,7 +502,7 @@ __all__ = [
     "EffectKind",
     "Receipt",
     "IntentionAcceptedEvent",
-    "EvidenceSettledEvent",
+    "ObservationReceivedEvent",
     "UserActionEvent",
     "UserCaptureEvent",
     "PauseCoachingEvent",

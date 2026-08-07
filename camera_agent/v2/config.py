@@ -117,6 +117,60 @@ class VisualDeadlines:
 
 
 @dataclass(frozen=True, slots=True)
+class FrameSignalPolicy:
+    """Versioned deterministic frame-signal and material-change thresholds.
+
+    These are the CPU-cheap deterministic signal crossings (spec §4.2). A hard
+    camera-context change (lens/orientation/frame dimensions), a material
+    preview/metadata delta, or a calibrated quality crossing immediately
+    invalidates settled Evidence. Deterministic signals MAY invalidate, request
+    reasoning, or enter a Context Pack; they MUST NOT establish semantic
+    achievement or Readiness. The values are inherited from the v1 material-
+    change thresholds and are explicitly **uncalibrated** until a documented
+    calibration run promotes them.
+    """
+
+    camera_hard_change_keys: tuple[str, ...] = (
+        "lensID",
+        "orientation",
+        "frameWidth",
+        "frameHeight",
+    )
+    visual_material_global_mae: float = 0.04
+    visual_material_block_mae: float = 0.10
+    visual_material_hash_distance: int = 6
+    visual_thumbnail_size: int = 64
+    visual_blur_radius: float = 1.0
+    visual_alignment_radius: int = 2
+    sharpness_regression_threshold: float = 0.15
+    luminance_change_threshold: float = 0.10
+    highlight_clipping_threshold: float = 0.02
+    shadow_clipping_threshold: float = 0.02
+
+    def __post_init__(self) -> None:
+        if not self.camera_hard_change_keys:
+            raise ValueError("at least one hard camera-context key is required")
+        for name, value in {
+            "visual_material_global_mae": self.visual_material_global_mae,
+            "visual_material_block_mae": self.visual_material_block_mae,
+            "sharpness_regression_threshold": self.sharpness_regression_threshold,
+            "luminance_change_threshold": self.luminance_change_threshold,
+            "highlight_clipping_threshold": self.highlight_clipping_threshold,
+            "shadow_clipping_threshold": self.shadow_clipping_threshold,
+        }.items():
+            if value <= 0:
+                raise ValueError(f"{name} must be positive")
+        if self.visual_material_hash_distance <= 0:
+            raise ValueError("visual_material_hash_distance must be positive")
+        if self.visual_thumbnail_size < 8 or self.visual_thumbnail_size % 4:
+            raise ValueError("visual_thumbnail_size must be >= 8 and divisible by 4")
+        if self.visual_blur_radius < 0:
+            raise ValueError("visual_blur_radius must not be negative")
+        if self.visual_alignment_radius < 0:
+            raise ValueError("visual_alignment_radius must not be negative")
+
+
+@dataclass(frozen=True, slots=True)
 class SettledPolicy:
     """Versioned asymmetric Settled hysteresis.
 
@@ -364,6 +418,7 @@ class RuntimeConfig:
     reasoner_retry: ReasonerRetryPolicy = field(default_factory=ReasonerRetryPolicy)
     visual: VisualDeadlines = field(default_factory=VisualDeadlines)
     settled: SettledPolicy = field(default_factory=SettledPolicy)
+    frame_signals: FrameSignalPolicy = field(default_factory=FrameSignalPolicy)
     strategy: StrategyBounds = field(default_factory=StrategyBounds)
     context: ContextPackBounds = field(default_factory=ContextPackBounds)
     evidence_memory: EvidenceMemoryBounds = field(default_factory=EvidenceMemoryBounds)

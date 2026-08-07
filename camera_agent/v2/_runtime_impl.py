@@ -40,8 +40,8 @@ from .config import RuntimeConfig
 from .contracts import (
     AdapterFailureEvent,
     CoachingProjection,
-    EvidenceSettledEvent,
     IntentionAcceptedEvent,
+    ObservationReceivedEvent,
     Receipt,
     ReceiptDisposition,
     ReasonerStrategyEvent,
@@ -74,9 +74,13 @@ from .values import (
     CriterionImportance,
     EvidenceIdentity,
     EvidenceSnapshot,
+    EvidenceState,
+    FrameSignals,
     Instruction,
+    InstructionFreshness,
     InstructionKind,
     Mode,
+    Observation,
     Readiness,
     ReadinessState,
     ShotStrategy,
@@ -112,10 +116,18 @@ class _CoachingRuntime:
     state lanes, coordinates reducer steps, or bypasses completion admission.
     """
 
-    def __init__(self, config: RuntimeConfig, reasoner: Any, editor: Any) -> None:
+    def __init__(
+        self,
+        config: RuntimeConfig,
+        reasoner: Any,
+        editor: Any,
+        *,
+        signal_computer: Any = None,
+    ) -> None:
         self._config = config
         self._reasoner = reasoner
         self._editor = editor
+        self._signal_computer = signal_computer
 
         self._session_id = new_identity()
         self._lock = asyncio.Lock()
@@ -143,11 +155,31 @@ class _CoachingRuntime:
         self._authoritative_run: Provenance | None = None
         self._last_snapshot: EvidenceSnapshot | None = None
 
+        # Settling hysteresis (spec §4.3). The runtime emits a new Evidence
+        # identity only when configurable mutually equivalent post-change
+        # observations meet both a confirmation count and a dwell duration.
+        # ``_settled_observation`` is the exact analyzed observation Evidence
+        # and spatial overlays are bound to; ``_latest_observation`` is the
+        # newest view proven equivalent to it, which text MAY be projected
+        # against. A hard camera-context or material visual/quality change
+        # immediately invalidates settled Evidence, overlays, queued work, and
+        # the authoritative run token.
+        self._evidence_state = EvidenceState.MISSING
+        self._settling_baseline: Observation | None = None
+        self._settling_count = 0
+        self._settling_first_arrival: float | None = None
+        self._settled_observation: Observation | None = None
+        self._latest_observation: Observation | None = None
+        self._last_signals: FrameSignals | None = None
+        self._last_projection_key: tuple | None = None
+
         # The initial committed state (revision 0) is a complete immutable
         # projection: no intention -> needs_intention with truthful waiting
         # Activity and no reasoning. Emitted at construction so a caller that
         # never submits still observes the authoritative initial state.
-        self._output_queue.put_nowait(self._build_projection())
+        initial = self._build_projection()
+        self._output_queue.put_nowait(initial)
+        self._last_projection_key = self._projection_key(initial)
 
     # --- public Interface ------------------------------------------------
 
@@ -229,9 +261,19 @@ class _CoachingRuntime:
         self._next_order += 1
         return order
 
-    def _commit_projection(self) -> CoachingProjection:
+    def _commit_projection(self) -> CoachingProjection | None:
+        # Duplicate-projection suppression: emit a new projection only when the
+        # user-visible semantic content changed. Equivalent routine frames that
+        # coalesce without a new Evidence identity or instruction change produce
+        # no inference backlog. The committed revision advances only when the
+        # projection is actually emitted.
+        provisional = self._build_projection()
+        key = self._projection_key(provisional)
+        if self._last_projection_key is not None and key == self._last_projection_key:
+            return None
         self._next_revision += 1
-        return self._build_projection()
+        self._last_projection_key = key
+        return replace(provisional, state_revision=self._next_revision)
 
     def _build_projection(self) -> CoachingProjection:
         phase = self._derive_phase()
@@ -247,6 +289,48 @@ class _CoachingRuntime:
             available_actions=(),
             visual_guidance=None,
             readiness=self._readiness,
+        )
+
+    def _projection_key(self, projection: CoachingProjection) -> tuple:
+        """The committed semantic state of the runtime, ignoring revision.
+
+        Two consecutive reducer transitions that produce the same key are
+        duplicates and only the first is emitted. This implements duplicate-
+        projection suppression so equivalent routine frames that coalesce
+        without a new Evidence identity do not produce an inference backlog,
+        while real state transitions (settling, strategy requested, an
+        Instruction admitted, a freshness change) still emit a projection.
+        """
+
+        instruction = projection.instruction
+        instruction_key = (
+            instruction.instruction_id,
+            instruction.kind,
+            instruction.text,
+            instruction.addressee,
+            instruction.freshness,
+        ) if instruction is not None else None
+        readiness = projection.readiness
+        readiness_key = (
+            readiness.state,
+            readiness.evidence_snapshot_id,
+            readiness.supporting_evidence_id,
+        ) if readiness is not None else None
+        task = projection.task
+        task_key = (
+            task.task_id,
+            task.strategy_revision,
+        ) if task is not None else None
+        activity = projection.activity
+        activity_key = (activity.kind, activity.text) if activity is not None else None
+        return (
+            projection.phase,
+            task_key,
+            instruction_key,
+            activity_key,
+            readiness_key,
+            self._analysis,
+            self._analysis_purpose,
         )
 
     # --- phase / activity derivation (spec §3.2 first-matching rule) ------
@@ -301,8 +385,8 @@ class _CoachingRuntime:
         """
         if isinstance(event, IntentionAcceptedEvent):
             return self._apply_intention(event)
-        if isinstance(event, EvidenceSettledEvent):
-            return self._apply_evidence_settled(event)
+        if isinstance(event, ObservationReceivedEvent):
+            return self._apply_observation(event)
         if isinstance(event, ReasonerStrategyEvent):
             return self._apply_reasoner_strategy(event)
         if isinstance(event, AdapterFailureEvent):
@@ -330,15 +414,15 @@ class _CoachingRuntime:
         self._reset_dependent_state()
         self._mode = Mode.ACTIVE
         self._connection = ConnectionState.CONNECTED
-        outputs = [self._commit_projection()]
+        outputs = self._emit()
         return [], outputs, ReceiptDisposition.ADMITTED
 
     def _reset_dependent_state(self) -> None:
         """Clear every state lane that depends on the current Task/authority.
 
-        Used when a new intention, task end, or a current failure invalidates
-        the authoritative run. Mode/connection are not reset here; only the
-        Task-bound coaching lanes.
+        Used when a new intention, task end, a current failure, or a material
+        frame-signal change invalidates the authoritative run. Mode/connection
+        are not reset here; only the Task-bound coaching lanes.
         """
         self._evidence = None
         self._strategy = None
@@ -348,16 +432,154 @@ class _CoachingRuntime:
         self._analysis = AnalysisState.IDLE
         self._analysis_purpose = None
         self._authoritative_run = None
+        self._evidence_state = EvidenceState.MISSING
+        self._settling_baseline = None
+        self._settling_count = 0
+        self._settling_first_arrival = None
+        self._settled_observation = None
+        self._latest_observation = None
+        self._last_signals = None
 
-    def _apply_evidence_settled(self, event: EvidenceSettledEvent):
+    def _emit(self) -> list[RuntimeOutput]:
+        """Commit and enqueue a projection only if its content changed.
+
+        Implements duplicate-projection suppression so equivalent routine frames
+        that coalesce without a new Evidence identity do not produce an
+        inference backlog.
+        """
+        projection = self._commit_projection()
+        return [projection] if projection is not None else []
+
+    # --- observation settling (spec §4.2 / §4.3) -------------------------
+
+    def _apply_observation(self, event: ObservationReceivedEvent):
+        # A complete immutable observation is admitted to the mailbox. The
+        # runtime owns deterministic frame measurement, material-change
+        # assessment, and asymmetric Settled hysteresis. With no accepted task
+        # there is no coaching state to admit against; the observation is a
+        # harmless orphan (it cannot become authoritative coaching Evidence).
         if self._task is None:
-            # Settled evidence with no accepted intention is harmless; no
-            # coaching state to admit it against.
             return [], [], ReceiptDisposition.ORPHANED
-        if event.task_id != self._task.task_id:
-            # Evidence bound to an older task is stale.
-            return [], [], ReceiptDisposition.STALE
-        self._evidence = event.evidence
+        observation = event.observation
+        # Settled dwell is measured in arrival-time space: the span between the
+        # first post-change observation's transport-recorded arrival and the
+        # confirming observation's arrival. This decouples Settled from reducer
+        # processing latency so a delayed submit cannot skew the dwell.
+        now = observation.arrival_monotonic_seconds
+        reference = (
+            self._settled_observation
+            if self._evidence_state is EvidenceState.SETTLED
+            else self._settling_baseline
+        )
+        signals = (
+            self._signal_computer(reference, observation)
+            if self._signal_computer is not None and reference is not None
+            else FrameSignals(
+                decode_available=True,
+                material_change=False,
+                equivalent_to_reference=False,
+            )
+        )
+        self._last_signals = signals
+        self._latest_observation = observation
+
+        # Decode failure is conservative fail-open change handling: it
+        # immediately invalidates settled Evidence regardless of other signals.
+        # A hard camera-context or material visual/quality change likewise
+        # immediately invalidates Evidence, overlays, queued work, and the
+        # authoritative run token (spec §4.3 / issue #22 AC1).
+        if reference is None:
+            # First post-change frame: start a new settling period. Nothing
+            # authoritative exists to invalidate; this observation is the
+            # settling baseline.
+            self._begin_settling(observation, now)
+            return [], self._emit(), ReceiptDisposition.ADMITTED
+
+        if signals.material_change:
+            self._invalidate_settled(reasons=signals.material_reasons)
+            self._begin_settling(observation, now)
+            return [], self._emit(), ReceiptDisposition.ADMITTED
+
+        if signals.equivalent_to_reference:
+            if self._evidence_state is EvidenceState.SETTLED:
+                # Equivalent routine frame: coalesce without a new Evidence
+                # identity or queued call (issue #22 AC3). Text may be projected
+                # against this newest equivalent view while overlays remain
+                # bound to the exact analyzed observation (S11).
+                if signals.quality_crossing:
+                    # A calibrated quality crossing may request revalidation
+                    # only; it never establishes semantic achievement or Ready
+                    # (issue #22 AC4). It marks the supporting Instruction /
+                    # Readiness as needing revalidation.
+                    self._mark_needs_revalidation()
+                return [], self._emit(), ReceiptDisposition.ADMITTED
+            # Settling: count this equivalent post-change observation toward
+            # confirmation. A new Evidence identity is admitted only after at
+            # least two mutually equivalent post-change observations spanning
+            # at least 500 ms (issue #22 AC2).
+            self._settling_count += 1
+            if self._settling_first_arrival is None:
+                self._settling_first_arrival = now
+            return self._maybe_settle(observation, now)
+
+        # A non-equivalent, non-material drift: the scene is no longer
+        # equivalent to the current settled Evidence. It does not immediately
+        # invalidate the identity (only material/hard/quality crossings do),
+        # but it restarts settling so a fresh confirmed identity replaces it.
+        # The retained Instruction/Ready stays visible as ``may_be_outdated``
+        # until fresh settled Evidence is accepted (no flicker / revocation).
+        self._mark_may_be_outdated()
+        self._begin_settling(observation, now)
+        return [], self._emit(), ReceiptDisposition.ADMITTED
+
+    def _begin_settling(self, observation: Observation, now: float) -> None:
+        self._evidence_state = EvidenceState.SETTLING
+        self._settling_baseline = observation
+        self._settling_count = 1
+        self._settling_first_arrival = now
+
+    def _maybe_settle(
+        self, observation: Observation, now: float,
+    ) -> tuple[list, list, ReceiptDisposition]:
+        policy = self._config.settled
+        span = (
+            now - self._settling_first_arrival
+            if self._settling_first_arrival is not None
+            else 0.0
+        )
+        if self._settling_count < policy.confirmation_count or span < policy.dwell_seconds:
+            return [], self._emit(), ReceiptDisposition.ADMITTED
+        # Settled: allocate an application-authored Evidence identity bound to
+        # this exact observation and admit it. Overlays remain bound to this
+        # exact analyzed observation; text may use the newest equivalent view.
+        evidence = EvidenceIdentity(
+            evidence_id=new_identity(),
+            camera_context_id=new_identity(),
+            observation_id=observation.observation_id,
+            source_bytes_hash=observation.preview.bytes_hash,
+        )
+        self._evidence = evidence
+        self._settled_observation = observation
+        self._evidence_state = EvidenceState.SETTLED
+        self._settling_baseline = None
+        self._settling_count = 0
+        self._settling_first_arrival = None
+        effects = self._request_work_for_settled_evidence(evidence)
+        return effects, self._emit(), ReceiptDisposition.ADMITTED
+
+    def _request_work_for_settled_evidence(
+        self, evidence: EvidenceIdentity,
+    ) -> list[tuple[Provenance, StrategyContextPack]]:
+        """Request the priority-appropriate reasoning run for fresh Evidence.
+
+        With no Strategy yet, fresh settled Evidence requests orientation. With
+        an admitted Strategy and an active Instruction, a material evaluation
+        would be requested here; full progress evaluation admission lands in a
+        later ticket (#23), so for now a fresh Evidence simply revalidates the
+        active Instruction's support (issue #22 AC4: deterministic signals may
+        request work) without launching a second VLM call.
+        """
+
         effects: list[tuple[Provenance, StrategyContextPack]] = []
         if (self._strategy is None
                 and self._analysis is AnalysisState.IDLE
@@ -368,16 +590,62 @@ class _CoachingRuntime:
                 run_id=run_id,
                 identities={
                     "task": self._task.task_id,
-                    "evidence": event.evidence.evidence_id,
+                    "evidence": evidence.evidence_id,
                 },
             )
             self._analysis = AnalysisState.REQUESTED
             self._analysis_purpose = AnalysisPurpose.ORIENT
             self._authoritative_run = provenance
-            pack = self._build_strategy_pack(provenance, event.evidence)
+            pack = self._build_strategy_pack(provenance, evidence)
             effects.append((provenance, pack))
-        outputs = [self._commit_projection()]
-        return effects, outputs, ReceiptDisposition.ADMITTED
+        return effects
+
+    def _invalidate_settled(self, *, reasons: tuple[str, ...]) -> None:
+        """Immediately invalidate settled Evidence, overlays, queued work, run.
+
+        A hard camera-context or material visual/quality change invalidates
+        every Evidence-derived lane and the authoritative run token. The
+        persistent Instruction and Readiness are NOT revoked: their support is
+        marked ``needs_revalidation`` so guidance does not flicker, but stale
+        completions become harmless discards (issue #22 AC1).
+        """
+
+        self._evidence = None
+        self._last_snapshot = None
+        self._evidence_state = EvidenceState.MISSING
+        self._settled_observation = None
+        self._settling_baseline = None
+        self._settling_count = 0
+        self._settling_first_arrival = None
+        if self._authoritative_run is not None:
+            self._analysis = AnalysisState.IDLE
+            self._analysis_purpose = None
+            self._authoritative_run = None
+        self._mark_needs_revalidation()
+
+    def _mark_needs_revalidation(self) -> None:
+        if self._instruction is not None and (
+            self._instruction.freshness is InstructionFreshness.CURRENT
+        ):
+            self._instruction = replace(
+                self._instruction, freshness=InstructionFreshness.NEEDS_REVALIDATION,
+            )
+        if self._readiness is not None and (
+            self._readiness.state is ReadinessState.READY
+        ):
+            self._readiness = Readiness(state=ReadinessState.NEEDS_REVALIDATION)
+
+    def _mark_may_be_outdated(self) -> None:
+        if self._instruction is not None and (
+            self._instruction.freshness is InstructionFreshness.CURRENT
+        ):
+            self._instruction = replace(
+                self._instruction, freshness=InstructionFreshness.MAY_BE_OUTDATED,
+            )
+        if self._readiness is not None and (
+            self._readiness.state is ReadinessState.READY
+        ):
+            self._readiness = Readiness(state=ReadinessState.NEEDS_REVALIDATION)
 
     def _apply_reasoner_strategy(self, event: ReasonerStrategyEvent):
         # Only a current-token completion may act. Stale, late, or orphaned
@@ -406,7 +674,7 @@ class _CoachingRuntime:
             self._derive_ready(snapshot)
         else:
             self._derive_first_action(strategy, snapshot)
-        outputs = [self._commit_projection()]
+        outputs = self._emit()
         return [], outputs, ReceiptDisposition.ADMITTED
 
     def _apply_adapter_failure(self, event: AdapterFailureEvent):
@@ -416,7 +684,7 @@ class _CoachingRuntime:
         if (self._authoritative_run is not None
                 and event.provenance.run_id == self._authoritative_run.run_id):
             self._reset_dependent_state()
-            return [], [self._commit_projection()], ReceiptDisposition.ADMITTED
+            return [], self._emit(), ReceiptDisposition.ADMITTED
         return [], [], ReceiptDisposition.STALE
 
     def _apply_task_ended(self, event: TaskEndedEvent):
@@ -424,7 +692,7 @@ class _CoachingRuntime:
             return [], [], ReceiptDisposition.STALE
         self._task = None
         self._reset_dependent_state()
-        return [], [self._commit_projection()], ReceiptDisposition.ADMITTED
+        return [], self._emit(), ReceiptDisposition.ADMITTED
 
     # --- strategy admission (assigns application-authored IDs) -----------
 

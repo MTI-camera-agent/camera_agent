@@ -16,6 +16,7 @@ root.
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from enum import StrEnum
 from types import MappingProxyType
@@ -768,6 +769,165 @@ class VisualGuidanceSidecar:
                 raise ValueError("active job status requires a job entity")
 
 
+# --- Observation, camera context, and deterministic frame signals ----------
+
+
+@dataclass(frozen=True, slots=True)
+class CameraContext:
+    """Immutable camera-context metadata for one complete observation.
+
+    Carries the exact camera metadata that arrived with a preview. A hard
+    camera-context change (lens, orientation, frame dimensions) immediately
+    invalidates settled Evidence. Automatic exposure and white-balance shimmer
+    is ignored unless a calibrated quality signal shows a meaningful change.
+    The metadata mapping is frozen as an immutable view.
+    """
+
+    metadata: Mapping[str, Any]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.metadata, Mapping):
+            raise TypeError("camera context metadata must be a mapping")
+        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
+
+    @property
+    def hard_signature(self) -> tuple[Any, ...]:
+        """The keys whose change is a hard camera-context change.
+
+        Lens identity, orientation, and frame dimensions changing is a hard
+        invalidation: the runtime cannot treat the new view as equivalent to the
+        prior settled Evidence.
+        """
+
+        m = self.metadata
+        return (
+            m.get("lensID"),
+            m.get("orientation"),
+            m.get("frameWidth"),
+            m.get("frameHeight"),
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class PreviewImage:
+    """One immutable preview image carried by a complete observation.
+
+    ``bytes_hash`` is ``sha256:<hex>`` of ``bytes_`` and is the authoritative
+    source-byte identity recorded in Evidence and diagnostics. Dimensions are
+    positive integers; the mime type is JPEG or PNG.
+    """
+
+    bytes_: bytes
+    mime_type: str
+    width: int
+    height: int
+    bytes_hash: str = ""
+
+    def __post_init__(self) -> None:
+        if not self.bytes_:
+            raise ValueError("preview bytes must be nonempty")
+        if self.mime_type not in {"image/jpeg", "image/png"}:
+            raise ValueError("preview mime type must be JPEG or PNG")
+        if self.width <= 0 or self.height <= 0:
+            raise ValueError("preview dimensions must be positive")
+        expected = "sha256:" + hashlib.sha256(self.bytes_).hexdigest()
+        if self.bytes_hash and self.bytes_hash != expected:
+            raise ValueError("preview bytes_hash must be sha256 of bytes_")
+        if not self.bytes_hash:
+            object.__setattr__(self, "bytes_hash", expected)
+
+
+@dataclass(frozen=True, slots=True)
+class Observation:
+    """One complete immutable observation context admitted to the mailbox.
+
+    The transport-edge ``ObservationAssembler`` correlates observation metadata
+    and preview bytes using both ``imageMessageId`` and ``observationId`` and
+    emits exactly one complete context per joined observation. ``observation_id``
+    is the v1 positive process-local ``observationId``; ``arrival_monotonic_seconds``
+    is the desktop-monotonic arrival time used for Settled dwell.
+    """
+
+    observation_id: int
+    camera: CameraContext
+    preview: PreviewImage
+    arrival_monotonic_seconds: float
+    reason: str = "stream"
+
+    def __post_init__(self) -> None:
+        if self.observation_id < 0:
+            raise ValueError("observation id must be a non-negative v1 local value")
+        if self.arrival_monotonic_seconds < 0:
+            raise ValueError("arrival monotonic seconds must not be negative")
+        if not self.reason.strip():
+            raise ValueError("observation reason must be nonempty")
+
+
+@dataclass(frozen=True, slots=True)
+class FrameSignals:
+    """Cheap deterministic signals assessed for one complete preview.
+
+    Every complete preview is assessed with CPU-cheap deterministic signals
+    (spec §4.2): compatible camera-context metadata deltas, existing thumbnail /
+    global / local difference and hash-supported change signals, mutual
+    equivalence of post-change frames, relative sharpness/blur regression, and
+    luminance and highlight/shadow clipping measurements.
+
+    Deterministic signals MAY invalidate Evidence, influence Settled, request
+    reasoning, or enter a Context Pack. They MUST NOT establish semantic
+    achievement, subject presence, framing correctness, or Readiness. Ready is
+    derived only from admitted ``CriterionAssessment`` values; these signals never
+    author that result.
+
+    ``decode_available`` is ``False`` when the preview could not be decoded;
+    decode failure yields unavailable quality data and conservative fail-open
+    change handling (the runtime treats it as a material invalidation).
+    ``material_change`` is ``True`` for a hard camera-context change, a material
+    preview/metadata delta, or decode-unavailable fail-open — these immediately
+    invalidate settled Evidence (spec §4.3 / issue #22 AC1). A relative
+    sharpness/luminance/clipping *configured crossing* is reported via
+    ``quality_crossing`` and ``sharpness_regression`` and requests revalidation
+    only; it MUST NOT itself be a material invalidation or establish semantic
+    achievement or Ready (S04 / issue #22 AC4). ``equivalent_to_reference``
+    is ``True`` for a routine frame that coalesces without a new Evidence identity
+    (a frame may be both equivalent and quality-crossing). The numeric
+    measurements are diagnostic and never establish Ready.
+    """
+
+    decode_available: bool
+    material_change: bool
+    equivalent_to_reference: bool
+    material_reasons: tuple[str, ...] = ()
+    relative_sharpness: float | None = None
+    luminance: float | None = None
+    highlight_clipping: float | None = None
+    shadow_clipping: float | None = None
+    sharpness_regression: bool = False
+    quality_crossing: bool = False
+
+    def __post_init__(self) -> None:
+        if not self.decode_available:
+            # Decode failure: quality data is unavailable and the runtime treats
+            # the frame as a conservative fail-open change regardless of the
+            # caller's ``material_change`` flag.
+            object.__setattr__(self, "material_change", True)
+            if not self.material_reasons:
+                object.__setattr__(self, "material_reasons", ("decode_unavailable",))
+        for name, value in {
+            "relative_sharpness": self.relative_sharpness,
+            "luminance": self.luminance,
+            "highlight_clipping": self.highlight_clipping,
+            "shadow_clipping": self.shadow_clipping,
+        }.items():
+            if value is not None:
+                if value != value:  # NaN guard
+                    raise ValueError(f"{name} must be finite")
+                if not (0.0 <= value <= 1.0):
+                    raise ValueError(f"{name} must be in [0, 1]")
+        if not isinstance(self.material_reasons, tuple):
+            raise TypeError("material_reasons must be a tuple")
+
+
 def new_action_ordinal_uuid(ordinal: int, session_salt: UUID) -> UUID:
     """Derive a stable action UUID from a session-scoped monotonic ordinal.
 
@@ -836,4 +996,9 @@ __all__ = [
     "Recovery",
     "GeneratedArtifact",
     "VisualGuidanceSidecar",
+    # observation & deterministic frame signals
+    "CameraContext",
+    "PreviewImage",
+    "Observation",
+    "FrameSignals",
 ]

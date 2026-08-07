@@ -39,7 +39,6 @@ from camera_agent.v2 import (
     CoachingReasoner,
     CriterionAssessment,
     CriterionClassification,
-    EvidenceIdentity,
     GroundingFact,
     GroundingTag,
     InstructionKind,
@@ -50,8 +49,8 @@ from camera_agent.v2 import (
     build_runtime,
 )
 from camera_agent.v2.contracts import (
-    EvidenceSettledEvent,
     IntentionAcceptedEvent,
+    ObservationReceivedEvent,
     ReasonerStrategyEvent,
 )
 from camera_agent.v2.seams import (
@@ -61,6 +60,7 @@ from camera_agent.v2.seams import (
 from tests.v2_controls import (
     CompletionDriver,
     ScriptedEditor,
+    ScriptedFrameSignalComputer,
     ScriptedReasoner,
     ScriptedResponse,
     VirtualMonotonicClock,
@@ -70,19 +70,12 @@ from tests.v2_controls import (
     assert_output_order_is_committed,
     assert_ready_cites_current_evidence,
     assert_truthful_activity_when_no_instruction,
+    build_observation,
 )
 
 
 # --- shared builders --------------------------------------------------------
 
-
-def _evidence() -> EvidenceIdentity:
-    return EvidenceIdentity(
-        evidence_id=uuid4(),
-        camera_context_id=uuid4(),
-        observation_id=1,
-        source_bytes_hash="sha256:abc",
-    )
 
 
 def _action_proposal(*, action: str = "Step left", actor: str | None = "photographer") -> StrategyProposal:
@@ -140,14 +133,27 @@ def _ready_proposal() -> StrategyProposal:
 
 
 def _runtime_with_strategy(proposal: StrategyProposal):
-    """Build a runtime whose reasoner will return ``proposal`` on first call."""
-    driver = CompletionDriver(clock=VirtualMonotonicClock())
+    """Build a runtime whose reasoner will return ``proposal`` on first call.
+
+    A shared virtual clock drives both the scripted adapter trace and the
+    runtime's Settled dwell, and a scripted frame-signal computer reports every
+    post-change frame as mutually equivalent so settling completes after the
+    configured confirmation count and dwell. Both are private mechanical
+    substitutions, not public Adapter seams.
+    """
+    clock = VirtualMonotonicClock()
+    driver = CompletionDriver(clock=clock)
     reasoner = ScriptedReasoner(
         driver=driver,
         strategy_responses=[ScriptedResponse.success_for(proposal)],
     )
     editor = ScriptedEditor(driver=driver)
-    runtime = build_runtime(RuntimeConfig(), reasoner=reasoner, editor=editor)
+    runtime = build_runtime(
+        RuntimeConfig(),
+        reasoner=reasoner,
+        editor=editor,
+        signal_computer=ScriptedFrameSignalComputer(),
+    )
     return runtime, driver
 
 
@@ -190,22 +196,39 @@ async def _next(runtime):
 
 
 async def _intend_and_settle(runtime, driver, *, intention: str = "portrait"):
-    """Submit an intention then a settled Evidence view; return (p1, p2, evidence)."""
+    """Submit an intention then drive two equivalent observations to Settled.
+
+    The runtime owns settling: a new Evidence identity is admitted only after
+    at least two mutually equivalent post-change observations spanning at least
+    the configured dwell. Returns ``(p1, p_settled, evidence)`` where ``evidence``
+    is the runtime-allocated settled Evidence identity.
+    """
     await runtime.submit(
         IntentionAcceptedEvent(
             event_id=uuid4(), task_epoch=0, accepted_intention=intention,
         )
     )
     p1 = await _next(runtime)
-    evidence = _evidence()
+    # First post-change observation begins settling (suppressed projection:
+    # nothing user-visible changed yet). Advance the shared virtual clock past
+    # the configured dwell, then the second equivalent observation settles.
+    clock: VirtualMonotonicClock = driver._clock  # type: ignore[assignment]
     await runtime.submit(
-        EvidenceSettledEvent(
-            event_id=uuid4(), evidence=evidence, task_id=p1.task.task_id,
+        ObservationReceivedEvent(
+            event_id=uuid4(),
+            observation=build_observation(1, clock=clock),
+        )
+    )
+    clock.advance(RuntimeConfig().settled.dwell_seconds)
+    await runtime.submit(
+        ObservationReceivedEvent(
+            event_id=uuid4(),
+            observation=build_observation(2, clock=clock),
         )
     )
     p2 = await _next(runtime)
     await _pump_until_pending(driver)
-    return p1, p2, evidence
+    return p1, p2, runtime._evidence
 
 
 def _assert_invariants(trace: list) -> None:
@@ -429,9 +452,20 @@ async def test_T11_phase_precedence_needs_intention_then_orienting_then_coaching
     # Task exists but no Strategy/Instruction -> orienting (not coaching).
     assert p1.phase == CoachingPhase.ORIENTING
 
+    # Settle two equivalent observations; the second admits an Evidence identity
+    # and requests orientation without changing phase away from orienting.
+    clock: VirtualMonotonicClock = driver._clock  # type: ignore[assignment]
     await runtime.submit(
-        EvidenceSettledEvent(
-            event_id=uuid4(), evidence=_evidence(), task_id=p1.task.task_id,
+        ObservationReceivedEvent(
+            event_id=uuid4(),
+            observation=build_observation(1, clock=clock),
+        )
+    )
+    clock.advance(RuntimeConfig().settled.dwell_seconds)
+    await runtime.submit(
+        ObservationReceivedEvent(
+            event_id=uuid4(),
+            observation=build_observation(2, clock=clock),
         )
     )
     p2 = await _next(runtime)
@@ -627,7 +661,8 @@ def _runtime_with_failing_strategy():
     from tests.v2_controls import ScriptedResponse
     from camera_agent.v2.seams import AdapterFailure
     from camera_agent.v2 import TypedFailure
-    driver = CompletionDriver(clock=VirtualMonotonicClock())
+    clock = VirtualMonotonicClock()
+    driver = CompletionDriver(clock=clock)
     failure = AdapterFailure(
         failure=TypedFailure.UNAVAILABLE,
         provenance=Provenance(
@@ -641,7 +676,12 @@ def _runtime_with_failing_strategy():
         strategy_responses=[ScriptedResponse(failure=failure, cancellable=True)],
     )
     editor = ScriptedEditor(driver=driver)
-    runtime = build_runtime(RuntimeConfig(), reasoner=reasoner, editor=editor)
+    runtime = build_runtime(
+        RuntimeConfig(),
+        reasoner=reasoner,
+        editor=editor,
+        signal_computer=ScriptedFrameSignalComputer(),
+    )
     return runtime, driver
 
 

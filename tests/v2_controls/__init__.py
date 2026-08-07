@@ -49,6 +49,16 @@ from .invariants import (
     assert_truthful_activity_when_no_instruction,
     assert_visual_sidecar_isolated,
 )
+from .observations import (
+    ScriptedFrameSignalComputer,
+    build_observation,
+    decode_unavailable,
+    default_camera_context,
+    equivalent_no_change,
+    material_change,
+    non_equivalent_drift,
+    quality_crossing,
+)
 from .scripted_adapters import (
     CallLifecycle,
     CompletionDriver,
@@ -73,6 +83,15 @@ __all__ = [
     "ImageFixture",
     "default_preview_fixture",
     "default_still_fixture",
+    # observations & scripted frame signals
+    "default_camera_context",
+    "build_observation",
+    "ScriptedFrameSignalComputer",
+    "equivalent_no_change",
+    "material_change",
+    "decode_unavailable",
+    "quality_crossing",
+    "non_equivalent_drift",
     # scripted adapters
     "ScriptedResponse",
     "ScriptedOutcome",

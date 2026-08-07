@@ -26,12 +26,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import AsyncIterator, Protocol, runtime_checkable
+from typing import AsyncIterator, Callable, Protocol, runtime_checkable
 from uuid import UUID
 
 from .config import RuntimeConfig
 from .contracts import RuntimeEvent, RuntimeOutput, Receipt
 from .seams import CoachingReasoner, IllustrationEditor
+from .values import FrameSignals, Observation
 
 
 class AttachDecision(StrEnum):
@@ -138,24 +139,43 @@ def build_runtime(
     config: RuntimeConfig,
     reasoner: CoachingReasoner,
     editor: IllustrationEditor,
+    *,
+    signal_computer: "Callable[[Observation | None, Observation], FrameSignals] | None" = None,
 ) -> CoachingRuntime:
     """Construct a ``CoachingRuntime`` from immutable config and the two Adapters.
 
     This factory is the sole composition entry point so that the production
     composition root never wires a second coaching authority. It returns the
-    concrete tracer-bullet runtime (issue #21): ordered admission from no
-    intention through Task creation and initial Strategy completion to one
-    persistent Instruction or immediate evidence-backed Ready.
+    concrete tracer-bullet runtime (issue #21) extended with deterministic
+    frame-signal measurement and asymmetric Settled hysteresis (issue #22):
+    ordered admission from no intention through Task creation, observation
+    settling, and initial Strategy completion to one persistent Instruction or
+    immediate evidence-backed Ready.
 
-    The returned runtime implements the first tracer bullet of the v2 coaching
-    surface; subsequent v2 tickets extend the same public Interface. The
-    package remains dormant and off the production composition root until the
-    atomic-cutover ticket, so production never calls this factory yet.
+    ``signal_computer`` is a private mechanical substitution, not a public
+    Adapter seam: production decodes previews with Pillow; deterministic tests
+    substitute a scripted signal computer through the same keyword argument. It
+    never owns scheduling, settling policy, invalidation, Instruction,
+    Readiness, or visual-job policy. Settled dwell is measured in the
+    transport-recorded ``Observation.arrival_monotonic_seconds`` space, so no
+    runtime-owned clock is required here.
+
+    The returned runtime implements the v2 coaching surface; subsequent v2
+    tickets extend the same public Interface. The package remains dormant and
+    off the production composition root until the atomic-cutover ticket, so
+    production never calls this factory yet.
     """
 
     from ._runtime_impl import _CoachingRuntime
 
-    return _CoachingRuntime(config, reasoner, editor)  # type: ignore[arg-type]
+    if signal_computer is None:
+        from ._signals import PILFrameSignalComputer
+
+        signal_computer = PILFrameSignalComputer(config.frame_signals).compute
+
+    return _CoachingRuntime(
+        config, reasoner, editor, signal_computer=signal_computer,
+    )  # type: ignore[arg-type]
 
 
 class RuntimeContractPending(RuntimeError):

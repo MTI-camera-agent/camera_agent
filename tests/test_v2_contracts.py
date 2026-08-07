@@ -45,21 +45,25 @@ from camera_agent.v2 import (
     CriterionAssessment,
     CriterionClassification,
     CriterionImportance,
+    CameraContext,
     DORMANT,
     Effect,
     EffectKind,
     EventKind,
     EvidenceIdentity,
     EvidenceSnapshot,
+    FrameSignals,
     GeneratedArtifact,
     GroundingFact,
     GroundingTag,
     IllustrationEditor,
     Instruction,
     InstructionKind,
+    Observation,
     OutputKind,
     OverlayPrimitive,
     OverlaySet,
+    PreviewImage,
     Provenance,
     Readiness,
     ReadinessState,
@@ -90,6 +94,7 @@ from camera_agent.v2.contracts import (
     AdapterFailureEvent,
     CoachingProjection,
     IntentionAcceptedEvent,
+    ObservationReceivedEvent,
     ReasonerStrategyEvent,
     UserActionEvent,
 )
@@ -295,6 +300,80 @@ def test_runtime_config_defaults_are_uncalibrated_and_within_bounds() -> None:
     assert config.progress.insufficient_count_before_alternative == 2
     assert config.progress.insufficient_span_seconds == 10.0
     assert config.progress.visual_offer_distinct_insufficient_actions == 2
+    # Deterministic frame-signal thresholds (issue #22) inherit the v1 material-
+    # change starting points and are explicitly uncalibrated.
+    assert config.settled.confirmation_count == 2
+    assert config.settled.dwell_seconds == 0.5
+    assert config.frame_signals.visual_material_global_mae == 0.04
+    assert config.frame_signals.visual_material_block_mae == 0.10
+    assert config.frame_signals.visual_material_hash_distance == 6
+    assert config.frame_signals.camera_hard_change_keys == (
+        "lensID", "orientation", "frameWidth", "frameHeight",
+    )
+
+
+def test_frame_signals_decode_failure_is_conservative_fail_open() -> None:
+    # Spec §4.2: decode failure yields unavailable quality data and
+    # conservative fail-open change handling. Decode-unavailable forces a
+    # material invalidation regardless of the caller's flags, and never
+    # fabricates a quality value.
+    signals = FrameSignals(
+        decode_available=False,
+        material_change=False,
+        equivalent_to_reference=True,
+    )
+    assert signals.decode_available is False
+    assert signals.material_change is True
+    assert signals.equivalent_to_reference is True  # caller's value preserved
+    assert "decode_unavailable" in signals.material_reasons
+    assert signals.relative_sharpness is None
+    assert signals.luminance is None
+    assert signals.quality_crossing is False
+
+
+def test_frame_signals_reject_out_of_range_measurements() -> None:
+    with pytest.raises(ValueError):
+        FrameSignals(
+            decode_available=True,
+            material_change=False,
+            equivalent_to_reference=True,
+            relative_sharpness=1.5,
+        )
+    with pytest.raises(ValueError):
+        FrameSignals(
+            decode_available=True,
+            material_change=False,
+            equivalent_to_reference=True,
+            luminance=-0.1,
+        )
+
+
+def test_observation_and_camera_context_are_immutable() -> None:
+    camera = CameraContext(
+        metadata={"lensID": "wide", "orientation": "portrait", "frameWidth": 480, "frameHeight": 640}
+    )
+    assert camera.hard_signature == ("wide", "portrait", 480, 640)
+    with pytest.raises(TypeError):
+        camera.metadata["lensID"] = "tele"  # type: ignore[index]
+    preview = PreviewImage(
+        bytes_=b"\x00\x01", mime_type="image/jpeg", width=2, height=2,
+    )
+    assert preview.bytes_hash.startswith("sha256:")
+    observation = Observation(
+        observation_id=7,
+        camera=camera,
+        preview=preview,
+        arrival_monotonic_seconds=1.0,
+        reason="stream",
+    )
+    assert observation.observation_id == 7
+    with pytest.raises(ValueError):
+        Observation(
+            observation_id=-1,
+            camera=camera,
+            preview=preview,
+            arrival_monotonic_seconds=1.0,
+        )
 
 
 def test_runtime_config_is_frozen() -> None:
@@ -631,6 +710,17 @@ def test_every_event_carries_an_application_authored_identity() -> None:
             provenance=_strategy_provenance(),
             failure=TypedFailure.DEADLINE_EXCEEDED,
         ),
+        ObservationReceivedEvent(
+            event_id=_identity(),
+            observation=Observation(
+                observation_id=1,
+                camera=CameraContext(metadata={"lensID": "wide"}),
+                preview=PreviewImage(
+                    bytes_=b"x", mime_type="image/jpeg", width=1, height=1,
+                ),
+                arrival_monotonic_seconds=0.0,
+            ),
+        ),
     ]
     for event in events:
         assert isinstance(event_identity(event), UUID)
@@ -642,6 +732,19 @@ def test_event_kind_discriminates_events() -> None:
             event_id=_identity(), task_epoch=0, accepted_intention="x"
         )
     ) is EventKind.INTENTION_ACCEPTED
+    assert event_kind(
+        ObservationReceivedEvent(
+            event_id=_identity(),
+            observation=Observation(
+                observation_id=1,
+                camera=CameraContext(metadata={"lensID": "wide"}),
+                preview=PreviewImage(
+                    bytes_=b"x", mime_type="image/jpeg", width=1, height=1,
+                ),
+                arrival_monotonic_seconds=0.0,
+            ),
+        )
+    ) is EventKind.OBSERVATION_RECEIVED
     assert event_kind(
         AdapterFailureEvent(
             event_id=_identity(),
