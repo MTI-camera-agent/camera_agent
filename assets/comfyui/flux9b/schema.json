@@ -1,0 +1,23 @@
+{
+  "version": "1",
+  "parameters": {
+    "image": {
+      "node_id": "76",
+      "field": "image",
+      "type": "image",
+      "required": true,
+      "description": "Input/source image uploaded to ComfyUI (LoadImage node 76).",
+      "default": "01-input_frame.png",
+      "label": "输入图像（LoadImage 节点 76）"
+    },
+    "prompt": {
+      "node_id": "75:74",
+      "field": "text",
+      "type": "string",
+      "required": true,
+      "description": "Edit instruction text fed to CLIPTextEncode node 75:74 (positive conditioning).",
+      "default": "",
+      "label": "编辑指令（CLIPTextEncode 节点 75:74）"
+    }
+  }
+}

@@ -40,11 +40,18 @@ def build_parser() -> argparse.ArgumentParser:
 def main() -> None:
     args = build_parser().parse_args()
     config = load_config(args.config)
-    configure_logging(str(config.get("logging", {}).get("level", "INFO")))
+    logging_cfg = config.get("logging")
+    if isinstance(logging_cfg, dict):
+        configure_logging(config=logging_cfg)
+    else:
+        configure_logging(str(logging_cfg or "INFO"))
 
     registry = create_default_tool_registry()
     prompt_loader = PromptLoader(Path(config.get("prompts_dir", "prompts")))
-    vision_client = build_structured_vision_client(config["structured_vision"])
+    planner_client = build_structured_vision_client(config["structured_vision"])
+    # Prefer dedicated evaluator (MiniCPM dual-image); fall back for older configs.
+    evaluation_cfg = config.get("structured_evaluation") or config["structured_vision"]
+    evaluation_client = build_structured_vision_client(evaluation_cfg)
     image_generator = build_image_generator(config["image_generator"])
 
     output_root = Path(config.get("outputs_dir", "outputs"))
@@ -63,11 +70,11 @@ def main() -> None:
     )
 
     planner = PlannerAgent(
-        client=vision_client,
+        client=planner_client,
         prompt_loader=prompt_loader,
         tool_catalog=registry.specs_markdown(),
     )
-    reflector = ReflectorAgent(client=vision_client, prompt_loader=prompt_loader)
+    reflector = ReflectorAgent(client=evaluation_client, prompt_loader=prompt_loader)
     loop = ImageLoop(
         planner=planner,
         reflector=reflector,

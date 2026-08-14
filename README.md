@@ -10,7 +10,7 @@ The core loop is:
 4. Evaluate the result against the original image and request.
 5. Replan when the evaluator reports that requirements are still missing.
 
-Agno is used only for structured multimodal planner/evaluator agents. Execution, state, history, tool registration, and provider clients are plain Python modules. The default Gemini Developer API config uses Agno JSON mode and then validates the response locally with Pydantic.
+Agno is used only for structured multimodal planner/evaluator agents. Execution, state, history, tool registration, and provider clients are plain Python modules. Default planner: DeepSeek (`deepseek-v4-flash`) + local Qwen3-VL vision bridge (`:8000`). Default evaluator: local MiniCPM-V-4.6 dual-image on `:8001` (see [docs/minicpm_evaluation.md](docs/minicpm_evaluation.md)).
 
 ## Layout
 
@@ -27,12 +27,40 @@ For a full module-by-module guide, extension recipes, and architecture notes, re
 
 ## Run
 
-The default config expects `GEMINI_API_KEY` and an OpenAI-compatible image service at `http://127.0.0.1:8010`.
+### Edit loop (`app.py`)
+
+The default config expects `DEEPSEEK_API_KEY`, a local **Qwen3-VL** vision bridge at
+`http://127.0.0.1:8000`, local **MiniCPM-V-4.6** at `http://127.0.0.1:8001/v1`
+(evaluator; no API key), and **ComfyUI** at `http://127.0.0.1:8188`. Start all three with
+`bash scripts/restart_required_services.sh`. See `docs/development_workflow.md` §3.5 and
+`docs/minicpm_evaluation.md`.
 
 ```bash
 python app.py \
   --image test_img/stand_female_0.jpg \
   --prompt "Change the background to a sunny beach while preserving the person."
+```
+
+### Shooting slow path P1 (`app_shooting.py`)
+
+Qwen3-VL does scene description + fixed aesthetic edit draft (**no user intent** in the
+aesthetic call). The main Agent asks clarifying questions and produces `ShootingPlan` +
+final `editInstruction`. Needs `:8000` + `DEEPSEEK_API_KEY` (not MiniCPM/Comfy for P1).
+
+```bash
+python app_shooting.py \
+  --image test_img/02-input_frame.jpg \
+  --prompt "在断桥拍游客照，湖面和远山，人物在右侧"
+```
+
+### Gateway P2 (H5 + FastAPI)
+
+Same shooting loop over HTTP; gallery upload or one-shot camera (no live preview stream).
+See [docs/p2_gateway_access.md](docs/p2_gateway_access.md) and [docs/p2_ui.md](docs/p2_ui.md).
+
+```bash
+uvicorn services.gateway.main:app --host 0.0.0.0 --port 8787
+# http://127.0.0.1:8787/   mock UI: /?mock=1
 ```
 
 The app prints a structured trajectory by default: planning, compiled actions,

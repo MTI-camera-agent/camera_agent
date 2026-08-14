@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CameraAgent iOS App — UX 草稿（相机即主界面）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0b1c24; --ink-soft:#16303c; --lake:#1a6b7a; --lake-bright:#2a9aad;
+    --sun:#e8b84a; --danger:#b33a3a; --mist:#edf3f5; --paper:#f7fafb;
+    --muted:#5c737c; --line:#d6e0e2;
+    --font-display:"Fraunces",Georgia,serif;
+    --font-body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-body);background:linear-gradient(165deg,#0b1c24 0%,#123040 42%,#1a4552 100%);color:var(--ink);min-height:100vh;padding:32px 16px 64px}
+  .wrap{max-width:1180px;margin:0 auto}
+  header.page{color:var(--mist);margin-bottom:28px}
+  header.page h1{font-family:var(--font-display);font-weight:700;font-size:30px;letter-spacing:.5px}
+  header.page p{color:#9fb4ba;margin-top:6px;font-size:14px}
+  header.page a{color:var(--lake-bright)}
+  .sec-title{font-family:var(--font-display);color:var(--mist);font-size:20px;margin:28px 0 14px;border-left:3px solid var(--lake-bright);padding-left:10px}
+  .sec-sub{color:#9fb4ba;font-size:13px;margin:-8px 0 14px 60px}
+
+  /* phone shell */
+  #storyboard{display:flex;gap:18px;overflow-x:auto;padding:8px 2px 18px;scroll-snap-type:x mandatory}
+  .mini-wrap{scroll-snap-align:start;flex:0 0 auto}
+  .mini-cap{color:#9fb4ba;font-size:12px;text-align:center;margin-bottom:6px;letter-spacing:.3px}
+  .mini-cap b{color:var(--mist)}
+  .mini-shell{width:184px;height:392px;overflow:hidden;border-radius:30px;background:#000;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+  .phone{width:390px;height:844px;background:#000;border-radius:48px;position:relative;overflow:hidden;
+         box-shadow:0 0 0 10px #1a1a1a,0 0 0 12px #333,0 24px 60px rgba(0,0,0,.5)}
+  .mini-shell .phone{transform:scale(.471);transform-origin:top left}
+  .screen{position:absolute;inset:0;background:#000;overflow:hidden;display:flex;flex-direction:column}
+
+  /* status bar + island */
+  .statusbar{height:50px;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+             padding:0 26px 0 30px;color:#fff;font-size:14px;font-weight:600;z-index:30;position:absolute;top:0;left:0;right:0}
+  .statusbar .r{display:flex;gap:6px;align-items:center}
+  .island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:118px;height:34px;background:#000;border-radius:20px;z-index:31}
+  .statusbar .bat{width:24px;height:11px;border:1.5px solid #fff;border-radius:3px;position:relative}
+  .statusbar .bat::after{content:"";position:absolute;right:-3px;top:2px;width:2px;height:5px;background:#fff;border-radius:0 1px 1px 0}
+  .statusbar .bat i{display:block;height:7px;margin:1px;background:#fff;border-radius:1px}
+
+  /* camera + chrome (iOS Camera-like) */
+  .cam{flex:1 1 auto;position:relative;overflow:hidden;background:#0b1c24}
+  .cam .scene{position:absolute;inset:0}
+  .camtop{position:absolute;top:50px;left:0;right:0;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:20}
+  .camtop .ico{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;backdrop-filter:blur(4px)}
+  .camtop .left{display:flex;gap:10px}
+  .camtop .agent{background:linear-gradient(135deg,var(--lake-bright),var(--lake));box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+  .chrome{position:absolute;left:0;right:0;bottom:0;padding:8px 18px 30px;z-index:18;display:flex;flex-direction:column;gap:10px;
+          background:linear-gradient(180deg,transparent,rgba(0,0,0,.55))}
+  .zoom-row{display:flex;justify-content:center;gap:18px;color:#fff;font-size:13px;font-weight:600}
+  .zoom-row span{opacity:.55;cursor:pointer;padding:2px 4px}
+  .zoom-row span.on{opacity:1;background:rgba(255,255,255,.18);border-radius:8px}
+  .mode-row{display:flex;justify-content:center;gap:14px;color:#fff;font-size:11px}
+  .mode-row span{opacity:.5}
+  .mode-row span.on{opacity:1;color:var(--sun);font-weight:600}
+  .shutter-row{display:flex;align-items:center;justify-content:space-between;padding:0 8px;margin-top:2px}
+  .thumb{width:42px;height:42px;border-radius:8px;background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.4)}
+  .shutter{width:66px;height:66px;border-radius:50%;border:4px solid #fff;background:transparent}
+  .flip{width:42px;height:42px;border-radius:50%;background:rgba(0,0,0,.4);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px}
+
+  /* agent panel (above zoom) */
+  .agent-panel{position:absolute;left:14px;right:14px;bottom:96px;z-index:25;
+               background:rgba(11,28,36,.78);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12);
+               border-radius:18px;padding:12px 12px 10px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  .ap-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .ap-head .t{color:#cfe0e3;font-size:12px;font-weight:600;letter-spacing:.3px}
+  .ap-head .x{color:#9fb4ba;font-size:16px;cursor:pointer;width:24px;height:24px;display:flex;align-items:center;justify-content:center}
+  .presets{display:flex;gap:8px;margin-bottom:8px}
+  .presets .p{flex:1;text-align:center;font-size:13px;font-weight:600;color:#fff;border:1px solid rgba(255,255,255,.25);
+              border-radius:10px;padding:9px 0;cursor:pointer;background:rgba(255,255,255,.06)}
+  .presets .p:hover{background:rgba(42,154,173,.25);border-color:var(--lake-bright)}
+  .presets .p .d{display:block;font-size:9px;font-weight:400;opacity:.6;margin-top:2px}
+  .input-row{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+             border-radius:10px;padding:6px 8px}
+  .input-row input{flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:var(--font-body);font-size:13px}
+  .input-row input::placeholder{color:#7a929a}
+  .input-row .voice{color:#7a929a;font-size:16px;cursor:not-allowed}
+  .input-row .send{color:var(--lake-bright);font-size:18px;cursor:pointer;width:28px;text-align:center}
+  .ap-hint{text-align:center;color:#5c7d83;font-size:10px;margin-top:6px}
+
+  /* overlay */
+  .ov{position:absolute;inset:0;pointer-events:none;z-index:15}
+  .ov .rotv{position:absolute;top:33.33%;bottom:33.33%;left:0;width:1px;background:rgba(255,255,255,.3)}
+  .ov .roth{position:absolute;left:33.33%;right:33.33%;top:0;height:1px;background:rgba(255,255,255,.3)}
+  .ov .rotv2{left:66.66%} .ov .roth2{top:66.66%;left:0;right:0}
+  .ov .bbox{position:absolute;border:2px solid var(--lake-bright);border-radius:8px;box-shadow:0 0 0 2px rgba(42,154,173,.25)}
+  .ov .bbox .lbl{position:absolute;top:-12px;left:-2px;background:var(--lake-bright);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600}
+  .ov .txt{position:absolute;left:0;right:0;text-align:center;color:#fff;font-size:13px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.7);padding:0 16px}
+  .ov .txt.top{top:14px} .ov .txt.bottom{bottom:14px}
+  .ov .arrow{position:absolute;left:30%;top:46%;color:var(--sun)}
+  .ov .refimg{position:absolute;inset:0;opacity:.35}
+  .pip{position:absolute;top:108px;right:14px;width:96px;height:96px;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.7);box-shadow:0 6px 16px rgba(0,0,0,.4);z-index:22}
+  .pip .tag{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:#fff;font-size:9px;text-align:center;padding:2px}
+
+  /* act top bar (chrome hidden) */
+  .acttop{position:absolute;top:50px;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:20}
+  .acttop .ico{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px}
+  .acttop .chip{background:rgba(0,0,0,.5);color:#fff;font-size:11px;padding:5px 10px;border-radius:999px}
+
+  /* bottom advice card */
+  .bottomcard{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-radius:24px 24px 0 0;padding:16px 18px 26px;box-shadow:0 -6px 20px rgba(0,0,0,.25);z-index:18}
+  .bc-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .ph-chip{font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px}
+  .ph-chip.coarse{background:#e7f0f1;color:var(--lake)}
+  .ph-chip.fine{background:#fdf2dd;color:#9a7416}
+  .badge{font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;margin-left:auto}
+  .badge.ok{background:#e3f4e8;color:#2a7a3a}
+  .badge.warning{background:#fdf2dd;color:#9a7416}
+  .badge.severe{background:#fbe6e6;color:var(--danger)}
+  .advice{font-size:14px;color:var(--ink);line-height:1.45;margin:4px 0 10px}
+  .ringwrap{display:flex;align-items:center;gap:10px;margin:8px 0}
+  .ring{width:42px;height:42px;border-radius:50%;background:conic-gradient(var(--lake-bright) calc(var(--p)*1%),#e2ecee 0);display:flex;align-items:center;justify-content:center}
+  .ring i{width:32px;height:32px;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--ink-soft)}
+  .ringwrap .lbl{font-size:11px;color:var(--muted)}
+  .pbar{height:8px;border-radius:6px;background:#e2ecec;overflow:hidden;margin:6px 0 4px}
+  .pbar i{display:block;height:100%;background:linear-gradient(90deg,var(--lake),var(--lake-bright))}
+  .pbar-lbl{font-size:10px;color:var(--muted);display:flex;justify-content:space-between}
+  .bc-actions{display:flex;gap:8px;margin-top:10px}
+  .bc-actions button{flex:1;font-family:var(--font-body);font-size:13px;border:none;border-radius:12px;padding:11px 0;cursor:pointer}
+  .btn-ghost{background:var(--mist);color:var(--ink-soft)}
+  .btn-ghost:hover{background:#dde9eb}
+  .btn-primary{background:var(--lake);color:#fff}
+  .btn-primary:hover{background:var(--lake-bright)}
+  .btn-danger{background:var(--danger);color:#fff}
+
+  /* sheets over camera */
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-radius:24px 24px 0 0;padding:14px 18px 30px;box-shadow:0 -8px 30px rgba(0,0,0,.3);z-index:30}
+  .grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 12px}
+  .sheet h2{font-family:var(--font-display);font-size:18px;color:var(--ink);margin-bottom:4px}
+  .sheet .sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+  .qcard{background:var(--mist);border-radius:14px;padding:12px 14px;margin:10px 0}
+  .qcard .qt{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:8px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chips .c{font-size:12px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;color:var(--ink-soft)}
+  .chips .c:hover{border-color:var(--lake-bright)}
+  .chips .c.sel{background:var(--lake);color:#fff;border-color:var(--lake)}
+  .collapse{font-size:12px;color:var(--lake);margin:8px 0 2px;cursor:pointer}
+  .conflicts{font-size:11px;color:var(--muted);background:#fbe6e6;border-radius:10px;padding:8px 10px;display:none}
+  .conflicts.open{display:block}
+  .conflicts b{color:var(--danger)}
+
+  /* loading / countdown / done */
+  .center-col{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#fff;z-index:24;pointer-events:none}
+  .center-col .btn-primary{pointer-events:auto;border:none;border-radius:10px;padding:8px 16px;cursor:pointer}
+  .spinner{width:46px;height:46px;border-radius:50%;border:4px solid rgba(255,255,255,.2);border-top-color:var(--lake-bright);animation:sp 1s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .ready-ring{width:130px;height:130px;border-radius:50%;border:6px solid rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;box-shadow:0 0 0 8px rgba(255,255,255,.15)}
+  .countdown{font-family:var(--font-display);font-size:120px;color:#fff;text-shadow:0 4px 20px rgba(0,0,0,.5)}
+  .done-shot{position:absolute;inset:0;background:linear-gradient(165deg,#1a4552,#0b1c24);display:flex;align-items:center;justify-content:center;color:#fff;z-index:12}
+  .done-card{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-radius:24px 24px 0 0;padding:16px 18px 28px;z-index:30}
+
+  /* severe banner / modal */
+  .severe-banner{position:absolute;top:50px;left:0;right:0;background:var(--danger);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px;z-index:23;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+  .severe-banner button{margin-left:auto;background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer}
+  .modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:40}
+  .modal{background:var(--paper);border-radius:18px;padding:22px 20px;width:300px;text-align:center}
+  .modal h3{font-family:var(--font-display);font-size:18px;margin-bottom:8px}
+  .modal p{font-size:13px;color:var(--muted);margin-bottom:16px}
+  .modal .row{display:flex;gap:8px}
+  .modal .row button{flex:1;border:none;border-radius:12px;padding:11px 0;font-size:13px;cursor:pointer}
+  .note-mock{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:10px;color:#9fb4ba;z-index:50}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <h1>CameraAgent — iOS App UX 草稿（相机即主界面）</h1>
+    <p>App 打开即相机 · 右上 ✦ 触发 · 预置 chips + 输入框（🎤 未来语音）· 点预置=捕获当前帧分析 · mock 数据 = <a href="../01-MVP期-方案设计及计划.md">MVP 附录 A.4</a> · 设计说明见 <a href="UX_DESIGN.md">UX_DESIGN.md</a></p>
+  </header>
+
+  <div class="sec-title">流程概览（相机 → ✦ → 预置/输入 → 引导 → 成片）</div>
+  <div class="sec-sub">横向滚动看全流程分镜</div>
+  <div id="storyboard"></div>
+
+  <div class="sec-title">交互预览</div>
+  <div class="sec-sub">点手机内按钮走流程；右侧状态点可跳任意态</div>
+  <div id="interactive">
+    <div class="phone-stage">
+      <div class="phone"><div class="screen" id="screen"></div></div>
+    </div>
+    <div class="side">
+      <div class="nav-card">
+        <h3>状态跳转</h3>
+        <div class="nav-grid" id="navgrid"></div>
+      </div>
+      <div class="api-card">
+        <h3>当前环节 API 绑定</h3>
+        <div class="ep" id="api-ep">—</div>
+        <div class="pl" id="api-pl"></div>
+      </div>
+      <div class="legend">
+        <b>说明</b>：主界面即相机（iOS 风，.5/1x/2/4/8 变焦+快门+翻转）；右上 <b>✦</b> 唤起预置 chips+输入框（变焦数字上方）；点预置<b>捕获当前帧</b>+分析（无 Intent）；<b>双景拍</b>含前置 clone-ID mock。Act 期隐藏底栏 chrome、换 advice 卡，不干扰取景。字段名对齐 <a href="../../schemas/shooting.py">schemas/shooting.py</a> + A.4。
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .nav-card{background:var(--paper);border-radius:16px;padding:16px 18px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+  .nav-card h3{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+  .nav-grid{display:flex;flex-wrap:wrap;gap:6px}
+  .nav-grid button{font-family:var(--font-body);font-size:12px;background:var(--mist);color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:6px 11px;cursor:pointer;transition:.15s}
+  .nav-grid button:hover{border-color:var(--lake-bright);color:var(--lake)}
+  .nav-grid button.on{background:var(--lake);color:#fff;border-color:var(--lake)}
+  .api-card{background:#0e2229;border:1px solid #1f3b45;border-radius:14px;padding:14px 16px;margin-top:14px;color:var(--mist)}
+  .api-card h3{color:#7fa0a6;font-size:11px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+  .api-card .ep{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#9fdfe8;word-break:break-all}
+  .api-card .pl{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#7fa0a6;margin-top:6px;white-space:pre-wrap}
+  .legend{font-size:12px;color:#9fb4ba;margin-top:14px;line-height:1.6}
+  .legend b{color:var(--mist)}
+  #interactive{display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap}
+  .phone-stage{flex:0 0 auto}
+  .side{flex:1 1 320px;min-width:300px}
+</style>
+
+<script>
+/* ---- mock data (MVP 附录 A.4 断桥样例) ---- */
+const MOCK = {
+  draftGoal:"断桥游客照，湖面+远山，人物右侧",
+  questions:[
+    {questionId:"q1", text:"您希望拍半身还是全身？", options:["半身","全身"], rec:0},
+    {questionId:"q2", text:"是否接受人物在画面右侧、湖面占下方约 1/3 的构图方案？", options:["接受","我想调整"], rec:0}
+  ],
+  conflicts:[{summary:"意图要求人物在右侧，但当前帧人物偏左", userSide:"人物在右侧", aestheticSide:"建议人物落在右侧三分", sceneSide:"当前主体偏画面左侧"}],
+  plan:{goal:"断桥游客照，人物右侧、保留湖面远山", steps:[
+    {stepId:"s0_intent",title:"意图确认",status:"completed"},
+    {stepId:"s1_coarse_act",title:"粗调站位与景别",status:"in_progress"},
+    {stepId:"s2_fine_act",title:"精调姿态对齐",status:"pending"}
+  ]},
+  coarseGuidance:{adviceText:"粗调：先完成站位与半身景别", layers:[
+    {kind:"rule_of_thirds"},
+    {kind:"bbox", normalized:[0.55,0.30,0.35,0.50], label:"target_subject"},
+    {kind:"text", text:"请让人物站到栏杆左侧，面朝湖面", position:"top"}
+  ]},
+  analyzeFine:{compositionScore:0.78, vlmAlignScore:0.82, gaps:["头部可再微左转 5°"], progressScore:0.804, planDeviation:"ok", captureReady:true, captureReason:"coarse_and_fine_threshold_met", adviceText:"接近目标示意图，保持"}
+};
+const MOCK2 = JSON.parse(JSON.stringify(MOCK));
+MOCK2.draftGoal="断桥分身入画：分身立于右侧三分，本人对镜";
+MOCK2.plan.goal="断桥分身入画：分身右侧三分，本人面向镜头";
+MOCK2.coarseGuidance.adviceText="粗调：分身站位右三分，本人对镜姿态微侧";
+MOCK2.coarseGuidance.layers=[
+  {kind:"rule_of_thirds"},
+  {kind:"bbox", normalized:[0.55,0.30,0.35,0.50], label:"clone_target"},
+  {kind:"bbox", normalized:[0.10,0.32,0.28,0.46], label:"self_position"},
+  {kind:"text", text:"分身置于右三分虚框，本人面向镜头", position:"top"}
+];
+
+/* ---- scene SVG (取景占位) ---- */
+function sceneSVG(figX, isRef){
+  const fx=figX*390;
+  return `<svg class="scene" viewBox="0 0 390 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bcd6dc"/><stop offset="1" stop-color="#e8f0f1"/></linearGradient>
+      <linearGradient id="lake" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a5c66"/><stop offset="1" stop-color="#16303c"/></linearGradient>
+    </defs>
+    <rect width="390" height="360" fill="url(#sky)"/>
+    <path d="M0 300 Q60 250 120 285 T240 270 T390 290 V360 H0 Z" fill="#7fa0a6" opacity=".55"/>
+    <path d="M0 320 Q90 292 170 312 T330 302 T390 316 V360 H0 Z" fill="#5c7d83" opacity=".7"/>
+    <rect y="360" width="390" height="240" fill="url(#lake)"/>
+    <g stroke="#0b1c24" stroke-width="2" opacity=".45" fill="none">
+      <line x1="0" y1="382" x2="390" y2="382"/>
+      <line x1="34" y1="362" x2="34" y2="402"/><line x1="78" y1="362" x2="78" y2="402"/>
+      <line x1="312" y1="362" x2="312" y2="402"/><line x1="356" y1="362" x2="356" y2="402"/>
+    </g>
+    <g transform="translate(${fx},300)">
+      <ellipse cx="0" cy="14" rx="13" ry="28" fill="#0b1c24"/>
+      <circle cx="0" cy="-18" r="9" fill="#cfa37a"/>
+    </g>
+  </svg>`;
+}
+function selfieSVG(){
+  return `<svg class="scene" viewBox="0 0 390 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <rect width="390" height="600" fill="#26495a"/>
+    <circle cx="195" cy="250" r="70" fill="#cfa37a"/>
+    <ellipse cx="195" cy="430" rx="120" ry="160" fill="#0b1c24"/>
+  </svg>`;
+}
+
+/* ---- shared chrome ---- */
+function statusbar(){
+  return `<div class="statusbar"><span>9:41</span>
+    <div class="r"><span style="font-size:11px">5G</span>
+    <span class="bat"><i style="width:78%"></i></span></div></div>
+    <div class="island"></div>`;
+}
+function camtop(rightAgent){
+  // rightAgent true → ✦ button (camera home / agent_panel); false → ✕ exit (act)
+  const right = rightAgent
+    ? `<div class="ico agent" title="CameraAgent" onclick="go('agent_panel')">✦</div>`
+    : `<div class="ico" onclick="go('camera')" title="退出">✕</div>`;
+  return `<div class="camtop"><div class="left"><div class="ico" title="闪光">⚡</div><div class="ico" title="夜景">◐</div></div>${right}</div>`;
+}
+function chrome(){
+  return `<div class="chrome">
+    <div class="zoom-row"><span>.5</span><span class="on">1x</span><span>2</span><span>4</span><span>8</span></div>
+    <div class="mode-row"><span>人像</span><span class="on">拍照</span><span>全景</span></div>
+    <div class="shutter-row"><div class="thumb"></div><div class="shutter"></div><div class="flip">↻</div></div>
+  </div>`;
+}
+function overlayHTML(layers, refOn){
+  let h='<div class="ov">';
+  (layers||[]).forEach(L=>{
+    if(L.kind==="rule_of_thirds"){h+='<div class="rotv"></div><div class="rotv rotv2"></div><div class="roth"></div><div class="roth roth2"></div>';}
+    if(L.kind==="bbox"&&L.normalized){const[x,y,w,ht]=L.normalized;
+      h+=`<div class="bbox" style="left:${x*100}%;top:${y*100}%;width:${w*100}%;height:${ht*100}%"><span class="lbl">${L.label||""}</span></div>`;}
+    if(L.kind==="text"){h+=`<div class="txt ${L.position||'top'}">${L.text||""}</div>`;}
+    if(L.kind==="arrow"){h+='<svg class="arrow" width="80" height="40"><path d="M5 30 L55 30 M45 18 L65 30 L45 42" stroke="#e8b84a" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';}
+  });
+  if(refOn) h+=`<div class="refimg">${sceneSVG(0.72,true)}</div>`;
+  h+='</div>';
+  return h;
+}
+function ring(p){return `<div class="ringwrap"><div class="ring" style="--p:${Math.round(p*100)}"><i>${p.toFixed(2)}</i></div><span class="lbl">构图分 compositionScore</span></div>`;}
+function pbar(p){return `<div class="pbar"><i style="width:${Math.round(p*100)}%"></i></div><div class="pbar-lbl"><span>对齐进度 progressScore</span><span>${p.toFixed(3)}</span></div>`;}
+function bcActions(btns){return `<div class="bc-actions">${btns.map(b=>`<button class="${b.c}" onclick="${b.o}">${b.t}</button>`).join("")}</div>`;}
+
+/* ---- states ---- */
+function cameraHTML(){
+  return `${statusbar()}${camtop(true)}
+  <div class="cam"><div class="scene">${sceneSVG(0.30,false)}</div></div>
+  ${chrome()}
+  <div class="note-mock">相机主界面 · 占位预览（真功能用 expo-camera）</div>`;
+}
+function agentPanelHTML(){
+  return `${statusbar()}${camtop(true)}
+  <div class="cam"><div class="scene">${sceneSVG(0.30,false)}</div></div>
+  ${chrome()}
+  <div class="agent-panel">
+    <div class="ap-head"><span class="t">CameraAgent · 选场景或输入意图</span><span class="x" onclick="go('camera')">✕</span></div>
+    <div class="presets">
+      <div class="p" onclick="setSc(1);go('question')">构图引导<span class="d">捕获当前帧 · 构图/站位</span></div>
+      <div class="p" onclick="setSc(2);go('clone_id')">双景拍<span class="d">前置分身+后置场景</span></div>
+    </div>
+    <div class="input-row">
+      <input id="intent" placeholder="或输入拍摄意图…" onfocus="this.value=this.value" value="">
+      <span class="voice" title="未来支持语音输入">🎤</span>
+      <span class="send" onclick="go('question')">↗</span>
+    </div>
+    <div class="ap-hint">点预置=捕获当前预览帧分析（默认不输入意图）</div>
+  </div>`;
+}
+function cloneIDHTML(){
+  return `${statusbar()}${camtop(false)}
+  <div class="cam"><div class="scene">${selfieSVG()}</div></div>
+  <div class="sheet">
+    <div class="grab"></div>
+    <h2>生成分身 ID</h2>
+    <div class="sub">前置相机自拍上半身 → mock 生成 identity_photo（identity-photo-gen 待建）</div>
+    <div style="font-size:12px;background:#fdf2dd;color:#9a7416;border-radius:10px;padding:8px 10px;margin-bottom:10px">白底 · 正面 · 上半身 · 无遮挡</div>
+    <button class="btn-primary" style="width:100%;border:none;border-radius:12px;padding:13px;font-size:14px;cursor:pointer" onclick="go('question')">📸 拍一张分身照</button>
+  </div>`;
+}
+function questionHTML(){
+  const m = sc===2?MOCK2:MOCK;
+  let qh='';
+  m.questions.forEach(q=>{
+    qh+=`<div class="qcard"><div class="qt">${q.text}</div><div class="chips">`;
+    q.options.forEach((o,i)=>{qh+=`<span class="c${i===q.rec?' sel':''}" onclick="this.parentNode.querySelectorAll('.c').forEach(x=>x.classList.remove('sel'));this.classList.add('sel')">${o}</span>`;});
+    qh+='</div></div>';
+  });
+  const cl = m.conflicts.map(c=>`<div>• ${c.summary}<br><b>用户</b> ${c.userSide} · <b>美学</b> ${c.aestheticSide} · <b>场景</b> ${c.sceneSide}</div>`).join("");
+  return `${statusbar()}${camtop(false)}
+  <div class="cam"><div class="scene">${sceneSVG(0.30,false)}</div></div>
+  <div class="sheet">
+    <div class="grab"></div>
+    <h2>${m.draftGoal}</h2>
+    <div class="collapse" onclick="this.nextElementSibling.classList.toggle('open')">⚠ 冲突摘要（点展开）</div>
+    <div class="conflicts">${cl}</div>
+    ${qh}
+    <button class="btn-ghost" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px;margin-bottom:8px;cursor:pointer" onclick="go('agent_panel')">← 返回</button>
+    <button class="btn-primary" style="width:100%;border:none;border-radius:12px;padding:13px;font-size:14px;cursor:pointer" onclick="go('loading')">确认并生成方案</button>
+  </div>`;
+}
+function loadingHTML(){
+  return `${statusbar()}${camtop(false)}
+  <div class="cam"><div class="scene">${sceneSVG(0.30,false)}</div></div>
+  <div class="center-col">
+    <div class="spinner"></div>
+    <div style="font-size:14px">规划中…</div>
+    <div style="font-size:11px;color:#9fb4ba">ShootingPlannerAgent · confirm-intent</div>
+    <button class="btn-primary" onclick="go('coarse')">进入粗调 ›</button>
+  </div>`;
+}
+function actHTML(sub){
+  const m = sc===2?MOCK2:MOCK;
+  let layers=m.coarseGuidance.layers, advice=m.coarseGuidance.adviceText, chip='<span class="ph-chip coarse">粗调</span>', extra="", refOn=false, dev="ok", comp=0.42, prog=null, actions=[];
+  if(sub==="reference_pip"){comp=0.58; advice="示意图就绪（28.5s · qwen2511），点缩略图比对目标"; extra=`<div class="pip" onclick="go('fine')">${sceneSVG(0.72,true)}<div class="tag">示意图 · ready</div></div>`;}
+  if(sub==="fine"){refOn=true; chip='<span class="ph-chip fine">细调</span>'; const a=m.analyzeFine; comp=a.compositionScore; prog=a.progressScore; advice=a.adviceText+"（"+a.gaps.join("；")+"）"; dev=a.planDeviation; extra=`<div class="pip">${sceneSVG(0.72,true)}<div class="tag">目标图</div></div>`;}
+  if(sub==="severe"){comp=0.28; dev="severe"; advice="连续 5 帧 compositionScore<0.35，主体偏离目标区";}
+  if(sub==="plan_refresh"){comp=0.40; advice="场景变化，需重新规划 Plan 与参考图";}
+  const devBadge=`<span class="badge ${dev}">${dev}</span>`;
+  const progH = prog!==null? pbar(prog):"";
+  if(sub==="coarse") actions=[{t:"模拟 severe",c:"btn-danger",o:"go('severe')"},{t:"示意图就绪",c:"btn-ghost",o:"go('reference_pip')"},{t:"进入细调",c:"btn-primary",o:"go('fine')"}];
+  else if(sub==="reference_pip") actions=[{t:"叠加比对 → 细调",c:"btn-primary",o:"go('fine')"},{t:"返回粗调",c:"btn-ghost",o:"go('coarse')"}];
+  else if(sub==="fine") actions=[{t:"模拟 Plan 刷新",c:"btn-ghost",o:"go('plan_refresh')"},{t:"就绪 · 拍摄",c:"btn-primary",o:"go('capture')"}];
+  else if(sub==="severe") actions=[{t:"继续引导",c:"btn-ghost",o:"go('coarse')"},{t:"退出 Plan",c:"btn-danger",o:"go('camera')"}];
+  else if(sub==="plan_refresh") actions=[{t:"取消",c:"btn-ghost",o:"go('coarse')"},{t:"重新规划",c:"btn-primary",o:"go('coarse')"}];
+  const modal = sub==="plan_refresh" ? `<div class="modal-bg"><div class="modal"><h3>场景变化</h3><p>检测到场景失效（原帧缺失物体出现），需重新规划 Plan 与参考图。</p><div class="row"><button class="btn-ghost" onclick="go('coarse')">取消</button><button class="btn-primary" onclick="go('coarse')">重新规划</button></div></div></div>`:"";
+  const banner = sub==="severe" ? `<div class="severe-banner">⚠ 连续偏离，是否退出 Plan？<button onclick="go('camera')">退出</button></div>`:"";
+  const sceneChip = sc===2?"分身入画":"构图引导";
+  return `${statusbar()}${banner}
+  <div class="acttop"><div class="ico" onclick="go('camera')" title="退出">✕</div><div class="chip">${sceneChip}</div><div class="ico">⟳</div></div>
+  <div class="cam"><div class="scene">${sceneSVG(0.30,false)}</div>${overlayHTML(layers,refOn)}${extra}</div>
+  <div class="bottomcard">
+    <div class="bc-row">${chip}${devBadge}</div>
+    <div class="advice">${advice}</div>
+    ${ring(comp)}${progH}
+    ${bcActions(actions)}
+  </div>${modal}`;
+}
+function captureHTML(){
+  return `${statusbar()}${camtop(false)}
+  <div class="cam"><div class="scene">${sceneSVG(0.30,false)}</div></div>
+  <div class="center-col" id="cd">
+    <div class="ready-ring">就绪</div>
+    <div class="countdown" id="cdnum">3</div>
+    <div style="font-size:13px;color:#cfe0e3">captureReady · coarse_and_fine_threshold_met</div>
+  </div>`;
+}
+function doneHTML(){
+  const m=sc===2?MOCK2:MOCK;
+  const steps=m.plan.steps.map(s=>`<div style="font-size:12px;color:${s.status==='completed'?'#2a7a3a':s.status==='in_progress'?'var(--lake)':'var(--muted)'};margin:3px 0">${s.status==='completed'?'✓':s.status==='in_progress'?'▶':'○'} ${s.title}</div>`).join("");
+  const post = sc===2?`<div style="font-size:11px;color:var(--muted);background:#fdf2dd;border-radius:8px;padding:6px 8px;margin:6px 0">后处理：character-swap / id-correction（P4+ 未来）</div>`:"";
+  return `${statusbar()}${camtop(false)}
+  <div class="done-shot"><div style="text-align:center"><div style="font-size:40px">🖼</div><div style="font-size:13px;margin-top:6px">成片预览</div></div></div>
+  <div class="done-card">
+    <h2 style="font-family:var(--font-display);font-size:18px;margin-bottom:4px">拍摄完成</h2>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px">${m.plan.goal}</div>
+    ${steps}${post}
+    <div class="bc-actions" style="margin-top:12px">
+      <button class="btn-ghost" onclick="go('camera')">再拍一组</button>
+      <button class="btn-primary" onclick="go('camera')">完成</button>
+    </div>
+  </div>`;
+}
+
+/* ---- dispatch ---- */
+function renderState(state){
+  switch(state){
+    case 'camera': return cameraHTML();
+    case 'agent_panel': return agentPanelHTML();
+    case 'clone_id': return cloneIDHTML();
+    case 'question': return questionHTML();
+    case 'loading': return loadingHTML();
+    case 'coarse': return actHTML('coarse');
+    case 'reference_pip': return actHTML('reference_pip');
+    case 'fine': return actHTML('fine');
+    case 'severe': return actHTML('severe');
+    case 'plan_refresh': return actHTML('plan_refresh');
+    case 'capture': return captureHTML();
+    case 'done': return doneHTML();
+  }
+}
+const API = {
+  camera:["（相机就绪）","✦ 右上 → agent_panel"],
+  agent_panel:["POST /api/v1/sessions/{id}/submit-intent","预置=捕获当前帧 + userIntent=''；输入=+userIntent"],
+  clone_id:["(mock) identity-photo-gen","待建 · 前置自拍 → 切后置场景"],
+  question:["POST submit-intent →","IntentPhaseResult{ draftGoal, questions, conflicts }"],
+  loading:["POST /api/v1/sessions/{id}/confirm-intent","{ answers:[{questionId,value}] } → PlanAndEditInstruction"],
+  coarse:["POST /api/v1/sessions/{id}/analyze-frame?phase=coarse_act","→ { guidanceOverlay, compositionScore, planDeviation } (PR2)"],
+  reference_pip:["GET /api/v1/sessions/{id}/reference-preview","→ ready 后 GET .../reference-preview.png"],
+  fine:["POST /api/v1/sessions/{id}/analyze-frame?phase=fine_act","→ { vlmAlignScore, progressScore, captureReady } (PR2)"],
+  severe:["analyze-frame 返回 planDeviation=severe","连续5帧 score<0.35 / IoU<0.2×3 / 人脸消失>3s"],
+  plan_refresh:["edge→cloud invalidate signal + 新帧","re-Plan → 刷新 overlay + 重生参考图"],
+  capture:["captureReady=true","captureReason: coarse_and_fine_threshold_met"],
+  done:["（拍摄结束）","本地保存成片；场景二后处理 P4+"]
+};
+const NAV=[["camera","相机"],["agent_panel","✦面板"],["clone_id","Clone-ID"],["question","Question"],["loading","Loading"],["coarse","粗调"],["reference_pip","示意图"],["fine","细调"],["severe","Severe"],["plan_refresh","Plan刷新"],["capture","倒计时"],["done","Done"]];
+
+let sc=1, cur='camera', cdTimer=null;
+function paint(){
+  if(cdTimer && cur!=='capture'){clearInterval(cdTimer);cdTimer=null;}
+  const el=document.getElementById('screen'); el.innerHTML=renderState(cur);
+  document.querySelectorAll('#navgrid button').forEach(b=>b.classList.toggle('on',b.dataset.s===cur));
+  const a=API[cur]||["—",""]; document.getElementById('api-ep').textContent=a[0]; document.getElementById('api-pl').textContent=a[1];
+  if(cur==='capture') runCountdown();
+}
+function go(s){ cur=s; paint(); }
+function setSc(v){ sc=v; }
+function runCountdown(){
+  if(cdTimer) clearInterval(cdTimer);
+  let n=3; const num=document.querySelector('#screen #cdnum'); if(!num) return;
+  num.textContent=n;
+  cdTimer=setInterval(()=>{ n--; if(n<=0){clearInterval(cdTimer);cdTimer=null;go('done');}else{num.textContent=n;}},1000);
+}
+
+/* ---- init ---- */
+function init(){
+  const ng=document.getElementById('navgrid');
+  NAV.forEach(([s,l])=>{const b=document.createElement('button');b.textContent=l;b.dataset.s=s;b.onclick=()=>go(s);ng.appendChild(b);});
+  const sb=document.getElementById('storyboard');
+  const frames=[
+    ["camera","相机（Home）",1],["agent_panel","✦ 预置/输入",1],["clone_id","Clone-ID（双景拍）",2],
+    ["question","Question · S1",1],["loading","Plan Loading · S2",1],["coarse","粗引导 · S3/S4",1],
+    ["reference_pip","示意图 · S4'",1],["fine","细引导 · S5",1],["severe","Severe",1],
+    ["plan_refresh","Plan 刷新",1],["capture","倒计时 · S6",1],["done","Done",1]
+  ];
+  frames.forEach(([st,cap,v])=>{
+    const w=document.createElement('div');w.className='mini-wrap';
+    const cap2=document.createElement('div');cap2.className='mini-cap';cap2.innerHTML=`<b>${cap}</b>`;
+    const sh=document.createElement('div');sh.className='mini-shell';
+    const ph=document.createElement('div');ph.className='phone';
+    const scr=document.createElement('div');scr.className='screen';
+    const oldSc=sc; sc=v; scr.innerHTML=renderState(st); sc=oldSc;
+    ph.appendChild(scr);sh.appendChild(ph);w.appendChild(cap2);w.appendChild(sh);sb.appendChild(w);
+  });
+  sc=1; cur='camera'; paint();
+}
+init();
+</script>
+</body>
+</html>

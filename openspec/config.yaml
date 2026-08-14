@@ -1,0 +1,43 @@
+schema: spec-driven
+
+context: |
+  Project: CameraAgent — AI 拍照助手 MVP（景点打卡纵切）
+  Language: Python 3.12; provider-neutral factories (see AGENTS.md)
+  Stack: Agno agents, FastAPI gateway, vLLM (:8000), ComfyUI (:8188), optional FLUX (:8010 cold)
+  Tests: pytest -q (default); live tests gated by RUN_LIVE_AGENT_TESTS
+
+  Document layers (do not conflate):
+  - CONTEXT.md — ubiquitous language / glossary only
+  - docs/adr/ — hard-to-reverse decisions
+  - openspec/specs/ — current observable behavior (SHALL + scenarios)
+  - openspec/changes/ — in-flight deltas
+  - docs/01-MVP期-方案设计及计划.md — phase milestones M1–M5 (SE updates on archive)
+  - docs/p3_act_channels.md — P3 PR1/PR2/PR3 execution slice
+
+  Conventions:
+  - No parallel *_v2 implementations; replace and delete
+  - Model routing HTTP-only; no GPU scheduling in agent code
+  - Structured commits; PR must link openspec change id when applicable
+
+rules:
+  proposal:
+    - State non-goals and which role owns the change (SE / Harness / Model / Skills)
+    - Reference existing docs/01 or p3 sections when touching MVP scope
+  specs:
+    - Use ADDED/MODIFIED/REMOVED delta sections
+    - Scenarios use WHEN/THEN; tie to pytest or gateway API where possible
+  design:
+    - Respect models/factory.py and skills/ boundaries; no hardcoded providers
+  tasks:
+    - Vertical slices; each task mentions test file or route to verify
+    - Flag mm-comfyui env as read-only (see development_workflow.md)
+
+operations:
+  apply:
+    guidance:
+      - Run pytest for touched modules before marking tasks done
+      - Follow AGENTS.md provider-neutral rules
+  archive:
+    guidance:
+      - Remind SE to update docs/01 milestone checklist if acceptance criteria met
+      - Do not merge CONTEXT implementation details into openspec specs

@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CameraAgent iOS App — UX v3.1（HUD 收拢变焦上方带 + 双击 + 气泡轮动 + Plan/提示合一）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0b1c24; --ink-soft:#16303c; --lake:#1a6b7a; --lake-bright:#2a9aad;
+    --sun:#e8b84a; --danger:#b33a3a; --mist:#edf3f5; --paper:#f7fafb;
+    --muted:#5c737c; --line:#d6e0e2;
+    --font-display:"Fraunces",Georgia,serif;
+    --font-body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-body);background:linear-gradient(165deg,#0b1c24 0%,#123040 42%,#1a4552 100%);color:var(--ink);min-height:100vh;padding:32px 16px 64px}
+  .wrap{max-width:1180px;margin:0 auto}
+  header.page{color:var(--mist);margin-bottom:28px}
+  header.page h1{font-family:var(--font-display);font-weight:700;font-size:30px;letter-spacing:.5px}
+  header.page p{color:#9fb4ba;margin-top:6px;font-size:14px}
+  header.page a{color:var(--lake-bright)}
+  .sec-title{font-family:var(--font-display);color:var(--mist);font-size:20px;margin:28px 0 14px;border-left:3px solid var(--lake-bright);padding-left:10px}
+  .sec-sub{color:#9fb4ba;font-size:13px;margin:-8px 0 14px 60px}
+  #storyboard{display:flex;gap:18px;overflow-x:auto;padding:8px 2px 18px;scroll-snap-type:x mandatory}
+  .mini-wrap{scroll-snap-align:start;flex:0 0 auto}
+  .mini-cap{color:#9fb4ba;font-size:12px;text-align:center;margin-bottom:6px;letter-spacing:.3px}
+  .mini-cap b{color:var(--mist)}
+  .mini-shell{width:184px;height:392px;overflow:hidden;border-radius:30px;background:#000;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+  .phone{width:390px;height:844px;background:#000;border-radius:48px;position:relative;overflow:hidden;
+         box-shadow:0 0 0 10px #1a1a1a,0 0 0 12px #333,0 24px 60px rgba(0,0,0,.5)}
+  .mini-shell .phone{transform:scale(.471);transform-origin:top left}
+  .screen{position:absolute;inset:0;background:#000;overflow:hidden;display:flex;flex-direction:column}
+  .statusbar{height:50px;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;color:#fff;font-size:14px;font-weight:600;z-index:30;position:absolute;top:0;left:0;right:0}
+  .statusbar .r{display:flex;gap:6px;align-items:center}
+  .island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:118px;height:34px;background:#000;border-radius:20px;z-index:31}
+  .statusbar .bat{width:24px;height:11px;border:1.5px solid #fff;border-radius:3px;position:relative}
+  .statusbar .bat::after{content:"";position:absolute;right:-3px;top:2px;width:2px;height:5px;background:#fff;border-radius:0 1px 1px 0}
+  .statusbar .bat i{display:block;height:7px;margin:1px;background:#fff;border-radius:1px}
+
+  .cam{flex:1 1 auto;position:relative;overflow:hidden;background:#0b1c24}
+  .cam .scene{position:absolute;inset:0}
+  .camtop{position:absolute;top:50px;left:0;right:0;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:20}
+  .camtop .ico{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;backdrop-filter:blur(4px);cursor:pointer}
+  .camtop .left{display:flex;gap:10px}
+  .camtop .agent{background:linear-gradient(135deg,var(--lake-bright),var(--lake));box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+  .chrome{position:absolute;left:0;right:0;bottom:0;padding:8px 18px 26px;z-index:18;display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.6))}
+  .zoom-row{display:flex;justify-content:center;gap:18px;color:#fff;font-size:13px;font-weight:600}
+  .zoom-row span{opacity:.55;cursor:pointer;padding:2px 4px}
+  .zoom-row span.on{opacity:1;background:rgba(255,255,255,.18);border-radius:8px}
+  .shutter-row{display:flex;align-items:center;justify-content:space-between;padding:0 8px}
+  .thumb{width:40px;height:40px;border-radius:8px;background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.4)}
+  .shutter{width:62px;height:62px;border-radius:50%;border:4px solid #fff;background:transparent}
+  .flip{width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.4);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px}
+
+  /* hud-band：变焦数字上方带状空白区，所有 HUD 收拢于此 */
+  .hud-band{position:absolute;left:0;right:0;bottom:104px;height:56px;z-index:24;display:flex;align-items:center;gap:10px;padding:0 12px}
+  .hud-band.L{flex-direction:row}
+  .hud-band.R{flex-direction:row-reverse}
+  .robot{width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,var(--lake-bright),var(--lake));flex:0 0 auto;
+         display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;touch-action:manipulation;
+         animation:breathe 2.4s ease-in-out infinite;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+  .robot.scan{animation:breathe .7s ease-in-out infinite}
+  .robot.listen{animation:breathe .55s ease-in-out infinite;background:linear-gradient(135deg,var(--sun),#b8842a)}
+  @keyframes breathe{0%,100%{box-shadow:0 0 0 0 rgba(42,154,173,.5),0 4px 12px rgba(0,0,0,.4);transform:scale(1)}50%{box-shadow:0 0 0 14px rgba(42,154,173,0),0 4px 12px rgba(0,0,0,.4);transform:scale(1.07)}}
+  .hud-fill{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:8px;overflow:hidden}
+  .hud-hint{color:#cfe0e3;font-size:11px;background:rgba(11,28,36,.6);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:6px 10px;backdrop-filter:blur(6px);white-space:nowrap}
+  .scan-label{color:#cfe0e3;font-size:12px;font-weight:600;background:rgba(11,28,36,.6);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:6px 12px;backdrop-filter:blur(6px);white-space:nowrap}
+  .listen-fx{display:flex;gap:3px;align-items:flex-end;height:26px}
+  .listen-fx i{width:4px;background:var(--sun);border-radius:2px;animation:wf 1s ease-in-out infinite}
+  .listen-fx i:nth-child(1){height:8px;animation-delay:0s}.listen-fx i:nth-child(2){height:18px;animation-delay:.1s}
+  .listen-fx i:nth-child(3){height:12px;animation-delay:.2s}.listen-fx i:nth-child(4){height:22px;animation-delay:.3s}
+  .listen-fx i:nth-child(5){height:10px;animation-delay:.4s}.listen-fx i:nth-child(6){height:16px;animation-delay:.5s}
+  @keyframes wf{0%,100%{transform:scaleY(.5)}50%{transform:scaleY(1.4)}}
+
+  /* skill 气泡：水平全屏 + 溢出轮动 */
+  .bubbles{flex:1 1 auto;overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+  .bub-track{display:flex;gap:8px;width:max-content;align-items:center;animation:marq 18s linear infinite}
+  .bub-track:hover{animation-play-state:paused}
+  @keyframes marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .bub{font-size:12.5px;font-weight:600;color:#fff;background:rgba(11,28,36,.78);border:1px solid rgba(255,255,255,.22);
+       border-radius:999px;padding:8px 13px;cursor:pointer;backdrop-filter:blur(6px);white-space:nowrap;box-shadow:0 4px 10px rgba(0,0,0,.3)}
+  .bub:hover{background:rgba(42,154,173,.4);border-color:var(--lake-bright)}
+  .bub.dis{opacity:.32;cursor:not-allowed;color:#9fb4ba}
+  .bub.dis:hover{background:rgba(11,28,36,.78);border-color:rgba(255,255,255,.22)}
+
+  /* plan/tip 合一 */
+  .plan-tip{flex:1 1 auto;min-width:0;display:flex;align-items:center;gap:8px;background:rgba(11,28,36,.62);border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:7px 12px;backdrop-filter:blur(6px)}
+  .pt-dots{display:flex;gap:6px;flex:0 0 auto}
+  .pt-dots .d{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.28)}
+  .pt-dots .d.done{background:var(--lake)}
+  .pt-dots .d.cur{background:var(--sun);box-shadow:0 0 0 2px rgba(232,184,74,.3)}
+  .pt-line{flex:1 1 auto;min-width:0;color:#fff;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pt-line.tip{color:#fff}
+  .pt-line.done{color:var(--sun)}
+
+  /* scan fx (preview) */
+  .scan-fx{position:absolute;inset:0;z-index:14;pointer-events:none;overflow:hidden}
+  .scan-fx .sweep{position:absolute;left:0;right:0;height:160px;background:linear-gradient(180deg,transparent,rgba(42,154,173,.4),transparent);animation:swp 1.7s ease-in-out infinite}
+  .scan-fx .radar{position:absolute;left:50%;top:55%;width:40px;height:40px;border:2px solid rgba(42,184,74,.7);border-radius:50%;transform:translate(-50%,-50%);animation:rad 1.7s ease-out infinite}
+  @keyframes swp{0%{top:-160px}100%{top:100%}}
+  @keyframes rad{0%{width:40px;height:40px;opacity:.8}100%{width:520px;height:520px;opacity:0}}
+
+  /* overlay (preview 中部，无 top text) */
+  .ov{position:absolute;inset:0;pointer-events:none;z-index:15}
+  .ov .rotv{position:absolute;top:33.33%;bottom:33.33%;left:0;width:1px;background:rgba(255,255,255,.3)}
+  .ov .roth{position:absolute;left:33.33%;right:33.33%;top:0;height:1px;background:rgba(255,255,255,.3)}
+  .ov .rotv2{left:66.66%}.ov .roth2{top:66.66%;left:0;right:0}
+  .ov .bbox{position:absolute;border:2px solid var(--lake-bright);border-radius:8px;box-shadow:0 0 0 2px rgba(42,154,173,.25)}
+  .ov .bbox .lbl{position:absolute;top:-12px;left:-2px;background:var(--lake-bright);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600}
+  .ov .anchor{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--sun);border:2px solid #fff;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,.5)}
+  .ov .arrow{position:absolute;left:24%;top:46%;color:var(--sun)}
+  .ov .refimg{position:absolute;inset:0;opacity:.35}
+  .pip{position:absolute;top:150px;right:14px;width:88px;height:88px;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.7);box-shadow:0 6px 16px rgba(0,0,0,.4);z-index:22}
+  .pip .tag{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:#fff;font-size:9px;text-align:center;padding:2px}
+
+  /* sheets / countdown / done / modal */
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-radius:24px 24px 0 0;padding:14px 18px 30px;box-shadow:0 -8px 30px rgba(0,0,0,.3);z-index:30}
+  .grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 12px}
+  .sheet h2{font-family:var(--font-display);font-size:18px;color:var(--ink);margin-bottom:4px}
+  .sheet .sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+  .center-col{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#fff;z-index:24;pointer-events:none}
+  .ready-ring{width:120px;height:120px;border-radius:50%;border:6px solid rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;box-shadow:0 0 0 8px rgba(255,255,255,.15)}
+  .countdown{font-family:var(--font-display);font-size:120px;color:#fff;text-shadow:0 4px 20px rgba(0,0,0,.5)}
+  .done-shot{position:absolute;inset:0;background:linear-gradient(165deg,#1a4552,#0b1c24);display:flex;align-items:center;justify-content:center;color:#fff;z-index:12}
+  .done-card{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-radius:24px 24px 0 0;padding:16px 18px 28px;z-index:30}
+  .severe-banner{position:absolute;top:50px;left:0;right:0;background:var(--danger);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px;z-index:26;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+  .severe-banner button{margin-left:auto;background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer}
+  .modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:40}
+  .modal{background:var(--paper);border-radius:18px;padding:22px 20px;width:300px;text-align:center}
+  .modal h3{font-family:var(--font-display);font-size:18px;margin-bottom:8px}
+  .modal p{font-size:13px;color:var(--muted);margin-bottom:16px}
+  .modal .row{display:flex;gap:8px}
+  .modal .row button{flex:1;border:none;border-radius:12px;padding:11px 0;font-size:13px;cursor:pointer}
+  .note-mock{position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:10px;color:#9fb4ba;z-index:50}
+  .btn-ghost{background:var(--mist);color:var(--ink-soft);border:1px solid var(--line)}
+  .btn-primary{background:var(--lake);color:#fff;border:none}
+  .btn-primary:hover{background:var(--lake-bright)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <h1>CameraAgent — iOS App UX v3.1</h1>
+    <p>HUD 收拢变焦上方带 · 双击切换 L/R · 短按扫描/长按语音 · 气泡水平轮动 · Plan/提示合一 · 模拟控件外置 · mock=<a href="../01-MVP期-方案设计及计划.md">A.4</a> · 说明 <a href="UX_DESIGN.md">UX_DESIGN.md</a> · 旧 <a href="ios_app_ux_v2.html">v2</a></p>
+  </header>
+
+  <div class="sec-title">流程概览（相机 → ✦召唤 → 扫描/语音 → skill → Plan/提示合一 → 成片）</div>
+  <div class="sec-sub">横向滚动看全流程分镜</div>
+  <div id="storyboard"></div>
+
+  <div class="sec-title">交互预览</div>
+  <div class="sec-sub">手机内：双击 robot 切换 L/R · 短按扫描 · 长按语音；右侧"模拟控制"驱动流程</div>
+  <div id="interactive">
+    <div class="phone-stage"><div class="phone"><div class="screen" id="screen"></div></div></div>
+    <div class="side">
+      <div class="nav-card"><h3>状态跳转</h3><div class="nav-grid" id="navgrid"></div></div>
+      <div class="sim-card"><h3>模拟控制（手机外）</h3><div class="sim-grid" id="simgrid"></div></div>
+      <div class="api-card"><h3>当前环节 API 绑定</h3><div class="ep" id="api-ep">—</div><div class="pl" id="api-pl"></div></div>
+      <div class="legend"><b>说明</b>：HUD 全在变焦上方带；<b>双击</b> robot 切换 L/R；<b>短按</b>扫描·<b>长按</b>语音；气泡水平轮动；plan/tip 合一（显 tip 或"✓某环节已完成"+小圆点）；bbox 左小、小人居中靠右、目标图右；无顶部提示。字段对齐 <a href="../../schemas/shooting.py">schemas/shooting.py</a> + A.4。</div>
+    </div>
+  </div>
+</div>
+<style>
+  .nav-card,.sim-card{background:var(--paper);border-radius:16px;padding:16px 18px;box-shadow:0 8px 24px rgba(0,0,0,.25);margin-bottom:14px}
+  .nav-card h3,.sim-card h3{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+  .nav-grid,.sim-grid{display:flex;flex-wrap:wrap;gap:6px}
+  .nav-grid button,.sim-grid button{font-family:var(--font-body);font-size:12px;border:1px solid var(--line);border-radius:999px;padding:6px 11px;cursor:pointer;transition:.15s}
+  .nav-grid button{background:var(--mist);color:var(--ink-soft)}
+  .nav-grid button:hover{border-color:var(--lake-bright);color:var(--lake)}
+  .nav-grid button.on{background:var(--lake);color:#fff;border-color:var(--lake)}
+  .sim-grid button{background:#0e2229;color:var(--lake-bright);border-color:#1f3b45}
+  .sim-grid button:hover{background:#16303c}
+  .api-card{background:#0e2229;border:1px solid #1f3b45;border-radius:14px;padding:14px 16px;color:var(--mist);margin-bottom:14px}
+  .api-card h3{color:#7fa0a6;font-size:11px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+  .api-card .ep{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#9fdfe8;word-break:break-all}
+  .api-card .pl{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#7fa0a6;margin-top:6px;white-space:pre-wrap}
+  .legend{font-size:12px;color:#9fb4ba;line-height:1.6}.legend b{color:var(--mist)}
+  #interactive{display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap}
+  .phone-stage{flex:0 0 auto}.side{flex:1 1 320px;min-width:300px}
+</style>
+
+<script>
+const MOCK={
+  plan:{goal:"断桥游客照，人物右侧、保留湖面远山",steps:["机位","示意图","姿态","完成"]},
+  coarseGuidance:{layers:[{kind:"rule_of_thirds"},{kind:"bbox",normalized:[0.10,0.28,0.30,0.44],label:"target_subject"},{kind:"arrow"}]},
+  analyzeFine:{progressScore:0.804}
+};
+const PLAN_TIPS=["调整站位至目标区","对照目标示意图","微调姿态与视角","就绪·准备抓拍"];
+const SKILLS=[["拍断桥打卡",1,true],["拍古典建筑",1,true],["给他人拍照",1,true],["分身入画",2,true],["拍月亮",1,false]];
+
+function sceneSVG(figX,clone){
+  const fx=figX*390;
+  return `<svg class="scene" viewBox="0 0 390 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bcd6dc"/><stop offset="1" stop-color="#e8f0f1"/></linearGradient>
+    <linearGradient id="lake" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a5c66"/><stop offset="1" stop-color="#16303c"/></linearGradient></defs>
+    <rect width="390" height="360" fill="url(#sky)"/>
+    <path d="M0 300 Q60 250 120 285 T240 270 T390 290 V360 H0 Z" fill="#7fa0a6" opacity=".55"/>
+    <path d="M0 320 Q90 292 170 312 T330 302 T390 316 V360 H0 Z" fill="#5c7d83" opacity=".7"/>
+    <rect y="360" width="390" height="240" fill="url(#lake)"/>
+    <g stroke="#0b1c24" stroke-width="2" opacity=".45" fill="none"><line x1="0" y1="382" x2="390" y2="382"/>
+      <line x1="34" y1="362" x2="34" y2="402"/><line x1="78" y1="362" x2="78" y2="402"/>
+      <line x1="312" y1="362" x2="312" y2="402"/><line x1="356" y1="362" x2="356" y2="402"/></g>
+    <g transform="translate(${fx},300)"><ellipse cx="0" cy="14" rx="12" ry="26" fill="#0b1c24"/><circle cx="0" cy="-17" r="8" fill="#cfa37a"/></g>
+    ${clone?`<g transform="translate(${0.72*390},300)" opacity=".5"><ellipse cx="0" cy="14" rx="12" ry="26" fill="#1a6b7a"/><circle cx="0" cy="-17" r="8" fill="#cfa37a"/></g>`:""}
+  </svg>`;
+}
+function selfieSVG(){return `<svg class="scene" viewBox="0 0 390 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><rect width="390" height="600" fill="#26495a"/><circle cx="195" cy="250" r="70" fill="#cfa37a"/><ellipse cx="195" cy="430" rx="120" ry="160" fill="#0b1c24"/></svg>`;}
+
+function statusbar(){return `<div class="statusbar"><span>9:41</span><div class="r"><span style="font-size:11px">5G</span><span class="bat"><i style="width:78%"></i></span></div></div><div class="island"></div>`;}
+function camtop(showAgent){
+  const right=showAgent?`<div class="ico agent" title="召唤助手" onclick="go('robot_idle')">✦</div>`:`<div class="ico" onclick="go('camera')" title="收起">✕</div>`;
+  return `<div class="camtop"><div class="left"><div class="ico" title="闪光">⚡</div><div class="ico" title="夜景">◐</div></div>${right}</div>`;
+}
+function chrome(){return `<div class="chrome"><div class="zoom-row"><span>.5</span><span class="on">1x</span><span>2</span><span>4</span><span>8</span></div><div class="shutter-row"><div class="thumb"></div><div class="shutter"></div><div class="flip">↻</div></div></div>`;}
+
+function robotHTML(mode){return `<div class="robot ${mode||''}" id="robot" title="短按扫描·长按语音·双击换边">
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><rect x="5" y="6" width="14" height="12" rx="4" fill="#fff"/><circle cx="9.5" cy="12" r="1.5" fill="#1a6b7a"/><circle cx="14.5" cy="12" r="1.5" fill="#1a6b7a"/><path d="M9 3.5v2.5M15 3.5v2.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/><path d="M10 15.5h4" stroke="#1a6b7a" stroke-width="1.5" stroke-linecap="round"/></svg></div>`;}
+
+function hudBandHTML(mode, inner){
+  return `<div class="hud-band ${robotSide}">${robotHTML(mode)}<div class="hud-fill">${inner}</div></div>`;
+}
+function scanFX(){return `<div class="scan-fx"><div class="sweep"></div><div class="radar"></div></div>`;}
+function bubblesHTML(){
+  const items=SKILLS.map(s=>`<span class="bub${s[2]?'':' dis'}" ${s[2]?`onclick="setSc(${s[1]});go('plan_coarse')"`:''}>${s[0]}${s[2]?'':' ✗'}</span>`).join("");
+  return `<div class="bubbles"><div class="bub-track">${items}${items}</div></div>`;
+}
+function listenFX(){return `<div class="listen-fx"><i></i><i></i><i></i><i></i><i></i><i></i></div><span class="scan-label">正在听…松开发送</span>`;}
+function dotsHTML(cur){return MOCK.plan.steps.map((s,i)=>{const n=i+1;const cls=n<cur?'done':n===cur?'cur':'';return `<span class="d ${cls}"></span>`;}).join("");}
+function planTipHTML(cur,done){
+  const line = done ? ("✓ "+MOCK.plan.steps[cur-2]+"已完成") : ("💡 "+PLAN_TIPS[cur-1]);
+  const cls = done?'done':'tip';
+  return `<div class="plan-tip"><div class="pt-dots">${dotsHTML(cur)}</div><div class="pt-line ${cls}" id="ptline">${line}</div></div>`;
+}
+function overlayHTML(cur,clone){
+  let layers=MOCK.coarseGuidance.layers.slice();
+  if(clone)layers.push({kind:"bbox",normalized:[0.62,0.30,0.26,0.42],label:"self/clone"});
+  const refOn=cur>=3;const showRef=cur>=2;
+  const pip=showRef?`<div class="pip">${sceneSVG(0.72,false)}<div class="tag">目标图${cur>=3?'·alpha':''}</div></div>`:"";
+  const anchors=[[0.25,0.40],[0.62,0.55]];
+  let h='<div class="ov">';
+  layers.forEach(L=>{
+    if(L.kind==="rule_of_thirds")h+='<div class="rotv"></div><div class="rotv rotv2"></div><div class="roth"></div><div class="roth roth2"></div>';
+    if(L.kind==="bbox"&&L.normalized){const[x,y,w,ht]=L.normalized;h+=`<div class="bbox" style="left:${x*100}%;top:${y*100}%;width:${w*100}%;height:${ht*100}%"><span class="lbl">${L.label||""}</span></div>`;}
+    if(L.kind==="arrow")h+='<svg class="arrow" width="80" height="40"><path d="M65 30 L15 30 M25 18 L5 30 L25 42" stroke="#e8b84a" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  });
+  anchors.forEach(a=>{h+=`<div class="anchor" style="left:${a[0]*100}%;top:${a[1]*100}%"></div>`;});
+  if(refOn)h+=`<div class="refimg">${sceneSVG(0.72,false)}</div>`;
+  h+='</div>';return h+pip;
+}
+
+/* states */
+function cameraHTML(){return `${statusbar()}${camtop(true)}<div class="cam"><div class="scene">${sceneSVG(0.62,false)}</div></div>${chrome()}<div class="note-mock">相机主界面 · 点右上 ✦ 召唤助手</div>`;}
+function robotIdleHTML(){return `${statusbar()}${camtop(false)}<div class="cam"><div class="scene">${sceneSVG(0.62,false)}</div></div>${chrome()}${hudBandHTML('','<span class="hud-hint">短按=扫描 · 长按=语音 · 双击=换边</span>')}`;}
+function scanningHTML(){return `${statusbar()}${camtop(false)}<div class="cam"><div class="scene">${sceneSVG(0.62,false)}</div>${scanFX()}</div>${chrome()}${hudBandHTML('scan','<span class="scan-label">正在扫描中…理解场景</span>')}`;}
+function skillsHTML(){return `${statusbar()}${camtop(false)}<div class="cam"><div class="scene">${sceneSVG(0.62,false)}</div></div>${chrome()}${hudBandHTML('',bubblesHTML())}`;}
+function listeningHTML(){return `${statusbar()}${camtop(false)}<div class="cam"><div class="scene">${sceneSVG(0.62,false)}</div></div>${chrome()}${hudBandHTML('listen',listenFX())}`;}
+function planHTML(cur,done){
+  const clone=sc===2;
+  return `${statusbar()}${camtop(false)}<div class="cam"><div class="scene">${sceneSVG(0.62,clone)}</div>${overlayHTML(cur,clone)}</div>${chrome()}${hudBandHTML('',planTipHTML(cur,done))}`;
+}
+function severeHTML(){return `${planHTML(planStep,false)}<div class="severe-banner">⚠ 连续偏离，是否退出 Plan？<button onclick="go('camera')">退出</button></div>`;}
+function planRefreshHTML(){return `${planHTML(planStep,false)}<div class="modal-bg"><div class="modal"><h3>场景变化</h3><p>检测到场景失效，需重新规划 Plan 与参考图。</p><div class="row"><button class="btn-ghost" onclick="go('plan_coarse')">取消</button><button class="btn-primary" onclick="go('plan_coarse')">重新规划</button></div></div></div>`;}
+function endRemindHTML(){return `${planHTML(planStep,false)}<div class="modal-bg"><div class="modal"><h3>流程已结束</h3><p>检测到你已离开引导或自行拍摄。是否保留本次 Plan 与成片？</p><div class="row"><button class="btn-ghost" onclick="go('camera')">丢弃</button><button class="btn-primary" onclick="go('done')">保留</button></div></div></div>`;}
+function cloneIDHTML(){return `${statusbar()}${camtop(false)}<div class="cam"><div class="scene">${selfieSVG()}</div></div>
+  <div class="sheet"><div class="grab"></div><h2>生成分身 ID</h2><div class="sub">分身入画 skill · 前置自拍上半身 → mock identity_photo（待建）</div>
+  <div style="font-size:12px;background:#fdf2dd;color:#9a7416;border-radius:10px;padding:8px 10px;margin-bottom:10px">白底·正面·上半身·无遮挡</div>
+  <button class="btn-primary" style="width:100%;border:none;border-radius:12px;padding:13px;font-size:14px;cursor:pointer" onclick="go('plan_coarse')">📸 拍分身照 → 进入引导</button></div>`;}
+function captureHTML(){return `${statusbar()}${camtop(false)}<div class="cam"><div class="scene">${sceneSVG(0.62,sc===2)}</div></div><div class="center-col" id="cd"><div class="ready-ring">就绪</div><div class="countdown" id="cdnum">3</div><div style="font-size:13px;color:#cfe0e3">captureReady · 择机抓拍</div></div>`;}
+function doneHTML(){
+  const steps=MOCK.plan.steps.map((s,i)=>`<div style="font-size:12px;color:#2a7a3a;margin:3px 0">✓ ${i+1}. ${s}</div>`).join("");
+  const post=sc===2?`<div style="font-size:11px;color:var(--muted);background:#fdf2dd;border-radius:8px;padding:6px 8px;margin:6px 0">后处理：character-swap / id-correction（P4+）</div>`:"";
+  return `${statusbar()}${camtop(false)}<div class="done-shot"><div style="text-align:center"><div style="font-size:40px">🖼</div><div style="font-size:13px;margin-top:6px">成片预览</div></div></div>
+  <div class="done-card"><h2 style="font-family:var(--font-display);font-size:18px;margin-bottom:4px">拍摄完成</h2><div style="font-size:12px;color:var(--muted);margin-bottom:8px">${MOCK.plan.goal}</div>${steps}${post}
+  <div style="display:flex;gap:8px;margin-top:12px"><button class="btn-ghost" style="flex:1;border:1px solid var(--line);border-radius:12px;padding:11px;cursor:pointer;background:var(--mist);color:var(--ink-soft)" onclick="go('camera')">再拍一组</button><button class="btn-primary" style="flex:1;border:none;border-radius:12px;padding:11px;cursor:pointer" onclick="go('camera')">完成</button></div></div>`;}
+
+function renderState(state){
+  switch(state){
+    case 'camera':return cameraHTML();
+    case 'robot_idle':return robotIdleHTML();
+    case 'scanning':return scanningHTML();
+    case 'skills':return skillsHTML();
+    case 'listening':return listeningHTML();
+    case 'clone_id':return cloneIDHTML();
+    case 'plan_coarse':planStep=1;return planHTML(1,planDone);
+    case 'plan_ref':planStep=2;return planHTML(2,planDone);
+    case 'plan_fine':planStep=3;return planHTML(3,planDone);
+    case 'severe':return severeHTML();
+    case 'plan_refresh':return planRefreshHTML();
+    case 'end_remind':return endRemindHTML();
+    case 'capture':return captureHTML();
+    case 'done':return doneHTML();
+  }
+}
+const API={
+  camera:["（相机就绪）","✦ 右上 → 召唤机器人"],
+  robot_idle:["（端侧 VLM 待命）","机器人常驻呼吸 · 短按/长按/双击"],
+  scanning:["端侧 VLM 读预览 + skill 白名单","→ 候选 skill + 可达性"],
+  skills:["POST /api/v1/sessions/{id}/submit-intent","frame + userIntent=<skill 标签>"],
+  listening:["(语音) userIntent=<转文字>","长按录音 → 松开 → submit-intent"],
+  clone_id:["(mock) identity-photo-gen","分身入画 skill 前置自拍"],
+  plan_coarse:["POST analyze-frame?phase=coarse_act","→ {guidanceOverlay,compositionScore,stepCompleted}(PR2)"],
+  plan_ref:["GET reference-preview","→ ready 后 GET .png"],
+  plan_fine:["POST analyze-frame?phase=fine_act","→ {vlmAlignScore,progressScore,captureReady}(PR2)"],
+  severe:["planDeviation=severe","连续 5 帧 score<0.35"],
+  plan_refresh:["invalidate signal","re-Plan → 刷新 overlay"],
+  end_remind:["用户中途跳走/自行拍摄","端侧提醒流程结束"],
+  capture:["captureReady=true","端侧择机抓拍"],
+  done:["（拍摄结束）","保存成片；场景二后处理 P4+"]
+};
+const NAV=[["camera","相机"],["robot_idle","机器人"],["scanning","扫描"],["skills","skill气泡"],["listening","语音"],["clone_id","Clone-ID"],["plan_coarse","Plan粗调"],["plan_ref","Plan目标图"],["plan_fine","Plan细调"],["severe","Severe"],["plan_refresh","Plan刷新"],["end_remind","结束提醒"],["capture","倒计时"],["done","Done"]];
+const SIM=[["扫描","scanning"],["语音","listening"],["Eval推进→","evalAdvance"],["severe","severe"],["Plan刷新","plan_refresh"],["结束","end_remind"]];
+
+let sc=1,cur='camera',robotSide='L',planStep=1,planDone=false,cdTimer=null,scanTimer=null,listenTimer=null,altTimer=null,altFlip=false;
+
+function startAlt(){
+  altFlip=planDone;
+  altTimer=setInterval(()=>{
+    altFlip=!altFlip;
+    const el=document.querySelector('#screen #ptline'); if(!el)return;
+    const done = altFlip && planStep>1;
+    el.textContent = done ? ("✓ "+MOCK.plan.steps[planStep-2]+"已完成") : ("💡 "+PLAN_TIPS[planStep-1]);
+    el.className = "pt-line "+(done?'done':'tip');
+  },2500);
+}
+function attachRobot(){
+  const r=document.querySelector('#screen #robot'); if(!r)return;
+  let downT=0,clicks=0,singleT=null,longT=null,fired=false;
+  const onDown=(e)=>{downT=Date.now();fired=false;e.preventDefault();
+    longT=setTimeout(()=>{if(!fired){fired=true;go('listening');
+      window.addEventListener('pointerup',()=>{if(cur==='listening')go('plan_coarse');},{once:true});}},500);};
+  const onUp=(e)=>{
+    clearTimeout(longT);
+    if(fired)return;
+    clicks++;
+    if(clicks===1){singleT=setTimeout(()=>{clicks=0;go('scanning');},260);}
+    else if(clicks===2){clearTimeout(singleT);clicks=0;robotSide=robotSide==='L'?'R':'L';paint();}
+  };
+  r.addEventListener('pointerdown',onDown);
+  r.addEventListener('pointerup',onUp);
+  r.addEventListener('pointercancel',()=>{clearTimeout(longT);clearTimeout(singleT);clicks=0;});
+}
+function evalAdvance(){
+  const next=cur==='plan_coarse'?'plan_ref':cur==='plan_ref'?'plan_fine':cur==='plan_fine'?'capture':null;
+  if(!next)return;
+  if(next==='capture'){go('capture');return;}
+  planDone=true; go(next);
+  setTimeout(()=>{planDone=false; const el=document.querySelector('#screen #ptline'); if(el&&cur.startsWith('plan_')){el.textContent="💡 "+PLAN_TIPS[planStep-1]; el.className="pt-line tip";}},1900);
+}
+function paint(){
+  if(cdTimer&&cur!=='capture'){clearInterval(cdTimer);cdTimer=null;}
+  if(scanTimer){clearTimeout(scanTimer);scanTimer=null;}
+  if(listenTimer){clearTimeout(listenTimer);listenTimer=null;}
+  if(altTimer){clearInterval(altTimer);altTimer=null;}
+  const el=document.getElementById('screen');el.innerHTML=renderState(cur);
+  document.querySelectorAll('#navgrid button').forEach(b=>b.classList.toggle('on',b.dataset.s===cur));
+  const a=API[cur]||["—",""];document.getElementById('api-ep').textContent=a[0];document.getElementById('api-pl').textContent=a[1];
+  if(cur==='capture')runCountdown();
+  if(cur==='scanning'){scanTimer=setTimeout(()=>go('skills'),1700);}
+  if(cur==='listening'){listenTimer=setTimeout(()=>{if(cur==='listening')go('plan_coarse');},1600);}
+  if(cur.startsWith('plan_')||cur==='severe'||cur==='plan_refresh'||cur==='end_remind'){startAlt();}
+  attachRobot();
+}
+function go(s){cur=s;paint();}
+function setSc(v){sc=v;}
+function runCountdown(){
+  if(cdTimer)clearInterval(cdTimer);
+  let n=3;const num=document.querySelector('#screen #cdnum');if(!num)return;
+  num.textContent=n;
+  cdTimer=setInterval(()=>{n--;if(n<=0){clearInterval(cdTimer);cdTimer=null;go('done');}else{num.textContent=n;}},1000);
+}
+function init(){
+  const ng=document.getElementById('navgrid');
+  NAV.forEach(([s,l])=>{const b=document.createElement('button');b.textContent=l;b.dataset.s=s;b.onclick=()=>go(s);ng.appendChild(b);});
+  const sg=document.getElementById('simgrid');
+  SIM.forEach(([l,fn])=>{const b=document.createElement('button');b.textContent=l;b.onclick=()=>{ if(fn==='evalAdvance')evalAdvance(); else go(fn); };sg.appendChild(b);});
+  const sb=document.getElementById('storyboard');
+  const frames=[["camera","相机(Home)",1],["robot_idle","机器人常驻",1],["scanning","扫描中",1],["skills","skill气泡",1],["listening","语音输入",1],["plan_coarse","Plan·粗调",1],["plan_ref","Plan·目标图",1],["plan_fine","Plan·细调",1],["severe","Severe",1],["end_remind","结束提醒",1],["capture","倒计时·抓拍",1],["done","Done",1]];
+  frames.forEach(([st,cap,v])=>{const w=document.createElement('div');w.className='mini-wrap';
+    const cap2=document.createElement('div');cap2.className='mini-cap';cap2.innerHTML=`<b>${cap}</b>`;
+    const sh=document.createElement('div');sh.className='mini-shell';const ph=document.createElement('div');ph.className='phone';
+    const scr=document.createElement('div');scr.className='screen';const oldSc=sc;sc=v;scr.innerHTML=renderState(st);sc=oldSc;
+    ph.appendChild(scr);sh.appendChild(ph);w.appendChild(cap2);w.appendChild(sh);sb.appendChild(w);});
+  sc=1;cur='camera';paint();
+}
+init();
+</script>
+</body>
+</html>

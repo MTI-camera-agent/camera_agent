@@ -1,7 +1,11 @@
 agno
+openai
 google-genai
 httpx
 pillow
 pydantic
 pyyaml
 pytest
+fastapi
+uvicorn
+python-multipart

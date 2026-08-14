@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>UX_DESIGN.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> or <div class="page"></div> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="cameraagent-ios-app--ux-设计说明">CameraAgent iOS App — UX 设计说明</h1>
+<ul>
+<li><strong>版本</strong>：v2.0（2026-08-04）—— 端侧 VLM 候选 + 隐藏输入 + 左侧 Plan + 持续 Evaluation</li>
+<li><strong>状态</strong>：设计稿（未编码）；对应 <a href="../01-MVP%E6%9C%9F-%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1%E5%8F%8A%E8%AE%A1%E5%88%92.md">01-MVP期-方案设计及计划.md</a> §5 Phase 3–5 / §9.2 / 附录 A.4–A.5</li>
+<li><strong>可预览草稿</strong>：<a href="ios_app_ux_v1.html">ios_app_ux_v1.html</a>（v2.0，浏览器直接打开）；旧版 <a href="ios_app_ux.html">ios_app_ux.html</a>（v1.1，已被取代，保留作参考）</li>
+<li><strong>视觉令牌</strong>：沿用 <a href="../../frontend/web/styles.css">frontend/web/styles.css</a>（ink/lake/mist + Fraunces/IBM Plex Sans）</li>
+</ul>
+<blockquote>
+<p>App 打开即相机（iOS 相机风），无独立 Home。CameraAgent 由相机右上 ✦ 轻量唤起：<strong>端侧 VLM 读预览 + skill 白名单给 1~5 候选</strong>，文字/语音默认隐藏，点✎才唤起。Plan 3~5 步左侧竖向圆点连线、提示不约束；目标交端侧 VLM 持续 Evaluation（容差范围）+ 择机抓拍；中途跳走→提醒结束。</p>
+</blockquote>
+<hr>
+<h2 id="1-三大场景ux-入口融合流程">1. 三大场景（UX 入口，融合流程）</h2>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>定位</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>给自己拍</strong></td>
+<td>分身入画（<code>dual-cam-clone</code>）</td>
+<td>独立开关：打开→前置自拍→生成分身→置入后置预览→后续与&quot;给他人拍&quot;一致。见 <a href="../03-%E5%9C%BA%E6%99%AF%E8%AE%BE%E8%AE%A1%E5%8F%8ASkills%E5%AE%9E%E7%8E%B0.md">03-场景设计及Skills实现.md</a></td>
+</tr>
+<tr>
+<td><strong>给他人拍</strong></td>
+<td>人像引导</td>
+<td>skill：给女朋友拍照（耐心/时长/容忍交互多）、给孩子拍照（即时/抓拍/孩子不听引导、主要引导拍摄者）…</td>
+</tr>
+<tr>
+<td><strong>拍景</strong></td>
+<td>场景引导</td>
+<td>skill：拍摄美食、拍摄古典建筑、拍摄湖景…</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>3 大场景 = <strong>skill 分类底色</strong>，不做显式 3 段选择器；✦ 面板直接显 VLM 候选 chip（按当前预览 match 白名单 1~5 个，相关度排序）+ 独立&quot;给自己拍&quot;开关 + ✎自定义。</p>
+</blockquote>
+<hr>
+<h2 id="2-设计原则v20">2. 设计原则（v2.0）</h2>
+<ol>
+<li><strong>相机即根屏</strong>：App 打开即相机，无独立 Home；agent_panel / question / plan_active / 倒计时 / done 都是相机之上的层。</li>
+<li><strong>不干扰取景</strong>：✦ 面板默认只显候选 chips + 给自己拍开关 + ✎；<strong>文字/语音隐藏</strong>，点✎才唤起；Act 期底栏 chrome 隐藏。</li>
+<li><strong>端侧 VLM 候选即入口</strong>：✦ → 端侧 VLM(MiniCPM, Demo mock) 读预览 + skill 白名单 → 1~5 候选 chip；点 chip = 触发该 skill（<strong>无文字、无 Question</strong>）。</li>
+<li><strong>给自己拍 = 开关</strong>：打开 → 前置自拍 → 分身 → 置入后置预览 → 后续与给他人拍一致。</li>
+<li><strong>Plan 轻约束</strong>：3~5 步、左侧竖向圆点连线、√完成、<strong>提示不约束</strong>；目标交端侧 VLM 持续 Evaluation（容差范围，在范围即完成）；<strong>择机抓拍</strong>；中途跳走/自行拍摄→提醒结束。</li>
+<li><strong>Question 仅自定义文字触发</strong>：候选/给自己拍→无 Question；✎ 输入文字→可能 Question。</li>
+</ol>
+<hr>
+<h2 id="3-状态机相机常驻根屏">3. 状态机（相机常驻根屏）</h2>
+<pre class="hljs"><code><div>camera(home) ──(✦)──► agent_panel
+agent_panel ──(VLM候选 chip)──────────────────────► plan_active   [无 Question]
+agent_panel ──(给自己拍 开关)──► clone_id(前置自拍 mock)──► plan_active(分身置入)
+agent_panel ──(✎ 输入文字+↗)──► [可能] question ──► plan_active
+plan_active = camera + 左侧 Plan 步骤条(√推进) + overlay(框/箭头/锚点/目标图) + 顶部 Agent 文字
+   plan_active ──(端侧VLM 持续 Evaluation)──► 步骤√推进 / overlay 演化 / 择机抓拍 capture
+   plan_active ──(severe)──► severe_banner（非阻塞）
+   plan_active ──(场景失效)──► plan_refresh_modal ──► re-Plan
+   plan_active ──(用户中途跳走/自行拍摄)──► end_remind（提醒流程结束）──► camera/done
+   plan_active ──(capture_ready)──► capture(3s 倒计时)──► done──► camera
+</div></code></pre>
+<blockquote>
+<p>Plan 步骤示例（3~5）：① 粗调 机位/站位 ② 目标示意图就位 ③ 细调 姿态/视角 ④ 拍摄完成。<code>plan_active</code> 单屏，overlay 随步骤演化（粗→ref→细），不再分粗/细独立子屏。</p>
+</blockquote>
+<hr>
+<h2 id="4-屏规格ios-相机风--app-品牌">4. 屏规格（iOS 相机风 + App 品牌）</h2>
+<table>
+<thead>
+<tr>
+<th>屏</th>
+<th>触发</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Camera（home）</strong></td>
+<td>启动</td>
+<td>全屏取景；顶栏（左⚡/◐，右**✦ CameraAgent**）；底栏 = 变焦 <code>.5/1x/2/4/8</code> + 模式条 + 快门⦿ + 相册缩略图(左下，仅回看) + 翻转↻。✦ → agent_panel</td>
+</tr>
+<tr>
+<td><strong>Agent Panel</strong>（默认态）</td>
+<td>✦ 点按</td>
+<td>变焦数字上方的紧凑半透明 blur 面板：①<strong>VLM 候选 chips</strong>（1~5，scene-matched）点 chip=捕获当前帧+分析（<strong>无 Question</strong>）；②<strong>🤳 给自己拍开关</strong>（独立）→ clone_id；③**✎ 自定义**按钮（点按才唤起文字输入+🎤+↗）；✕dismiss。<strong>无显式文字框</strong>。3 大场景为 skill 分类底色</td>
+</tr>
+<tr>
+<td><strong>Agent Input</strong>（✎ 唤起）</td>
+<td>✎ 点按</td>
+<td>在 ✦ 面板内唤起文字输入框 + 🎤(未来语音 disabled) + ↗发送；输文+↗ → question（可能）</td>
+</tr>
+<tr>
+<td><strong>Clone ID</strong>（给自己拍）</td>
+<td>开关打开</td>
+<td>前置自拍框 + 提示&quot;拍上半身生成分身&quot; + 快门（mock 一键）→ 切后置预览（含分身）→ plan_active。标注 identity-photo-gen 待建</td>
+</tr>
+<tr>
+<td><strong>Question</strong></td>
+<td>✎ 自定义文字</td>
+<td>相机之上底部 sheet：<code>draftGoal</code> + 可折叠&quot;冲突摘要&quot; + 1~2 问题卡(option chips) → plan_active。<strong>仅自定义文字触发</strong>；候选/给自己拍不触发</td>
+</tr>
+<tr>
+<td><strong>Plan Active</strong>（核心）</td>
+<td>候选/开关/确认</td>
+<td>相机全屏 + <strong>左侧竖向 Plan 圆点连线</strong>（3~5 步，✓/▶/○）+ <strong>顶部 Agent 文字提示</strong>（居中靠上）+ <strong>中部 overlay</strong>（bbox/箭头/锚点/三分线/目标图）+ 右上 score 环 + 右下紧凑 Eval 控制；步骤随端侧 Eval √ 推进；Act 期底栏 chrome 隐藏</td>
+</tr>
+<tr>
+<td><strong>Capture</strong></td>
+<td>择机抓拍/captureReady</td>
+<td>相机 + 绿色就绪环 + 3s 倒计时 → 快门</td>
+</tr>
+<tr>
+<td><strong>Done</strong></td>
+<td>拍摄完成</td>
+<td>成片 + Plan 摘要(全✓) + &quot;再拍一组&quot;(→camera)/&quot;完成&quot;；场景二标注后处理 P4+</td>
+</tr>
+</tbody>
+</table>
+<h3 id="41-plan-active-子演化overlay-随步骤">4.1 Plan Active 子演化（overlay 随步骤）</h3>
+<ul>
+<li><strong>step1 粗调</strong>：bbox(目标区)+箭头(移动方向)+锚点(站位/对焦点)+三分线；advice&quot;人物向右移至右三分线&quot;。</li>
+<li><strong>step2 目标示意图就位</strong>：+ PIP 目标图（ready，<code>latencyMs</code>/<code>generator</code>）；advice&quot;对照示意图&quot;。</li>
+<li><strong>step3 细调</strong>：目标图 alpha@0.35 叠加 + 对齐进度条(<code>progressScore</code>)；advice&quot;头部再微转&quot;。</li>
+<li><strong>step4 拍摄完成</strong>：全✓ → capture_ready → 倒计时。</li>
+<li><strong>severe</strong>：连续偏离→顶部红横幅（非阻塞）+退出/继续。</li>
+<li><strong>plan_refresh</strong>：场景失效→模态&quot;重新规划&quot;。</li>
+<li><strong>end_remind</strong>：用户跳走/自行拍摄→模态&quot;流程已结束，保留/丢弃&quot;。</li>
+</ul>
+<hr>
+<h2 id="5-技术结论q能否调起-iphone-相机系统组件">5. 技术结论（Q：能否调起 iPhone 相机系统组件？）</h2>
+<p><strong>不能嵌入原生 iOS&quot;相机&quot;App UI</strong>：无公开 API；<code>UIImagePickerController(.camera)</code> 模态、不可定制、<strong>不允许 overlay</strong>。<strong>唯一路径</strong>：用 <code>expo-camera</code>（App 已选定，见 <a href="../01-MVP%E6%9C%9F-%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1%E5%8F%8A%E8%AE%A1%E5%88%92.md">01-MVP §9.2</a>）自建全屏取景，复刻 iOS 相机主要功能（实时预览 / <code>takePictureAsync</code> 抓拍 / <code>cameraType</code> 翻转 / <code>flashMode</code> / <code>zoom</code> 变焦 .5/1x/2/4/8），并可画 overlay + ✦ 面板（系统相机禁此）。Instagram/Snapchat 同法。&gt; 变焦 .5/2/4 依赖设备多摄，Phase A 核实可用 ratio。</p>
+<hr>
+<h2 id="6-端侧-vlm-架构注p5-能力前移">6. 端侧 VLM 架构注（P5 能力前移）</h2>
+<p>v2.0 的<strong>端侧 VLM(MiniCPM) 候选建议 + 持续 Evaluation + 择机抓拍 + 中途结束提醒</strong>属 <a href="../01-MVP%E6%9C%9F-%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1%E5%8F%8A%E8%AE%A1%E5%88%92.md">01-MVP §5 Phase 5</a> 的端侧能力<strong>前移到默认 UX</strong>。</p>
+<ul>
+<li><strong>Demo</strong>：mock 候选 + mock Eval 推进。</li>
+<li><strong>开发期兜底</strong>：可云端 <a href="../../services/gateway">Qwen3-VL :8000 describe_scene</a> 出候选（非端侧，但能跑通）。</li>
+<li><strong>真功能</strong>：需端侧 MiniCPM（重）或端侧化部署。</li>
+</ul>
+<blockquote>
+<p>⚠️ 此为重要架构决策；落地前需评估端侧可行性/性能/发热，并在 <a href="../01-MVP%E6%9C%9F-%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1%E5%8F%8A%E8%AE%A1%E5%88%92.md">01-MVP §9.2</a> 增补&quot;端侧 VLM 候选/Eval&quot;为 Phase 前置项（现 §9.2 Phase A–D 偏云端 Act，端侧候选/Eval 需补）。</p>
+</blockquote>
+<hr>
+<h2 id="7-skill-白名单扩展点">7. Skill 白名单（扩展点）</h2>
+<ul>
+<li><strong>给他人拍</strong>：给女朋友拍照、给孩子拍照…</li>
+<li><strong>拍景</strong>：拍摄美食、拍摄古典建筑、拍摄湖景…</li>
+<li><strong>给自己拍</strong>：分身入画（clone-self-into-scene）。</li>
+</ul>
+<blockquote>
+<p>白名单 = 扩展点；端侧 VLM 按当前预览 match 最相关 1~5 个，按相关度排序。新 skill 以 chip 加入，复用同一相机+引导骨架。</p>
+</blockquote>
+<hr>
+<h2 id="8-overlay-图层规格">8. Overlay 图层规格</h2>
+<p>渲染 <code>GuidanceLayer.kind</code>（<a href="../../schemas/shooting.py">schemas/shooting.py</a> L78–95）：</p>
+<table>
+<thead>
+<tr>
+<th>kind</th>
+<th>画法</th>
+<th>字段</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rule_of_thirds</code></td>
+<td>2 横+2 竖白线 1px@30%</td>
+<td><code>active</code></td>
+</tr>
+<tr>
+<td><code>bbox</code></td>
+<td>圆角矩形(<code>--lake-bright</code>)+标签徽章；<code>normalized=[x,y,w,h]</code>(0..1)</td>
+<td><code>normalized</code>,<code>label</code></td>
+</tr>
+<tr>
+<td><code>arrow</code></td>
+<td>矢量箭头（当前→目标）</td>
+<td><code>active</code></td>
+</tr>
+<tr>
+<td><code>text</code></td>
+<td>advice，按 <code>position</code> 摆放</td>
+<td><code>text</code>,<code>position</code></td>
+</tr>
+<tr>
+<td><code>reference_overlay</code></td>
+<td>参考 PNG alpha@0.35</td>
+<td>⚠️ <code>opacity</code>/<code>previewId</code> 未在 schema（A.4 前瞻，PR2 补）</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>锚点(站位/对焦点)为 mockup 视觉元素（小圆点），非 schema kind；可由 <code>bbox</code>+<code>arrow</code> 派生或后续加 <code>anchor</code> kind。</p>
+</blockquote>
+<hr>
+<h2 id="9-数据绑定字段名--api-camelcase-别名">9. 数据绑定（字段名 = API camelCase 别名）</h2>
+<table>
+<thead>
+<tr>
+<th>环节</th>
+<th>请求</th>
+<th>响应字段</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VLM 候选（新）</td>
+<td>端侧 VLM 读预览 + skill 白名单</td>
+<td>候选 list（mock）；开发期可 <code>describe_scene</code>（Qwen3-VL :8000）兜底</td>
+</tr>
+<tr>
+<td>候选/开关触发</td>
+<td><code>POST /api/v1/sessions/{id}/submit-intent</code>（multipart <code>frame</code> + <code>userIntent=&lt;skill 标签 或 ''&gt;</code>）</td>
+<td><code>IntentPhaseResult{draftGoal,questions(默认空→跳过 confirm),conflicts,sceneFacts,aestheticDraft}</code></td>
+</tr>
+<tr>
+<td>自定义文字</td>
+<td><code>submit-intent(userIntent=&lt;text&gt;)</code> → 有歧义则 <code>confirm-intent</code></td>
+<td><code>PlanAndEditInstruction{shootingPlan,coarseGuidance,editInstruction,referencePreview}</code></td>
+</tr>
+<tr>
+<td>Reference 轮询</td>
+<td><code>GET .../reference-preview</code> → <code>GET .../reference-preview.png</code></td>
+<td><code>ReferencePreviewPayload{status,dataRef,width,height,latencyMs,generator}</code></td>
+</tr>
+<tr>
+<td>Plan/Eval</td>
+<td><code>POST .../analyze-frame?phase=coarse_act|fine_act</code></td>
+<td><code>AnalyzeFrameResponse{compositionScore,vlmAlignScore,planDeviation,progressScore,guidanceOverlay,captureReady,captureReason,stepCompleted?}</code>（⚠️ PR2 待建；草稿以 A.4 为契约；<code>stepCompleted</code> 为新增前瞻字段）</td>
+</tr>
+</tbody>
+</table>
+<p>样本数据见 <a href="../01-MVP%E6%9C%9F-%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1%E5%8F%8A%E8%AE%A1%E5%88%92.md">01-MVP</a> 附录 A.4（断桥 <code>sim-scenic-001</code>）。</p>
+<hr>
+<h2 id="10-ios-惯用-ui-约定">10. iOS 惯用 UI 约定</h2>
+<ul>
+<li><strong>相机即主界面</strong>：全屏取景（<code>expo-camera</code>），iOS 原生相机范式。</li>
+<li><strong>✦ 右上触发</strong>：唤起贴底半透明 ✦ 面板（候选+开关+✎，变焦数字上方）。</li>
+<li><strong>左侧 Plan 圆点连线</strong>：竖向、窄、半透明，✓/▶/○；提示不约束。</li>
+<li><strong>顶部 Agent 文字</strong>：居中靠上 advice pill。</li>
+<li><strong>Act 期 chrome 隐藏</strong>：底栏 chrome 隐，换紧凑 Eval 控制（右下）；不干扰取景。</li>
+<li><strong>Bottom sheet</strong>：Question 用底部 sheet。</li>
+<li><strong>进度环/条</strong>：右上 <code>compositionScore</code> 环；<code>progressScore</code> 条。</li>
+<li><strong>倒计时</strong>：大号 3→2→1 + 绿色就绪环。</li>
+<li><strong>横幅/模态</strong>：severe 顶部红横幅（非阻塞）；plan_refresh/end_remind 居中模态。</li>
+<li><strong>🎤 语音</strong>：✎ 唤起内，未来支持语音输入意图。</li>
+</ul>
+<hr>
+<h2 id="11-️-schema-缺口">11. ⚠️ Schema 缺口</h2>
+<ul>
+<li><code>AnalyzeFrameResponse</code>（<code>compositionScore</code>/<code>vlmAlignScore</code>/<code>progressScore</code>/<code>captureReady</code>/<code>captureReason</code>/<code>guidanceOverlay</code>/<code>stepCompleted?</code>）<strong>未在 <a href="../../schemas/shooting.py">schemas/shooting.py</a></strong> —— P3 PR2 待建。草稿以 A.4 样本为事实契约。</li>
+<li><code>GuidanceLayer.opacity</code>/<code>previewId</code> 未在 schema —— A.4 前瞻，PR2 补。</li>
+<li><code>stepCompleted</code> 为 v2.0 新增前瞻字段（端侧 Eval 判步骤完成），PR2 需补。</li>
+<li>接真接口前须先在 PR2 落 schema，再校准 App <code>client.ts</code>。</li>
+</ul>
+<hr>
+<h2 id="12-扩展性--可访问性">12. 扩展性 / 可访问性</h2>
+<ul>
+<li><strong>Skill 白名单 + 候选 chip</strong> = 扩展点；新场景以 chip 加入，复用相机+引导骨架。</li>
+<li>全中文 UI；字段名/技术词保留英文（与 schema 一致）。</li>
+<li>触控目标 ≥44pt；对比度 WCAG AA；severe/倒计时辅以文字。</li>
+<li>🎤 语音输入为未来可达性增强（拍摄场景打字不便）。</li>
+</ul>
+<hr>
+<p><em>文档结束。v2.0（2026-08-04）：端侧 VLM 候选 + 隐藏输入(✎) + 左侧 Plan + 持续 Eval + 择机抓拍 + end_remind；新增 §6 端侧 VLM 架构注、§7 Skill 白名单。配套 <a href="ios_app_ux_v1.html">ios_app_ux_v1.html</a>；旧 <a href="ios_app_ux.html">ios_app_ux.html</a> 被取代。</em></p>
+
+</body>
+</html>

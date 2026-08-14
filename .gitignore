@@ -219,3 +219,12 @@ __marimo__/
 
 # Generated local model smoke-test outputs
 outputs/
+
+# Local model weights (multi-GB); keep assets/comfyui workflows in git
+assets/models/
+
+# Upstream mirrors with nested .git (clone locally; see reference/README.md)
+reference/
+
+# Local image backup copies
+test_img_bk/

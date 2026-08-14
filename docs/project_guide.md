@@ -82,8 +82,8 @@ Runtime configuration. The default config uses:
 - `structured_vision.provider: agno.google`
 - `structured_vision.model_id: gemini-2.5-flash`
 - `structured_vision.use_json_mode: true`
-- `image_generator.provider: openai_compatible`
-- `image_generator.base_url: http://127.0.0.1:8010`
+- `image_generator.provider: comfyui` (Qwen2511 via `:8188`; default)
+- `image_generator_fallback` → `openai_compatible` @ `http://127.0.0.1:8010` (FLUX cold fallback)
 - `tracing.format: plain`
 
 Provider names are registry keys, not hardcoded workflow assumptions.

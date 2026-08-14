@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>03-场景设计及Skills实现.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> or <div class="page"></div> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="03--场景设计及-skills-实现独立维护">03 — 场景设计及 Skills 实现（独立维护）</h1>
+<ul>
+<li><strong>版本</strong>：v0.1</li>
+<li><strong>日期</strong>：2026-07-25</li>
+<li><strong>状态</strong>：独立迭代——与 <a href="01-MVP%E6%9C%9F-%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1%E5%8F%8A%E8%AE%A1%E5%88%92.md">01-MVP期-方案设计及计划.md</a> / <a href="02-%E6%A1%86%E6%9E%B6%E5%8F%8A%E6%B5%81%E7%A8%8B%E5%9B%BE.md">02-框架及流程图.md</a> 后续同步。本文为<strong>设计 + 高保真伪实现</strong>（伪码入文内代码块，不创建真实 <code>.py</code>，不阻塞 PR2/PR3）。</li>
+<li><strong>关联文档</strong>：<a href="01-MVP%E6%9C%9F-%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1%E5%8F%8A%E8%AE%A1%E5%88%92.md">01-MVP期-方案设计及计划.md</a>（§7.1 Skill 全表 / §5 Phase3-5 act-loop 契约）、<a href="02-%E6%A1%86%E6%9E%B6%E5%8F%8A%E6%B5%81%E7%A8%8B%E5%9B%BE.md">02-框架及流程图.md</a>（harness / 端云流程 / 分身入画）、<a href="project_guide.md">project_guide.md</a>、<a href="p3_act_channels.md">p3_act_channels.md</a></li>
+</ul>
+<hr>
+<h2 id="1-skill-规范完善">1. Skill 规范（完善）</h2>
+<h3 id="11-现状缺口">1.1 现状缺口</h3>
+<ul>
+<li><a href="01-MVP%E6%9C%9F-%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1%E5%8F%8A%E8%AE%A1%E5%88%92.md">01 §7.1 Skill 全表</a> 的 <code>类型</code>列用 <code>P1/P2/P3/P5</code> <strong>无 legend</strong>（与 <code>阶段</code>列混用、语义不明）。</li>
+<li><strong>无 <code>SkillSpec</code> / <code>SkillRegistry</code> 代码</strong>（仅 <a href="01-MVP%E6%9C%9F-%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1%E5%8F%8A%E8%AE%A1%E5%88%92.md">01:111</a>/<a href="02-%E6%A1%86%E6%9E%B6%E5%8F%8A%E6%B5%81%E7%A8%8B%E5%9B%BE.md">02:38</a> <code>SkillRegistry 待建</code> 占位）；skills 现直构于 <code>app_shooting.py</code> / <code>services/gateway/factory.py</code>。</li>
+<li><code>ShootingPlan</code> 已有 <code>scenario</code> 字段 + step <code>skillIds[]</code>+<code>completionCriteria</code>——<strong>Skill ID 已是 plan-step ↔ skill 的 join key</strong>，但无 registry 解析。</li>
+<li>镜像对象：<a href="../schemas/tool.py">schemas/tool.py</a> 的 <code>ToolSpec/ToolParameter/ToolLayer</code>（edit-loop 工具侧规范）。</li>
+</ul>
+<h3 id="12-伪-schemasskillpy镜像-toolspec">1.2 伪 <code>schemas/skill.py</code>（镜像 ToolSpec）</h3>
+<pre class="hljs"><code><div><span class="hljs-comment"># 伪码——仅作设计契约，不落库（暂不入 schemas/skill.py）</span>
+<span class="hljs-keyword">from</span> enum <span class="hljs-keyword">import</span> StrEnum
+<span class="hljs-keyword">from</span> typing <span class="hljs-keyword">import</span> <span class="hljs-type">Any</span>
+<span class="hljs-keyword">from</span> pydantic <span class="hljs-keyword">import</span> BaseModel, Field
+
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">SkillKind</span>(<span class="hljs-title class_ inherited__">StrEnum</span>):
+    ATOMIC = <span class="hljs-string">&quot;atomic&quot;</span>        <span class="hljs-comment"># 单一能力单元</span>
+    COMPOSITE = <span class="hljs-string">&quot;composite&quot;</span>  <span class="hljs-comment"># 场景 skill：编排 atomic + agent loop</span>
+
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">SkillCategory</span>(<span class="hljs-title class_ inherited__">StrEnum</span>):  <span class="hljs-comment"># 修正 §7.1 歧义「类型」列</span>
+    PERCEPTION = <span class="hljs-string">&quot;perception&quot;</span>    <span class="hljs-comment"># 场景+美学理解：qwen3vl-photo</span>
+    PLANNING = <span class="hljs-string">&quot;planning&quot;</span>       <span class="hljs-comment"># 意图/方案：intent-question, scenic-plan</span>
+    GENERATION = <span class="hljs-string">&quot;generation&quot;</span>   <span class="hljs-comment"># 图像生成：reference-image-*, identity-photo-gen</span>
+    EVALUATION = <span class="hljs-string">&quot;evaluation&quot;</span>   <span class="hljs-comment"># 评分/对齐/偏离：vlm-align, composition-score, plan-deviation, reflector</span>
+    GUIDANCE = <span class="hljs-string">&quot;guidance&quot;</span>       <span class="hljs-comment"># 引导/叠加：cv-guide, overlay-compose</span>
+    POSTPROCESS = <span class="hljs-string">&quot;postprocess&quot;</span>  <span class="hljs-comment"># 成片后处理：character-swap, id-correction</span>
+
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">SkillParameter</span>(<span class="hljs-title class_ inherited__">BaseModel</span>):  <span class="hljs-comment"># 镜像 ToolParameter</span>
+    name: <span class="hljs-built_in">str</span>
+    <span class="hljs-built_in">type</span>: <span class="hljs-built_in">str</span> = <span class="hljs-string">&quot;string&quot;</span>
+    required: <span class="hljs-built_in">bool</span> = <span class="hljs-literal">False</span>
+    description: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>
+    default: <span class="hljs-type">Any</span> = <span class="hljs-literal">None</span>
+
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">SkillSpec</span>(<span class="hljs-title class_ inherited__">BaseModel</span>):  <span class="hljs-comment"># 镜像 ToolSpec</span>
+    skill_id: <span class="hljs-built_in">str</span>
+    kind: SkillKind
+    category: SkillCategory  <span class="hljs-comment"># composite 取主产出域</span>
+    description: <span class="hljs-built_in">str</span>
+    inputs: <span class="hljs-built_in">list</span>[SkillParameter] = Field(default_factory=<span class="hljs-built_in">list</span>)
+    outputs: <span class="hljs-built_in">list</span>[SkillParameter] = Field(default_factory=<span class="hljs-built_in">list</span>)
+    phase: <span class="hljs-built_in">str</span> = <span class="hljs-string">&quot;&quot;</span>            <span class="hljs-comment"># P1..P5</span>
+    priority: <span class="hljs-built_in">str</span> = <span class="hljs-string">&quot;&quot;</span>         <span class="hljs-comment"># P0..P2</span>
+    depends_on: <span class="hljs-built_in">list</span>[<span class="hljs-built_in">str</span>] = Field(default_factory=<span class="hljs-built_in">list</span>)  <span class="hljs-comment"># composite 编排的 skill_ids</span>
+    produces_artifact: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = <span class="hljs-literal">None</span>                  <span class="hljs-comment"># e.g. &quot;reference_preview&quot;</span>
+
+<span class="hljs-meta">    @property</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">required_inputs</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">set</span>[<span class="hljs-built_in">str</span>]:
+        <span class="hljs-keyword">return</span> {p.name <span class="hljs-keyword">for</span> p <span class="hljs-keyword">in</span> <span class="hljs-variable language_">self</span>.inputs <span class="hljs-keyword">if</span> p.required}
+</div></code></pre>
+<h3 id="13-伪-skillsregistrypy镜像-toolsregistrypy">1.3 伪 <code>skills/registry.py</code>（镜像 <a href="../tools/registry.py">tools/registry.py</a>）</h3>
+<pre class="hljs"><code><div><span class="hljs-comment"># 伪码</span>
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">SkillRegistry</span>:
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">__init__</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-literal">None</span>:
+        <span class="hljs-variable language_">self</span>._skills: <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-string">&quot;CompositeSkill&quot;</span>] = {}
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">register</span>(<span class="hljs-params">self, skill: <span class="hljs-string">&quot;CompositeSkill&quot;</span></span>) -&gt; <span class="hljs-literal">None</span>:
+        sid = skill.spec.skill_id
+        <span class="hljs-keyword">if</span> sid <span class="hljs-keyword">in</span> <span class="hljs-variable language_">self</span>._skills:
+            <span class="hljs-keyword">raise</span> ValueError(<span class="hljs-string">f&quot;duplicate skill <span class="hljs-subst">{sid}</span>&quot;</span>)
+        <span class="hljs-variable language_">self</span>._skills[sid] = skill
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">get</span>(<span class="hljs-params">self, skill_id: <span class="hljs-built_in">str</span></span>) -&gt; <span class="hljs-string">&quot;CompositeSkill&quot;</span>:
+        <span class="hljs-keyword">if</span> skill_id <span class="hljs-keyword">not</span> <span class="hljs-keyword">in</span> <span class="hljs-variable language_">self</span>._skills:
+            <span class="hljs-keyword">raise</span> KeyError(<span class="hljs-string">f&quot;unknown skill <span class="hljs-subst">{skill_id}</span>; registered: <span class="hljs-subst">{<span class="hljs-built_in">list</span>(self._skills)}</span>&quot;</span>)
+        <span class="hljs-keyword">return</span> <span class="hljs-variable language_">self</span>._skills[skill_id]
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">resolve_step</span>(<span class="hljs-params">self, step</span>) -&gt; <span class="hljs-built_in">list</span>[<span class="hljs-string">&quot;CompositeSkill&quot;</span>]:
+        <span class="hljs-string">&quot;&quot;&quot;ShootingPlanStep.skillIds -&gt; skills（plan-step ↔ skill join）。&quot;&quot;&quot;</span>
+        <span class="hljs-keyword">return</span> [<span class="hljs-variable language_">self</span>._skills[s] <span class="hljs-keyword">for</span> s <span class="hljs-keyword">in</span> step.skill_ids <span class="hljs-keyword">if</span> s <span class="hljs-keyword">in</span> <span class="hljs-variable language_">self</span>._skills]
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">specs_markdown</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">str</span>:
+        <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;\n&quot;</span>.join(<span class="hljs-string">f&quot;- <span class="hljs-subst">{s.spec.skill_id}</span> (<span class="hljs-subst">{s.spec.category}</span>): <span class="hljs-subst">{s.spec.description}</span>&quot;</span>
+                         <span class="hljs-keyword">for</span> s <span class="hljs-keyword">in</span> <span class="hljs-variable language_">self</span>._skills.values())
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">create_default_skill_registry</span>(<span class="hljs-params">*, photo_vlm, intent_agent, planner_agent,
+                                  image_generator, **deps</span>) -&gt; SkillRegistry:
+    <span class="hljs-string">&quot;&quot;&quot;注入现有 clients/agents；构造 atomic + composite 场景 skill。&quot;&quot;&quot;</span>
+    <span class="hljs-comment"># 伪：注册 qwen3vl-photo / reference-image-* / cv-guide / ... / compose-guide / dual-cam-clone</span>
+    ...
+</div></code></pre>
+<h3 id="14-伪-skillsbasecompositepy镜像-toolsbasebasepy">1.4 伪 <code>skills/base/composite.py</code>（镜像 <a href="../tools/base/base.py">tools/base/base.py</a>）</h3>
+<pre class="hljs"><code><div><span class="hljs-comment"># 伪码</span>
+<span class="hljs-keyword">from</span> dataclasses <span class="hljs-keyword">import</span> dataclass, field
+<span class="hljs-keyword">from</span> pathlib <span class="hljs-keyword">import</span> Path
+<span class="hljs-keyword">from</span> typing <span class="hljs-keyword">import</span> <span class="hljs-type">Any</span>, Protocol
+
+<span class="hljs-meta">@dataclass</span>
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">SkillContext</span>:  <span class="hljs-comment"># 镜像 ToolContext</span>
+    inputs: <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-type">Any</span>]               <span class="hljs-comment"># frame / user_intent / front_selfie ...</span>
+    services: <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-type">Any</span>]             <span class="hljs-comment"># &quot;photo_vlm&quot; / &quot;image_generator&quot; / &quot;reference_preview_service&quot;</span>
+    agents: <span class="hljs-built_in">dict</span>[<span class="hljs-built_in">str</span>, <span class="hljs-type">Any</span>]               <span class="hljs-comment"># &quot;intent_agent&quot; / &quot;planner_agent&quot; / &quot;coach_agent&quot;</span>
+    state: <span class="hljs-type">Any</span>                           <span class="hljs-comment"># ExecutionState（schemas/state.py）</span>
+    output_dir: Path
+    session_id: <span class="hljs-built_in">str</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">with_inputs</span>(<span class="hljs-params">self, **kw</span>) -&gt; <span class="hljs-string">&quot;SkillContext&quot;</span>: ...  <span class="hljs-comment"># 派生子上下文（伪）</span>
+
+<span class="hljs-meta">@dataclass</span>
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">SkillResult</span>:
+    artifact_kind: <span class="hljs-built_in">str</span>   <span class="hljs-comment"># &quot;guidance_overlay&quot; | &quot;reference_preview&quot; | &quot;capture&quot; | &quot;identity_photo&quot; | &quot;swapped_photo&quot; | &quot;final_photo&quot;</span>
+    path: Path | <span class="hljs-literal">None</span>
+    data: <span class="hljs-type">Any</span> = <span class="hljs-literal">None</span>
+    message: <span class="hljs-built_in">str</span> = <span class="hljs-string">&quot;&quot;</span>
+
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">CompositeSkill</span>(<span class="hljs-title class_ inherited__">Protocol</span>):
+<span class="hljs-meta">    @property</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">spec</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-string">&quot;SkillSpec&quot;</span>: ...
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">run</span>(<span class="hljs-params">self, ctx: SkillContext</span>) -&gt; SkillResult: ...
+</div></code></pre>
+<h3 id="15-完善后-skill-全表修正-类型列-legend">1.5 完善后 Skill 全表（修正 <code>类型</code>列 legend）</h3>
+<table>
+<thead>
+<tr>
+<th>Skill ID</th>
+<th>类型(kind/category)</th>
+<th>输入</th>
+<th>输出</th>
+<th>阶段</th>
+<th>优先级</th>
+<th>状态</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>qwen3vl-photo</code></td>
+<td>atomic/perception</td>
+<td>frame</td>
+<td>scene + aesthetic draft</td>
+<td>P1</td>
+<td>P0</td>
+<td>已有</td>
+</tr>
+<tr>
+<td><code>intent-question</code></td>
+<td>atomic/planning</td>
+<td>evidence + intent</td>
+<td><code>questions[]</code></td>
+<td>P1</td>
+<td>P0</td>
+<td>已有</td>
+</tr>
+<tr>
+<td><code>scenic-plan</code></td>
+<td>atomic/planning</td>
+<td>answers + evidence</td>
+<td>Plan + <code>editInstruction</code> + <code>coarseGuidance</code></td>
+<td>P1</td>
+<td>P0</td>
+<td>已有</td>
+</tr>
+<tr>
+<td><code>reference-image-qwen2511</code></td>
+<td>atomic/generation</td>
+<td>frame + <code>editInstruction</code></td>
+<td><code>reference_preview</code></td>
+<td>P3</td>
+<td>P0</td>
+<td>PR1 已实现未实测</td>
+</tr>
+<tr>
+<td><code>reference-image-flux</code></td>
+<td>atomic/generation</td>
+<td>frame + <code>editInstruction</code></td>
+<td><code>reference_preview</code></td>
+<td>P3</td>
+<td>P1</td>
+<td>PR1 已接（默认关）</td>
+</tr>
+<tr>
+<td><code>cv-guide</code></td>
+<td>atomic/guidance</td>
+<td>preview_frame</td>
+<td>advice + offset</td>
+<td>P3–P5</td>
+<td>P1</td>
+<td>PR2 待建</td>
+</tr>
+<tr>
+<td><code>composition-score</code></td>
+<td>atomic/evaluation</td>
+<td>preview_frame</td>
+<td>score + issues</td>
+<td>P3–P5</td>
+<td>P2</td>
+<td>PR2 待建</td>
+</tr>
+<tr>
+<td><code>overlay-compose</code></td>
+<td>atomic/guidance</td>
+<td>frame + guidance</td>
+<td>layers</td>
+<td>P3–P5</td>
+<td>P1</td>
+<td>PR2 待建</td>
+</tr>
+<tr>
+<td><code>vlm-align</code></td>
+<td>atomic/evaluation</td>
+<td>current + reference</td>
+<td><code>vlmAlignScore</code></td>
+<td>P4–P5</td>
+<td>P0</td>
+<td>P4 待建</td>
+</tr>
+<tr>
+<td><code>plan-deviation</code></td>
+<td>atomic/evaluation</td>
+<td>score history + bbox</td>
+<td><code>planDeviation</code></td>
+<td>P3–P4</td>
+<td>P1</td>
+<td>PR2 待建</td>
+</tr>
+<tr>
+<td><code>reflector</code></td>
+<td>atomic/evaluation</td>
+<td>session memory</td>
+<td><code>reflectorHints</code></td>
+<td>P4</td>
+<td>P2</td>
+<td>P4 待建</td>
+</tr>
+<tr>
+<td><strong><code>identity-photo-gen</code></strong></td>
+<td>atomic/generation</td>
+<td>front_frame</td>
+<td>分身照(RGBA cutout)</td>
+<td>P3+</td>
+<td>P1</td>
+<td><strong>本文伪实现</strong></td>
+</tr>
+<tr>
+<td><strong><code>character-swap</code></strong></td>
+<td>atomic/postprocess</td>
+<td>rear_photo + 分身照 + reference</td>
+<td>swapped_photo</td>
+<td>P4+</td>
+<td>P1</td>
+<td><strong>本文伪实现</strong></td>
+</tr>
+<tr>
+<td><strong><code>id-correction</code></strong></td>
+<td>atomic/postprocess</td>
+<td>swapped_photo + front_face</td>
+<td>final_photo</td>
+<td>P4+</td>
+<td>P1</td>
+<td><strong>本文伪实现</strong></td>
+</tr>
+<tr>
+<td><strong><code>compose-guide</code></strong></td>
+<td>composite/guidance</td>
+<td>frame + user_intent?</td>
+<td>guidanceOverlay + reference_preview + captureReady</td>
+<td>P3–P5</td>
+<td>P0</td>
+<td><strong>本文伪实现</strong></td>
+</tr>
+<tr>
+<td><strong><code>dual-cam-clone</code></strong></td>
+<td>composite/postprocess</td>
+<td>rear_frame + user_intent? + front_selfie</td>
+<td>guidanceOverlay + reference_preview + final_photo</td>
+<td>P3–P5</td>
+<td>P0</td>
+<td><strong>本文伪实现</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>composite skill 的 <code>category</code> 取主产出域（compose-guide=guidance；dual-cam-clone=postprocess）；<code>depends_on</code> 见各 §。</p>
+</blockquote>
+<hr>
+<h2 id="2-场景一拍摄构图指导compose-guide">2. 场景一：拍摄构图指导（<code>compose-guide</code>）</h2>
+<p><strong>定位</strong>：用户默认无 Intent 或「想拍的更好看」模糊输入。<strong>默认跳过 Question</strong>，以 Qwen3 美学 instruction 为帧驱动构图目标；用户 Intent 作为<strong>后续引入点</strong>。体现 Agent 价值：instruction 智能给构图目标、Evaluation 评估并刷新引导/Plan。</p>
+<h3 id="21-体验流程图">2.1 体验流程图</h3>
+<pre><code class="language-mermaid"><div class="mermaid">sequenceDiagram
+  participant U as 用户
+  participant Skill as ComposeGuideSkill
+  participant Qwen as Qwen3VL_scene_aesthetic
+  participant Agent as MainAgent_Planner
+  participant Ref as ReferenceGen_Qwen2511
+  participant CV as CV_overlay
+  participant Mini as MiniCPM_eval
+  U->>Skill: 预览帧_可选模糊意图_拍好看点
+  Skill->>Qwen: describe_scene_帧
+  Skill->>Qwen: draft_aesthetic_instruction_帧_无userIntent
+  Note over Skill: 价值1_帧驱动智能构图目标_无意图干扰
+  alt 用户有明确意图_后续引入点
+    Skill->>Agent: intent_plus_scene_plus_aesthetic_to_Question_仅真实歧义
+    U-->>Skill: answers
+  else 默认无意图
+    Note over Skill: 跳过Question_以美学instruction为构图目标
+  end
+  Skill->>Agent: Plan_粗引导bbox箭头文字_plus_editInstruction
+  par coarse_act
+    Skill->>CV: overlay_三分线_bbox_箭头_plus_adviceText
+    CV-->>U: 粗调引导
+  and reference_preview_512
+    Skill->>Ref: 帧512_plus_editInstruction
+    Ref-->>Skill: reference_PNG_512
+    Skill-->>U: PIP示意图
+  end
+  loop 细引导_eval_1fps
+    U->>Mini: 当前帧_plus_reference_plus_Plan_goal
+    Mini-->>Skill: achieved_qm_gaps_next
+    alt Plan-refresh_场景变化使Plan失效
+      Skill->>Agent: invalidate_plus新帧_to_rePlan
+      Agent-->>Skill: 新Plan_plus新粗引导_参考
+    else 未达标
+      Skill->>CV: 刷新引导趋近
+    else 达标
+      Skill-->>U: capture_ready_plus倒计时
+    end
+  end
+  Note over U,Mini: Loop完成_趋近目标_rePlan_用户终止_意图随时注入后续
+</div></code></pre>
+<h3 id="22-skillspec">2.2 SkillSpec</h3>
+<p><code>compose-guide</code>（composite/guidance）：<code>depends_on=[qwen3vl-photo, scenic-plan, reference-image-qwen2511, cv-guide, composition-score, overlay-compose, vlm-align, plan-deviation]</code>；<code>inputs=[frame(path,req), user_intent?(str)]</code>；<code>outputs=[guidanceOverlay, reference_preview, captureReady(bool)]</code>；phase P3–P5；priority P0。</p>
+<h3 id="23-伪-skillsscenariocompose_guidepy">2.3 伪 <code>skills/scenario/compose_guide.py</code></h3>
+<pre class="hljs"><code><div><span class="hljs-string">&quot;&quot;&quot;场景一·拍摄构图指导 Skill（composite, 高保真伪实现）。
+
+编排：qwen3vl-photo(感知) → (条件)intent-question → scenic-plan →
+reference-image-qwen2511 ∥ cv-guide/composition-score/overlay-compose(粗调) →
+vlm-align/plan-deviation(细调 eval) → capture。
+Agent 价值：① 帧驱动 instruction ② evaluator 驱动 replan/refresh ③ Plan-refresh。
+用户 Intent 作为后续引入点（默认无/模糊意图，跳过 Question）。
+&quot;&quot;&quot;</span>
+<span class="hljs-keyword">from</span> __future__ <span class="hljs-keyword">import</span> annotations
+<span class="hljs-keyword">from</span> pathlib <span class="hljs-keyword">import</span> Path
+<span class="hljs-keyword">from</span> skills.base.composite <span class="hljs-keyword">import</span> CompositeSkill, SkillContext, SkillResult  <span class="hljs-comment"># 伪</span>
+<span class="hljs-keyword">from</span> schemas.skill <span class="hljs-keyword">import</span> SkillSpec, SkillKind, SkillCategory, SkillParameter  <span class="hljs-comment"># 伪</span>
+<span class="hljs-keyword">from</span> schemas.shooting <span class="hljs-keyword">import</span> PlanAndEditInstruction, IntentAnswer  <span class="hljs-comment"># 真</span>
+
+
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">ComposeGuideSkill</span>:
+    SPEC = SkillSpec(
+        skill_id=<span class="hljs-string">&quot;compose-guide&quot;</span>,
+        kind=SkillKind.COMPOSITE,
+        category=SkillCategory.GUIDANCE,
+        description=<span class="hljs-string">&quot;场景一：拍摄构图指导——帧驱动 instruction→Plan→粗调∥示意图→细调 eval 闭环&quot;</span>,
+        inputs=[SkillParameter(name=<span class="hljs-string">&quot;frame&quot;</span>, <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;path&quot;</span>, required=<span class="hljs-literal">True</span>),
+                SkillParameter(name=<span class="hljs-string">&quot;user_intent&quot;</span>, <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;string&quot;</span>, required=<span class="hljs-literal">False</span>)],
+        outputs=[SkillParameter(name=<span class="hljs-string">&quot;guidanceOverlay&quot;</span>),
+                 SkillParameter(name=<span class="hljs-string">&quot;reference_preview&quot;</span>),
+                 SkillParameter(name=<span class="hljs-string">&quot;captureReady&quot;</span>, <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;boolean&quot;</span>)],
+        phase=<span class="hljs-string">&quot;P3-P5&quot;</span>, priority=<span class="hljs-string">&quot;P0&quot;</span>,
+        depends_on=[<span class="hljs-string">&quot;qwen3vl-photo&quot;</span>, <span class="hljs-string">&quot;scenic-plan&quot;</span>, <span class="hljs-string">&quot;reference-image-qwen2511&quot;</span>,
+                    <span class="hljs-string">&quot;cv-guide&quot;</span>, <span class="hljs-string">&quot;composition-score&quot;</span>, <span class="hljs-string">&quot;overlay-compose&quot;</span>,
+                    <span class="hljs-string">&quot;vlm-align&quot;</span>, <span class="hljs-string">&quot;plan-deviation&quot;</span>],
+        produces_artifact=<span class="hljs-string">&quot;guidance_overlay&quot;</span>,
+    )
+
+<span class="hljs-meta">    @property</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">spec</span>(<span class="hljs-params">self</span>) -&gt; SkillSpec:
+        <span class="hljs-keyword">return</span> <span class="hljs-variable language_">self</span>.SPEC
+
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">run</span>(<span class="hljs-params">self, ctx: SkillContext</span>) -&gt; SkillResult:
+        frame: Path = ctx.inputs[<span class="hljs-string">&quot;frame&quot;</span>]
+        user_intent: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = ctx.inputs.get(<span class="hljs-string">&quot;user_intent&quot;</span>)
+        photo = ctx.services[<span class="hljs-string">&quot;photo_vlm&quot;</span>]          <span class="hljs-comment"># Qwen3VLPhotoClient（真）</span>
+        planner = ctx.agents[<span class="hljs-string">&quot;planner_agent&quot;</span>]     <span class="hljs-comment"># ShootingPlannerAgent（真）</span>
+
+        <span class="hljs-comment"># —— 价值①：帧驱动智能构图 instruction（美学调用禁收 userIntent）——</span>
+        scene = photo.describe_scene(frame)
+        aesthetic = photo.draft_aesthetic_instruction(frame)   <span class="hljs-comment"># 不传 user_intent（真契约）</span>
+
+        <span class="hljs-comment"># —— Question 默认跳过；仅当用户明确意图且存在真实歧义才问（后续引入点）——</span>
+        intent_phase = <span class="hljs-literal">None</span>
+        answers: <span class="hljs-built_in">list</span>[IntentAnswer] = []
+        <span class="hljs-keyword">if</span> user_intent <span class="hljs-keyword">and</span> <span class="hljs-variable language_">self</span>._has_ambiguity(scene, aesthetic, user_intent):  <span class="hljs-comment"># 伪</span>
+            intent_agent = ctx.agents[<span class="hljs-string">&quot;intent_agent&quot;</span>]                           <span class="hljs-comment"># IntentAgent（真）</span>
+            intent_phase = intent_agent.analyze(
+                user_intent=user_intent, scene_facts=scene, aesthetic_draft=aesthetic)
+            answers = <span class="hljs-variable language_">self</span>._ask_user(intent_phase.questions)                    <span class="hljs-comment"># 伪：端侧 UI</span>
+
+        <span class="hljs-comment"># —— Plan：粗引导(bbox/箭头/文字) + editInstruction ——</span>
+        plan: PlanAndEditInstruction = planner.plan(
+            user_intent=user_intent <span class="hljs-keyword">or</span> <span class="hljs-string">&quot;&quot;</span>,
+            answers=answers,
+            questions=intent_phase.questions <span class="hljs-keyword">if</span> intent_phase <span class="hljs-keyword">else</span> [],
+            conflicts=intent_phase.conflicts <span class="hljs-keyword">if</span> intent_phase <span class="hljs-keyword">else</span> [],
+            scene_facts=scene, aesthetic_draft=aesthetic)
+
+        <span class="hljs-comment"># —— 并行：reference 512 生成 ∥ 粗调 overlay ——</span>
+        reference = <span class="hljs-variable language_">self</span>._kickoff_reference(ctx, frame, plan.edit_instruction)   <span class="hljs-comment"># 伪：ReferencePreviewService.kickoff(帧512)</span>
+        <span class="hljs-variable language_">self</span>._render_overlay(ctx, plan.coarse_guidance)                          <span class="hljs-comment"># 伪：overlay-compose</span>
+
+        <span class="hljs-comment"># —— 细调 eval 闭环（MiniCPM 1fps；PR2/P4 落地前为伪 stub）——</span>
+        capture_ready = <span class="hljs-literal">False</span>
+        <span class="hljs-keyword">while</span> <span class="hljs-keyword">not</span> capture_ready:
+            current = <span class="hljs-variable language_">self</span>._fetch_current_frame(ctx)                          <span class="hljs-comment"># 伪：1fps 取帧</span>
+            ev = <span class="hljs-variable language_">self</span>._evaluate(ctx, current, reference, plan)                 <span class="hljs-comment"># 伪：vlm-align + plan-deviation</span>
+            <span class="hljs-keyword">if</span> ev.invalidates_plan:                                           <span class="hljs-comment"># 价值③：Plan-refresh</span>
+                plan = planner.plan(user_intent=user_intent <span class="hljs-keyword">or</span> <span class="hljs-string">&quot;&quot;</span>, answers=answers,
+                                    questions=intent_phase.questions <span class="hljs-keyword">if</span> intent_phase <span class="hljs-keyword">else</span> [],
+                                    conflicts=intent_phase.conflicts <span class="hljs-keyword">if</span> intent_phase <span class="hljs-keyword">else</span> [],
+                                    scene_facts=ev.new_scene, aesthetic_draft=aesthetic)
+                reference = <span class="hljs-variable language_">self</span>._kickoff_reference(ctx, frame, plan.edit_instruction)
+            <span class="hljs-keyword">elif</span> <span class="hljs-keyword">not</span> ev.achieved:                                              <span class="hljs-comment"># 价值②：刷新引导</span>
+                <span class="hljs-variable language_">self</span>._refresh_guidance(ctx, ev.next_action)
+            <span class="hljs-keyword">else</span>:
+                capture_ready = <span class="hljs-literal">True</span>
+            <span class="hljs-keyword">if</span> <span class="hljs-variable language_">self</span>._user_intent_injected():                                   <span class="hljs-comment"># 后续引入点</span>
+                plan = planner.plan(... <span class="hljs-keyword">with</span> new intent ...)                  <span class="hljs-comment"># 伪</span>
+        <span class="hljs-keyword">return</span> SkillResult(<span class="hljs-string">&quot;capture&quot;</span>, <span class="hljs-variable language_">self</span>._capture(ctx), {<span class="hljs-string">&quot;plan&quot;</span>: plan}, <span class="hljs-string">&quot;capture_ready&quot;</span>)
+
+    <span class="hljs-comment"># —— 伪 helpers ——</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_has_ambiguity</span>(<span class="hljs-params">self, *a</span>) -&gt; <span class="hljs-built_in">bool</span>: ...
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_ask_user</span>(<span class="hljs-params">self, qs</span>) -&gt; <span class="hljs-built_in">list</span>[IntentAnswer]: ...
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_kickoff_reference</span>(<span class="hljs-params">self, ctx, frame, edit_instr</span>): ...
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_render_overlay</span>(<span class="hljs-params">self, ctx, guidance</span>): ...
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_fetch_current_frame</span>(<span class="hljs-params">self, ctx</span>) -&gt; Path: ...
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_evaluate</span>(<span class="hljs-params">self, ctx, current, reference, plan</span>): ...   <span class="hljs-comment"># -&gt; {achieved, next_action, invalidates_plan, new_scene}</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_refresh_guidance</span>(<span class="hljs-params">self, ctx, next_action</span>): ...
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_user_intent_injected</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">bool</span>: ...
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_capture</span>(<span class="hljs-params">self, ctx</span>) -&gt; Path: ...
+</div></code></pre>
+<hr>
+<h2 id="3-场景二双景拍分身入画--character-swap--id-修正dual-cam-clone">3. 场景二：双景拍·分身入画 + Character Swap + ID 修正（<code>dual-cam-clone</code>）</h2>
+<p><strong>定位</strong>：用户触发按钮 + 可选意图（如「想让自己走在石板路上，惬意吹海风」）。Agent 理解意图 + Qwen3 画面理解 → 必要 Question + Plan → 前置大 FoV 自拍 → 分身照 → 抠图置位 → 目标示意图 → 细引导 eval → 后处理 character-swap + id-correction。用户意图随时注入刷新 Act/Plan。</p>
+<h3 id="31-体验流程图">3.1 体验流程图</h3>
+<pre><code class="language-mermaid"><div class="mermaid">sequenceDiagram
+  participant U as 用户
+  participant Skill as DualCamCloneSkill
+  participant Qwen as Qwen3VL_scene_aesthetic
+  participant Agent as MainAgent_Intent_Planner
+  participant ID as IdentityPhotoGen
+  participant OV as overlay_compose
+  participant Ref as ReferenceGen_Qwen2511
+  participant CV as CV_overlay
+  participant Mini as MiniCPM_eval
+  participant Swap as CharacterSwap
+  participant IDC as IDCorrection
+  U->>Skill: 按钮_plus_可选意图_走在石板路上吹海风
+  Skill->>Qwen: describe_scene_plus_draft_aesthetic
+  Skill->>Agent: intent_plus_scene_plus_aesthetic
+  Note over Skill: 价值1_意图到stance_mood_站位推理
+  alt 存在歧义_必要Question
+    Agent-->>U: Question_带选项
+    U-->>Skill: answers
+  end
+  Agent-->>Skill: Plan_机位_景别_站位_对焦点_plus_editInstruction
+  U->>ID: 前置自拍_大FoV_上半身_plus_衣着
+  ID-->>Skill: 分身照_白底模特照
+  Skill->>OV: 分身抠图_plus_Plan站位bbox
+  OV-->>U: 虚框人像置于站位示意
+  par coarse_act
+    Skill->>CV: bbox_箭头_文字_to_机位_景别_站位对焦
+  and reference_512
+    Skill->>Ref: 后置帧512_plus_editInstruction
+    Ref-->>Skill: reference_PNG
+    Skill-->>U: PIP示意图
+  end
+  loop 细引导_eval_1fps
+    U->>Mini: 当前帧_plus_reference_plus_Plan_goal
+    Mini-->>Skill: achieved_qm_next
+    alt 用户随时输入意图
+      Skill->>Agent: 新intent_to_rePlan_or_刷新Act
+    else Plan-refresh
+      Skill->>Agent: invalidate_to_rePlan
+    else 达标
+      Skill-->>U: capture_ready_to_快门
+    end
+  end
+  U->>Swap: 后置成片_plus_分身高清_plus_reference
+  Note over Swap: 背景绝对保真_人像高清_ID可能漂移
+  Swap-->>Skill: swapped_photo
+  Skill->>IDC: swapped_plus_前置人脸
+  IDC-->>U: 最终照片_ID修正
+</div></code></pre>
+<h3 id="32-新增-atomic-skillspec伪">3.2 新增 atomic SkillSpec（伪）</h3>
+<ul>
+<li><strong><code>identity-photo-gen</code></strong>（atomic/generation, P3+）：<code>inputs=[front_frame(path,req)]</code>；<code>outputs=[identity_photo(path)]</code>（白底模特照→RGBA抠图）；复用：<code>ImageGenerationClient.edit()</code> + SAM/人体检测抠图。</li>
+<li><strong><code>character-swap</code></strong>（atomic/postprocess, P4+）：<code>inputs=[rear_photo, identity_photo, reference?]</code>；<code>outputs=[swapped_photo]</code>；约束：<strong>背景绝对保真</strong>（mask 仅人像区）、人像高清 inpainting、ID 可能漂移（→ id-correction）。</li>
+<li><strong><code>id-correction</code></strong>（atomic/postprocess, P4+）：<code>inputs=[swapped_photo, front_face]</code>；<code>outputs=[final_photo]</code>；face swap 修正 ID 漂移。</li>
+</ul>
+<p><code>dual-cam-clone</code>（composite/postprocess）：<code>depends_on=[intent-question, qwen3vl-photo, scenic-plan, identity-photo-gen, overlay-compose, reference-image-qwen2511, cv-guide, composition-score, vlm-align, plan-deviation, character-swap, id-correction]</code>；<code>inputs=[rear_frame(req), user_intent?, front_selfie(req)]</code>；<code>outputs=[guidanceOverlay, reference_preview, final_photo]</code>；phase P3–P5；priority P0。</p>
+<h3 id="33-伪文件">3.3 伪文件</h3>
+<h4 id="skillsgenerationidentity_photopy"><code>skills/generation/identity_photo.py</code></h4>
+<pre class="hljs"><code><div><span class="hljs-string">&quot;&quot;&quot;identity-photo-gen：前置大 FoV 自拍 → 白底模特照（分身照，RGBA cutout）。&quot;&quot;&quot;</span>
+<span class="hljs-keyword">from</span> skills.base.composite <span class="hljs-keyword">import</span> CompositeSkill, SkillContext, SkillResult  <span class="hljs-comment"># 伪</span>
+<span class="hljs-keyword">from</span> schemas.skill <span class="hljs-keyword">import</span> SkillSpec, SkillKind, SkillCategory, SkillParameter  <span class="hljs-comment"># 伪</span>
+<span class="hljs-keyword">from</span> skills.reference_image <span class="hljs-keyword">import</span> PRESERVE_IDENTITY_SUFFIX  <span class="hljs-comment"># 真</span>
+
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">IdentityPhotoGenSkill</span>:
+    SPEC = SkillSpec(
+        skill_id=<span class="hljs-string">&quot;identity-photo-gen&quot;</span>, kind=SkillKind.ATOMIC, category=SkillCategory.GENERATION,
+        description=<span class="hljs-string">&quot;前置自拍上半身→白底分身照(RGBA抠图)，供 character-swap 置入后置画面&quot;</span>,
+        inputs=[SkillParameter(name=<span class="hljs-string">&quot;front_frame&quot;</span>, <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;path&quot;</span>, required=<span class="hljs-literal">True</span>)],
+        outputs=[SkillParameter(name=<span class="hljs-string">&quot;identity_photo&quot;</span>, <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;path&quot;</span>)],
+        phase=<span class="hljs-string">&quot;P3+&quot;</span>, priority=<span class="hljs-string">&quot;P1&quot;</span>, produces_artifact=<span class="hljs-string">&quot;identity_photo&quot;</span>)
+<span class="hljs-meta">    @property</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">spec</span>(<span class="hljs-params">self</span>) -&gt; SkillSpec: <span class="hljs-keyword">return</span> <span class="hljs-variable language_">self</span>.SPEC
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">run</span>(<span class="hljs-params">self, ctx: SkillContext</span>) -&gt; SkillResult:
+        front = ctx.inputs[<span class="hljs-string">&quot;front_frame&quot;</span>]
+        client = ctx.services[<span class="hljs-string">&quot;image_generator&quot;</span>]            <span class="hljs-comment"># ImageGenerationClient（真）</span>
+        out = ctx.output_dir / <span class="hljs-string">&quot;identity_raw.png&quot;</span>
+        <span class="hljs-comment"># 伪：1) 生成白底模特照（保持身份/衣着，禁止臆造新元素）</span>
+        client.edit(image_path=front,
+                    prompt=<span class="hljs-string">f&quot;白底全身模特照，保持人物身份与衣着不变。<span class="hljs-subst">{PRESERVE_IDENTITY_SUFFIX}</span>&quot;</span>,
+                    output_path=out)
+        cutout = <span class="hljs-variable language_">self</span>._matting(out)                          <span class="hljs-comment"># 伪：SAM/人体检测 → RGBA 抠图</span>
+        <span class="hljs-keyword">return</span> SkillResult(<span class="hljs-string">&quot;identity_photo&quot;</span>, cutout, <span class="hljs-literal">None</span>, <span class="hljs-string">&quot;分身照&quot;</span>)
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_matting</span>(<span class="hljs-params">self, path</span>): ...                            <span class="hljs-comment"># 伪</span>
+</div></code></pre>
+<h4 id="skillspostprocesscharacter_swappy"><code>skills/postprocess/character_swap.py</code></h4>
+<pre class="hljs"><code><div><span class="hljs-string">&quot;&quot;&quot;character-swap：后置成片人像区 inpainting 置入分身高清图；背景绝对保真，ID 可能漂移。&quot;&quot;&quot;</span>
+<span class="hljs-keyword">from</span> skills.base.composite <span class="hljs-keyword">import</span> CompositeSkill, SkillContext, SkillResult  <span class="hljs-comment"># 伪</span>
+<span class="hljs-keyword">from</span> schemas.skill <span class="hljs-keyword">import</span> SkillSpec, SkillKind, SkillCategory, SkillParameter  <span class="hljs-comment"># 伪</span>
+
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">CharacterSwapSkill</span>:
+    SPEC = SkillSpec(
+        skill_id=<span class="hljs-string">&quot;character-swap&quot;</span>, kind=SkillKind.ATOMIC, category=SkillCategory.POSTPROCESS,
+        description=<span class="hljs-string">&quot;后置成片人像区 inpainting 换成分身高清图；背景绝对保真(mask仅人像区)&quot;</span>,
+        inputs=[SkillParameter(name=<span class="hljs-string">&quot;rear_photo&quot;</span>, <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;path&quot;</span>, required=<span class="hljs-literal">True</span>),
+                SkillParameter(name=<span class="hljs-string">&quot;identity_photo&quot;</span>, <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;path&quot;</span>, required=<span class="hljs-literal">True</span>),
+                SkillParameter(name=<span class="hljs-string">&quot;reference&quot;</span>, <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;path&quot;</span>, required=<span class="hljs-literal">False</span>)],
+        outputs=[SkillParameter(name=<span class="hljs-string">&quot;swapped_photo&quot;</span>, <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;path&quot;</span>)],
+        phase=<span class="hljs-string">&quot;P4+&quot;</span>, priority=<span class="hljs-string">&quot;P1&quot;</span>, produces_artifact=<span class="hljs-string">&quot;swapped_photo&quot;</span>)
+<span class="hljs-meta">    @property</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">spec</span>(<span class="hljs-params">self</span>) -&gt; SkillSpec: <span class="hljs-keyword">return</span> <span class="hljs-variable language_">self</span>.SPEC
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">run</span>(<span class="hljs-params">self, ctx: SkillContext</span>) -&gt; SkillResult:
+        rear, identity, ref = ctx.inputs[<span class="hljs-string">&quot;rear_photo&quot;</span>], ctx.inputs[<span class="hljs-string">&quot;identity_photo&quot;</span>], ctx.inputs.get(<span class="hljs-string">&quot;reference&quot;</span>)
+        <span class="hljs-comment"># 伪：1) 人体/人像 mask（仅人像区，背景绝对保真）</span>
+        <span class="hljs-comment">#     2) inpainting：identity 高清人像贴入 mask 区，ref 作构图/姿态参照</span>
+        <span class="hljs-comment">#     3) 边缘融合 → swapped_photo（ID 可能漂移，由 id-correction 修正）</span>
+        out = ctx.output_dir / <span class="hljs-string">&quot;swapped.png&quot;</span>
+        <span class="hljs-keyword">return</span> SkillResult(<span class="hljs-string">&quot;swapped_photo&quot;</span>, out, <span class="hljs-literal">None</span>, <span class="hljs-string">&quot;character swap done&quot;</span>)
+</div></code></pre>
+<h4 id="skillspostprocessid_correctionpy"><code>skills/postprocess/id_correction.py</code></h4>
+<pre class="hljs"><code><div><span class="hljs-string">&quot;&quot;&quot;id-correction：将前置人脸 swap 到 swapped_photo，修正 ID 漂移。&quot;&quot;&quot;</span>
+<span class="hljs-keyword">from</span> skills.base.composite <span class="hljs-keyword">import</span> CompositeSkill, SkillContext, SkillResult  <span class="hljs-comment"># 伪</span>
+<span class="hljs-keyword">from</span> schemas.skill <span class="hljs-keyword">import</span> SkillSpec, SkillKind, SkillCategory, SkillParameter  <span class="hljs-comment"># 伪</span>
+
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">IDCorrectionSkill</span>:
+    SPEC = SkillSpec(
+        skill_id=<span class="hljs-string">&quot;id-correction&quot;</span>, kind=SkillKind.ATOMIC, category=SkillCategory.POSTPROCESS,
+        description=<span class="hljs-string">&quot;前置人脸 swap 到成片人像，修正 character-swap 的 ID 漂移&quot;</span>,
+        inputs=[SkillParameter(name=<span class="hljs-string">&quot;swapped_photo&quot;</span>, <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;path&quot;</span>, required=<span class="hljs-literal">True</span>),
+                SkillParameter(name=<span class="hljs-string">&quot;front_face&quot;</span>, <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;path&quot;</span>, required=<span class="hljs-literal">True</span>)],
+        outputs=[SkillParameter(name=<span class="hljs-string">&quot;final_photo&quot;</span>, <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;path&quot;</span>)],
+        phase=<span class="hljs-string">&quot;P4+&quot;</span>, priority=<span class="hljs-string">&quot;P1&quot;</span>, produces_artifact=<span class="hljs-string">&quot;final_photo&quot;</span>)
+<span class="hljs-meta">    @property</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">spec</span>(<span class="hljs-params">self</span>) -&gt; SkillSpec: <span class="hljs-keyword">return</span> <span class="hljs-variable language_">self</span>.SPEC
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">run</span>(<span class="hljs-params">self, ctx: SkillContext</span>) -&gt; SkillResult:
+        swapped, front_face = ctx.inputs[<span class="hljs-string">&quot;swapped_photo&quot;</span>], ctx.inputs[<span class="hljs-string">&quot;front_face&quot;</span>]
+        <span class="hljs-comment"># 伪：人脸检测(前置 + 成片) → face swap(In-Swapper 等) → 边缘融合 → final_photo</span>
+        out = ctx.output_dir / <span class="hljs-string">&quot;final.png&quot;</span>
+        <span class="hljs-keyword">return</span> SkillResult(<span class="hljs-string">&quot;final_photo&quot;</span>, out, <span class="hljs-literal">None</span>, <span class="hljs-string">&quot;id corrected&quot;</span>)
+</div></code></pre>
+<h4 id="skillsscenariodual_cam_clonepy"><code>skills/scenario/dual_cam_clone.py</code></h4>
+<pre class="hljs"><code><div><span class="hljs-string">&quot;&quot;&quot;场景二·双景拍 Skill（composite, 高保真伪实现）。
+
+编排：intent-question+qwen3vl-photo → scenic-plan → identity-photo-gen →
+overlay-compose(分身抠图置位) → reference-image ∥ cv-guide(粗调) →
+vlm-align/plan-deviation(细调 eval) → capture → character-swap → id-correction。
+用户意图随时注入 → re-Plan/刷新 Act。
+&quot;&quot;&quot;</span>
+<span class="hljs-keyword">from</span> __future__ <span class="hljs-keyword">import</span> annotations
+<span class="hljs-keyword">from</span> pathlib <span class="hljs-keyword">import</span> Path
+<span class="hljs-keyword">from</span> skills.base.composite <span class="hljs-keyword">import</span> CompositeSkill, SkillContext, SkillResult  <span class="hljs-comment"># 伪</span>
+<span class="hljs-keyword">from</span> schemas.skill <span class="hljs-keyword">import</span> SkillSpec, SkillKind, SkillCategory, SkillParameter  <span class="hljs-comment"># 伪</span>
+<span class="hljs-keyword">from</span> schemas.shooting <span class="hljs-keyword">import</span> PlanAndEditInstruction, IntentAnswer  <span class="hljs-comment"># 真</span>
+
+
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">DualCamCloneSkill</span>:
+    SPEC = SkillSpec(
+        skill_id=<span class="hljs-string">&quot;dual-cam-clone&quot;</span>,
+        kind=SkillKind.COMPOSITE,
+        category=SkillCategory.POSTPROCESS,
+        description=<span class="hljs-string">&quot;场景二：双景拍——分身入画 + character-swap + id-correction 全流程&quot;</span>,
+        inputs=[SkillParameter(name=<span class="hljs-string">&quot;rear_frame&quot;</span>, <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;path&quot;</span>, required=<span class="hljs-literal">True</span>),
+                SkillParameter(name=<span class="hljs-string">&quot;front_selfie&quot;</span>, <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;path&quot;</span>, required=<span class="hljs-literal">True</span>),
+                SkillParameter(name=<span class="hljs-string">&quot;user_intent&quot;</span>, <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;string&quot;</span>, required=<span class="hljs-literal">False</span>)],
+        outputs=[SkillParameter(name=<span class="hljs-string">&quot;guidanceOverlay&quot;</span>),
+                 SkillParameter(name=<span class="hljs-string">&quot;reference_preview&quot;</span>),
+                 SkillParameter(name=<span class="hljs-string">&quot;final_photo&quot;</span>, <span class="hljs-built_in">type</span>=<span class="hljs-string">&quot;path&quot;</span>)],
+        phase=<span class="hljs-string">&quot;P3-P5&quot;</span>, priority=<span class="hljs-string">&quot;P0&quot;</span>,
+        depends_on=[<span class="hljs-string">&quot;intent-question&quot;</span>, <span class="hljs-string">&quot;qwen3vl-photo&quot;</span>, <span class="hljs-string">&quot;scenic-plan&quot;</span>, <span class="hljs-string">&quot;identity-photo-gen&quot;</span>,
+                    <span class="hljs-string">&quot;overlay-compose&quot;</span>, <span class="hljs-string">&quot;reference-image-qwen2511&quot;</span>, <span class="hljs-string">&quot;cv-guide&quot;</span>, <span class="hljs-string">&quot;composition-score&quot;</span>,
+                    <span class="hljs-string">&quot;vlm-align&quot;</span>, <span class="hljs-string">&quot;plan-deviation&quot;</span>, <span class="hljs-string">&quot;character-swap&quot;</span>, <span class="hljs-string">&quot;id-correction&quot;</span>],
+        produces_artifact=<span class="hljs-string">&quot;final_photo&quot;</span>)
+
+<span class="hljs-meta">    @property</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">spec</span>(<span class="hljs-params">self</span>) -&gt; SkillSpec:
+        <span class="hljs-keyword">return</span> <span class="hljs-variable language_">self</span>.SPEC
+
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">run</span>(<span class="hljs-params">self, ctx: SkillContext</span>) -&gt; SkillResult:
+        rear: Path = ctx.inputs[<span class="hljs-string">&quot;rear_frame&quot;</span>]
+        intent: <span class="hljs-built_in">str</span> | <span class="hljs-literal">None</span> = ctx.inputs.get(<span class="hljs-string">&quot;user_intent&quot;</span>)
+        front_selfie: Path = ctx.inputs[<span class="hljs-string">&quot;front_selfie&quot;</span>]
+        photo = ctx.services[<span class="hljs-string">&quot;photo_vlm&quot;</span>]               <span class="hljs-comment"># Qwen3VLPhotoClient（真）</span>
+        intent_agent = ctx.agents[<span class="hljs-string">&quot;intent_agent&quot;</span>]       <span class="hljs-comment"># IntentAgent（真）</span>
+        planner = ctx.agents[<span class="hljs-string">&quot;planner_agent&quot;</span>]           <span class="hljs-comment"># ShootingPlannerAgent（真）</span>
+        identity_gen = ctx.services[<span class="hljs-string">&quot;identity_photo_gen&quot;</span>]      <span class="hljs-comment"># 伪 atomic</span>
+        overlay = ctx.services[<span class="hljs-string">&quot;overlay_compose&quot;</span>]            <span class="hljs-comment"># 伪 atomic</span>
+        ref_skill = ctx.services[<span class="hljs-string">&quot;reference_image&quot;</span>]          <span class="hljs-comment"># ReferenceImageSkill（真, PR1）</span>
+        char_swap = ctx.services[<span class="hljs-string">&quot;character_swap&quot;</span>]           <span class="hljs-comment"># 伪 atomic</span>
+        id_corr = ctx.services[<span class="hljs-string">&quot;id_correction&quot;</span>]             <span class="hljs-comment"># 伪 atomic</span>
+
+        <span class="hljs-comment"># —— 价值①：意图 → stance/mood/站位推理 ——</span>
+        scene = photo.describe_scene(rear)
+        aesthetic = photo.draft_aesthetic_instruction(rear)   <span class="hljs-comment"># 不传 user_intent</span>
+        intent_phase = intent_agent.analyze(user_intent=intent <span class="hljs-keyword">or</span> <span class="hljs-string">&quot;&quot;</span>, scene_facts=scene,
+                                           aesthetic_draft=aesthetic)
+        answers: <span class="hljs-built_in">list</span>[IntentAnswer] = (<span class="hljs-variable language_">self</span>._ask_user(intent_phase.questions)        <span class="hljs-comment"># 必要 Question</span>
+                                       <span class="hljs-keyword">if</span> intent_phase.questions <span class="hljs-keyword">else</span> [])
+
+        plan: PlanAndEditInstruction = planner.plan(
+            user_intent=intent <span class="hljs-keyword">or</span> <span class="hljs-string">&quot;&quot;</span>, answers=answers, questions=intent_phase.questions,
+            conflicts=intent_phase.conflicts, scene_facts=scene, aesthetic_draft=aesthetic)
+
+        <span class="hljs-comment"># —— 分身照 + 抠图置位（虚框人像置于站位示意）——</span>
+        identity = identity_gen.run(ctx.with_inputs(front_frame=front_selfie)).path
+        overlay.place_cutout(plan.coarse_guidance, identity)                  <span class="hljs-comment"># 伪</span>
+
+        <span class="hljs-comment"># —— 并行：reference 512 ∥ 粗调 ——</span>
+        reference = ref_skill.generate(frame_path=<span class="hljs-variable language_">self</span>._to512(rear),
+                                       edit_instruction=plan.edit_instruction,
+                                       output_path=ctx.output_dir / <span class="hljs-string">&quot;ref.png&quot;</span>)
+        <span class="hljs-variable language_">self</span>._render_coarse(ctx, plan.coarse_guidance)                        <span class="hljs-comment"># 伪：cv-guide/overlay</span>
+
+        <span class="hljs-comment"># —— 细调 eval loop（意图随时注入 / Plan-refresh / capture）——</span>
+        capture_ready = <span class="hljs-literal">False</span>
+        <span class="hljs-keyword">while</span> <span class="hljs-keyword">not</span> capture_ready:
+            current = <span class="hljs-variable language_">self</span>._fetch_current_frame(ctx)
+            ev = <span class="hljs-variable language_">self</span>._evaluate(ctx, current, reference, plan)               <span class="hljs-comment"># 伪：vlm-align + plan-deviation</span>
+            <span class="hljs-keyword">if</span> <span class="hljs-variable language_">self</span>._user_intent_injected():                                <span class="hljs-comment"># 价值：意图随时注入</span>
+                plan = planner.plan(... <span class="hljs-keyword">with</span> new intent ...)
+            <span class="hljs-keyword">elif</span> ev.invalidates_plan:                                       <span class="hljs-comment"># 价值：Plan-refresh</span>
+                plan = planner.plan(... <span class="hljs-keyword">with</span> new evidence ...)
+                reference = ref_skill.generate(... plan.edit_instruction ...)
+            <span class="hljs-keyword">elif</span> <span class="hljs-keyword">not</span> ev.achieved:
+                <span class="hljs-variable language_">self</span>._refresh_guidance(ctx, ev.next_action)
+            <span class="hljs-keyword">else</span>:
+                capture_ready = <span class="hljs-literal">True</span>
+        capture = <span class="hljs-variable language_">self</span>._capture(ctx)
+
+        <span class="hljs-comment"># —— 后处理：character-swap → id-correction ——</span>
+        swapped = char_swap.run(ctx.with_inputs(rear_photo=capture, identity_photo=identity,
+                                                reference=reference.path)).path
+        final = id_corr.run(ctx.with_inputs(swapped_photo=swapped,
+                                            front_face=<span class="hljs-variable language_">self</span>._face_from(identity))).path
+        <span class="hljs-keyword">return</span> SkillResult(<span class="hljs-string">&quot;final_photo&quot;</span>, final, {<span class="hljs-string">&quot;plan&quot;</span>: plan}, <span class="hljs-string">&quot;dual-cam done&quot;</span>)
+
+    <span class="hljs-comment"># —— 伪 helpers ——</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_ask_user</span>(<span class="hljs-params">self, qs</span>) -&gt; <span class="hljs-built_in">list</span>[IntentAnswer]: ...
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_to512</span>(<span class="hljs-params">self, p</span>) -&gt; Path: ...        <span class="hljs-comment"># 复用 save_resized_frame 思路，长边 512</span>
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_render_coarse</span>(<span class="hljs-params">self, ctx, guidance</span>): ...
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_fetch_current_frame</span>(<span class="hljs-params">self, ctx</span>) -&gt; Path: ...
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_evaluate</span>(<span class="hljs-params">self, ctx, current, reference, plan</span>): ...
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_refresh_guidance</span>(<span class="hljs-params">self, ctx, next_action</span>): ...
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_user_intent_injected</span>(<span class="hljs-params">self</span>) -&gt; <span class="hljs-built_in">bool</span>: ...
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_capture</span>(<span class="hljs-params">self, ctx</span>) -&gt; Path: ...
+    <span class="hljs-keyword">def</span> <span class="hljs-title function_">_face_from</span>(<span class="hljs-params">self, identity: Path</span>) -&gt; Path: ...
+</div></code></pre>
+<hr>
+<h2 id="4-agent-价值矩阵">4. Agent 价值矩阵</h2>
+<table>
+<thead>
+<tr>
+<th>价值时刻</th>
+<th>场景</th>
+<th>流程位置</th>
+<th>Agent/Skill</th>
+<th>非固定工作流体现</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>帧驱动智能构图 instruction</td>
+<td>一/二</td>
+<td>describe→aesthetic</td>
+<td><code>Qwen3VLPhotoClient</code>（禁收 userIntent）</td>
+<td>instruction 随画面变，非模板</td>
+</tr>
+<tr>
+<td>必要 Question（仅真实歧义）</td>
+<td>二(主)/一(后续)</td>
+<td>intent→Question</td>
+<td><code>IntentAgent</code></td>
+<td>默认不打断，歧义才问</td>
+</tr>
+<tr>
+<td>意图→stance/mood/站位推理</td>
+<td>二</td>
+<td>intent→Plan</td>
+<td><code>ShootingPlannerAgent</code></td>
+<td>意图驱动站位/对焦点，非固定站位</td>
+</tr>
+<tr>
+<td>evaluator 驱动 replan/refresh</td>
+<td>一/二</td>
+<td>eval loop</td>
+<td><code>Coach</code>/<code>vlm-align</code>+<code>plan-deviation</code></td>
+<td>评估结果决定刷新 or re-Plan</td>
+</tr>
+<tr>
+<td>Plan-refresh（场景失效）</td>
+<td>一/二</td>
+<td>eval→invalidate</td>
+<td><code>ShootingPlannerAgent</code></td>
+<td>移动后新物体出现→重 Plan</td>
+</tr>
+<tr>
+<td>意图随时注入→re-Plan</td>
+<td>二(主)/一(后续)</td>
+<td>loop 内 alt</td>
+<td><code>ShootingPlannerAgent</code></td>
+<td>用户打断→刷新 Act/Plan</td>
+</tr>
+<tr>
+<td>后处理 ID 修正</td>
+<td>二</td>
+<td>swap→id-correction</td>
+<td><code>character-swap</code>+<code>id-correction</code></td>
+<td>ID 漂移→修正闭环</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="5-实现路径与依赖">5. 实现路径与依赖</h2>
+<ul>
+<li><strong>复用（已有）</strong>：<code>Qwen3VLPhotoClient</code>（describe_scene / draft_aesthetic_instruction 拒收 userIntent）、<code>IntentAgent</code> / <code>ShootingPlannerAgent</code>、<code>ReferenceImageSkill</code>+<code>ReferencePreviewService</code>（PR1）、<code>schemas/shooting.py</code> 契约、<code>save_resized_frame</code>（长边 1280→reference 512，ComfyUI Qwen2511 workflow pinned <code>largest_size==512</code>）。</li>
+<li><strong>新增 skill 阶段</strong>：<code>identity-photo-gen</code> P3+；<code>compose-guide</code>/<code>dual-cam-clone</code>（composite）P3–P5；<code>character-swap</code>/<code>id-correction</code>（postprocess）P4+。</li>
+<li><strong>依赖前置（不阻塞 03）</strong>：act-loop / <code>Coach</code>(MiniCPM) / <code>AnalyzeFrameResponse</code>(Pydantic) 属 <strong>PR2</strong>；reference 真链路属 <strong>PR3</strong>（<a href="p3_act_channels.md">p3_act_channels.md §9.1</a>）；端侧 runtime 属 <strong>P5</strong>。03 为设计+伪码，<code>_evaluate</code>/<code>_ask_user</code> 等为伪 stub，待 PR2/P4 落地后接线。</li>
+<li><strong>双环硬边界</strong>：场景 skill 产 <code>PlanAndEditInstruction</code>（慢路径）、消费 <code>AnalyzeFrameResponse</code>（act 路径，PR2 落地后）；<strong>不调</strong> edit-loop 工具链（<code>app.py</code>/<code>ImageLoop</code>）。composite skill = 编排入口，多步 replan 循环逻辑属 <code>workflow/</code>（与 <a href="project_guide.md">project_guide.md</a>「composite 工具不藏多步 loop」一致）。</li>
+</ul>
+<hr>
+<p><em>本文档独立维护与迭代；与 01/02 后续同步。</em></p>
+
+</body>
+</html>

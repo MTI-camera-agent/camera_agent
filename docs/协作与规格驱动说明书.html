@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>协作与规格驱动说明书.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> or <div class="page"></div> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="cameraagent协作与规格驱动说明书">CameraAgent：协作与规格驱动说明书</h1>
+<ul>
+<li><strong>版本</strong>：v1.0</li>
+<li><strong>日期</strong>：2026-08-13</li>
+<li><strong>状态</strong>：Active — <strong>团队日常操作手册</strong>（必读）</li>
+<li><strong>读者</strong>：SE / Harness / Model / Skills / Mobile 全体开发者</li>
+<li><strong>关联</strong>：
+<ul>
+<li>调研与选型依据：<a href="%E5%8D%8F%E4%BD%9C%E4%B8%8E%E8%A7%84%E6%A0%BC%E9%A9%B1%E5%8A%A8%E5%B7%A5%E4%BD%9C%E6%B5%81%E8%B0%83%E7%A0%94.md">协作与规格驱动工作流调研.md</a></li>
+<li>产品里程碑：<a href="01-MVP%E6%9C%9F-%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1%E5%8F%8A%E8%AE%A1%E5%88%92.md">01-MVP期-方案设计及计划.md</a></li>
+<li>P3 执行切片：<a href="p3_act_channels.md">p3_act_channels.md</a></li>
+<li>代码规范：<a href="../AGENTS.md">../AGENTS.md</a></li>
+<li>环境与 GPU：<a href="development_workflow.md">development_workflow.md</a></li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="1-本说明书解决什么问题">1. 本说明书解决什么问题</h2>
+<p>CameraAgent 采用 <strong>Spec-Driven Development（SDD）+ 四角色分工 + 主责 SE 合流</strong>：</p>
+<ol>
+<li>各成员在各自 lane <strong>先对齐、再写规格</strong>（实验期不写生产代码）。</li>
+<li>规格以 <strong>OpenSpec change 包</strong> 进 Git，经 SE 整合评审后 <strong>统一 apply</strong>。</li>
+<li>实现对照 delta spec 验收，PR 合 <code>dev</code>，archive 更新行为真相。</li>
+</ol>
+<p><strong>核心原则</strong>：文档加速对齐 ≠ 弱化 Git。规格与代码<strong>同仓版本化</strong>；瓶颈在评审合流，不在 <code>git push</code>。</p>
+<hr>
+<h2 id="2-已交付脚手架仓库内清单">2. 已交付脚手架（仓库内清单）</h2>
+<p>以下文件/目录已在业务仓就绪，新成员 clone 即可用（<strong>重启 Cursor</strong> 后加载 slash 命令）。</p>
+<table>
+<thead>
+<tr>
+<th>路径</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../openspec/config.yaml"><code>openspec/config.yaml</code></a></td>
+<td>OpenSpec 项目 context 与 artifact 规则</td>
+</tr>
+<tr>
+<td><a href="../openspec/specs/"><code>openspec/specs/</code></a></td>
+<td>当前系统行为 spec（archive 后累积）</td>
+</tr>
+<tr>
+<td><a href="../openspec/changes/"><code>openspec/changes/</code></a></td>
+<td>进行中变更包</td>
+</tr>
+<tr>
+<td><a href="../.cursor/commands/"><code>.cursor/commands/opsx-*.md</code></a></td>
+<td>Cursor：<code>/opsx-explore</code> <code>/opsx-propose</code> <code>/opsx-apply</code> <code>/opsx-archive</code></td>
+</tr>
+<tr>
+<td><a href="../.cursor/skills/"><code>.cursor/skills/openspec-*</code></a></td>
+<td>OpenSpec 工作流技能</td>
+</tr>
+<tr>
+<td><a href="../.cursor/skills/"><code>.cursor/skills/</code></a> 下 Pocock 精选</td>
+<td><code>grill-with-docs</code>、<code>tdd</code>、<code>code-review</code> 等</td>
+</tr>
+<tr>
+<td><a href="../CONTEXT.md"><code>CONTEXT.md</code></a></td>
+<td>项目术语表（glossary）</td>
+</tr>
+<tr>
+<td><a href="../docs/adr/"><code>docs/adr/</code></a></td>
+<td>架构决策记录（ADR）</td>
+</tr>
+<tr>
+<td><a href="../.github/pull_request_template.md"><code>.github/pull_request_template.md</code></a></td>
+<td>PR 模板（链 openspec change）</td>
+</tr>
+<tr>
+<td><a href="../reference/skills"><code>reference/skills</code></a></td>
+<td>mattpocock/skills 只读镜像 @ <code>84fdeff</code></td>
+</tr>
+<tr>
+<td><a href="../reference/openspec"><code>reference/openspec</code></a></td>
+<td>OpenSpec 上游只读镜像 @ <code>610b78f</code></td>
+</tr>
+<tr>
+<td><a href="../reference/README.md"><code>reference/README.md</code></a></td>
+<td>镜像更新说明</td>
+</tr>
+</tbody>
+</table>
+<p><strong>尚未自动生成、需团队按流程创建的内容</strong>：</p>
+<ul>
+<li>首个 change：<code>p3-schema-lock</code>（SE 发起）</li>
+<li>各 lane 的 <code>openspec/changes/&lt;id&gt;/</code> 变更包</li>
+<li><code>docs/adr/NNNN-*.md</code> 具体 ADR 文件</li>
+<li>GitHub Issues（按 <code>[openspec:&lt;id&gt;]</code> 命名）</li>
+</ul>
+<hr>
+<h2 id="3-工具栈与分工不二选一">3. 工具栈与分工（不二选一）</h2>
+<pre class="hljs"><code><div>OpenSpec      → WHAT：openspec/changes/ 变更包、delta spec、tasks、archive
+Pocock grill  → WHY：grill-with-docs 访谈、CONTEXT.md、ADR（propose 之前）
+Pocock tdd    → HOW 可靠：apply 阶段红绿重构
+Pocock review → DONE：PR 前 Standards × Spec 双轴评审
+Git + PR      → SoT：规格与代码同仓；SE 唯一 merge 生产代码
+docs/01       → 里程碑 M1–M5（archive 时 SE 人工勾选）
+</div></code></pre>
+<table>
+<thead>
+<tr>
+<th>层</th>
+<th>工具</th>
+<th>禁止替代</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>变更规格</td>
+<td>OpenSpec</td>
+<td>Notion/飞书作唯一 SoT</td>
+</tr>
+<tr>
+<td>Agent 纪律</td>
+<td>mattpocock 精选 skills</td>
+<td>skills 替代 Code Review</td>
+</tr>
+<tr>
+<td>人协作</td>
+<td>GitHub Issues + PR</td>
+<td>并行 <code>*_v2</code> 实现分叉</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="4-文档分层规范必读防打架">4. 文档分层规范（必读，防打架）</h2>
+<table>
+<thead>
+<tr>
+<th>文档</th>
+<th>写什么</th>
+<th>不写什么</th>
+<th>谁维护</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../CONTEXT.md"><code>CONTEXT.md</code></a></td>
+<td>术语定义、Avoid 同义词</td>
+<td>实现细节、验收标准</td>
+<td>全员（grill-with-docs 触发更新）</td>
+</tr>
+<tr>
+<td><a href="../docs/adr/"><code>docs/adr/</code></a></td>
+<td>难逆转、有权衡的决策</td>
+<td>功能 spec、任务列表</td>
+<td>提案人 + SE 审</td>
+</tr>
+<tr>
+<td><code>openspec/specs/&lt;domain&gt;/</code></td>
+<td>当前行为：SHALL + Scenario</td>
+<td>进行中未 archive 的草案</td>
+<td>archive 自动合入</td>
+</tr>
+<tr>
+<td><code>openspec/changes/&lt;id&gt;/</code></td>
+<td>proposal、delta、design、tasks、eval</td>
+<td>—</td>
+<td>change 主责 propose；SE 整合</td>
+</tr>
+<tr>
+<td><a href="01-MVP%E6%9C%9F-%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1%E5%8F%8A%E8%AE%A1%E5%88%92.md"><code>docs/01-…</code></a></td>
+<td>阶段目标、M 验收清单</td>
+<td>单次 PR 细节</td>
+<td>SE（archive 后勾选）</td>
+</tr>
+<tr>
+<td><a href="p3_act_channels.md"><code>docs/p3_*</code></a></td>
+<td>PR 切片与通道设计</td>
+<td>—</td>
+<td>SE + lane 主责</td>
+</tr>
+<tr>
+<td><a href="02-%E6%A1%86%E6%9E%B6%E5%8F%8A%E6%B5%81%E7%A8%8B%E5%9B%BE.md"><code>docs/02</code></a>、<a href="03-%E5%9C%BA%E6%99%AF%E8%AE%BE%E8%AE%A1%E5%8F%8ASkills%E5%AE%9E%E7%8E%B0.md"><code>03</code></a></td>
+<td>设计参考</td>
+<td>不阻塞日常 PR</td>
+<td>独立维护，落地后 SE 择要回写 01</td>
+</tr>
+<tr>
+<td>飞书/Notion</td>
+<td>草稿、会议笔记</td>
+<td><strong>定稿必须 7 天内进 Git</strong></td>
+<td>个人</td>
+</tr>
+</tbody>
+</table>
+<p><strong>OpenSpec delta 写法</strong>（变更 spec 内）：</p>
+<pre class="hljs"><code><div><span class="hljs-section">## ADDED Requirements</span>
+
+<span class="hljs-section">### Requirement: Reference preview status</span>
+The gateway SHALL expose reference preview status on the session API.
+
+<span class="hljs-section">#### Scenario: Confirm intent kicks off generation</span>
+<span class="hljs-bullet">-</span> <span class="hljs-strong">**WHEN**</span> the client confirms intent
+<span class="hljs-bullet">-</span> <span class="hljs-strong">**THEN**</span> reference preview status is <span class="hljs-code">`generating`</span> until PNG is ready
+</div></code></pre>
+<hr>
+<h2 id="5-角色定义与边界">5. 角色定义与边界</h2>
+<table>
+<thead>
+<tr>
+<th>角色</th>
+<th>代号</th>
+<th>负责</th>
+<th>禁止</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>方案与统一实现负责人</strong></td>
+<td><strong>SE</strong></td>
+<td>Schema/API 锁、change <strong>整合批准</strong>、<strong>唯一 merge 生产代码</strong>、gateway/mobile 契约</td>
+<td>长期独占模型运维；并行多套实现</td>
+</tr>
+<tr>
+<td><strong>Agent Harness</strong></td>
+<td><strong>Harness</strong></td>
+<td><code>workflow/</code> loop、SkillRegistry、Memory、Wiki</td>
+<td>改 vLLM/ComfyUI 权重；单独定里程碑</td>
+</tr>
+<tr>
+<td><strong>模型优化</strong></td>
+<td><strong>Model</strong></td>
+<td>vLLM/ComfyUI 脚本、Qwen3.5 统一 Agent、FP8/评测</td>
+<td>agent 内 GPU 调度；改 gateway 业务</td>
+</tr>
+<tr>
+<td><strong>Skills 实现</strong></td>
+<td><strong>Skills</strong></td>
+<td><code>skills/*.py</code>、CV/示意图 skill、单测</td>
+<td>绕过 factory 硬编码 provider</td>
+</tr>
+<tr>
+<td>（可选）<strong>Mobile</strong></td>
+<td><strong>Mobile</strong></td>
+<td><code>mobile/</code> Expo、Channel B overlay</td>
+<td>自定 API 契约（须 SE/Skills 锁）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Harness vs Skills</strong>：Harness = 怎么编排、注册、loop；Skills = 可替换能力单元（如 <code>Qwen3VLPhotoClient</code>）。</p>
+<h3 id="51-推荐编制4-人">5.1 推荐编制（4 人）</h3>
+<table>
+<thead>
+<tr>
+<th>成员</th>
+<th>角色</th>
+<th>当前 Sprint 重点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td><strong>SE</strong></td>
+<td>整合、schema 锁、PR merge、<code>docs/01</code> 勾选</td>
+</tr>
+<tr>
+<td>B</td>
+<td>Harness</td>
+<td>SkillRegistry + shooting act loop</td>
+</tr>
+<tr>
+<td>C</td>
+<td>Model</td>
+<td>服务栈 + Qwen3.5 unified agent change</td>
+</tr>
+<tr>
+<td>D</td>
+<td>Skills + Mobile</td>
+<td>PR1/PR2 skills + <code>mobile/</code> Phase C</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="6-四阶段协作流程操作手册">6. 四阶段协作流程（操作手册）</h2>
+<pre><code class="language-mermaid"><div class="mermaid">flowchart TB
+  subgraph A [阶段A_实验]
+    grill[grill-with-docs]
+    explore["/opsx-explore 可选"]
+  end
+  subgraph B [阶段B_提案]
+    propose["/opsx-propose change-id"]
+  end
+  subgraph C [阶段C_整合]
+    se[SE审proposal+delta]
+    pr_doc[文档PR_团队review]
+  end
+  subgraph D [阶段D_实现]
+    apply["/opsx-apply + tdd"]
+    test[pytest]
+    eval[eval.md]
+    archive["/opsx-archive + 代码PR"]
+  end
+  A --> B --> C --> D
+</div></code></pre>
+<h3 id="阶段-a--模块实验">阶段 A — 模块实验</h3>
+<p><strong>参与者</strong>：Skills / Harness / Model 各 lane<br>
+<strong>门禁</strong>：<strong>禁止 merge 生产代码 PR</strong></p>
+<table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>阅读 <a href="p3_act_channels.md"><code>p3_act_channels.md</code></a> 与相关模块代码</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Cursor 中触发 <strong><code>grill-with-docs</code></strong>（纯产品议题用 <code>grill-me</code>）</td>
+</tr>
+<tr>
+<td>3</td>
+<td>可选：<code>/opsx-explore</code> 让 Agent 读仓、画架构（<strong>不写代码</strong>）</td>
+</tr>
+<tr>
+<td>4</td>
+<td>术语草案写入 <a href="../CONTEXT.md"><code>CONTEXT.md</code></a>；硬决策考虑 ADR</td>
+</tr>
+</tbody>
+</table>
+<p><strong>grill 结束标准</strong>：Agent 复述 shared understanding，<strong>你确认前不得改代码</strong>。</p>
+<h3 id="阶段-b--openspec-提案">阶段 B — OpenSpec 提案</h3>
+<p><strong>参与者</strong>：各 lane 主责<br>
+<strong>门禁</strong>：<code>/opsx-propose</code> <strong>仅生成规划 artifact，禁止写业务代码</strong></p>
+<pre class="hljs"><code><div>/opsx-propose p3-pr2-coarse-act-cv
+</div></code></pre>
+<p>生成目录示例：</p>
+<pre class="hljs"><code><div>openspec/changes/p3-pr2-coarse-act-cv/
+├── proposal.md      # 为什么做、做什么
+├── design.md        # 怎么做（模块、接口）
+├── tasks.md         # 可勾选实现步骤
+└── specs/
+    └── gateway-act/spec.md   # delta：ADDED/MODIFIED/REMOVED
+</div></code></pre>
+<p><strong>CLI 辅助</strong>（终端，可选）：</p>
+<pre class="hljs"><code><div><span class="hljs-built_in">cd</span> /home/pathfinder/projects/CameraAgent
+openspec list                    <span class="hljs-comment"># 列出进行中 change</span>
+openspec status --change p3-pr2-coarse-act-cv
+openspec doctor                  <span class="hljs-comment"># 检查 openspec 根是否正常</span>
+</div></code></pre>
+<h3 id="阶段-c--se-整合评审">阶段 C — SE 整合评审</h3>
+<p><strong>参与者</strong>：<strong>SE 主责</strong> + 全员<br>
+<strong>门禁</strong>：<strong>未 SE 批准，不得 <code>/opsx-apply</code></strong></p>
+<table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>SE 操作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>收集各 lane 的 <code>openspec/changes/&lt;id&gt;/</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>检查冲突：同一文件/API 是否被多个 change 修改</td>
+</tr>
+<tr>
+<td>3</td>
+<td>冲突时：合并为一个 change，或排期串行 apply</td>
+</tr>
+<tr>
+<td>4</td>
+<td>开 <strong>仅文档 PR</strong>（或 change 文件夹 PR），团队 review proposal + delta + tasks</td>
+</tr>
+<tr>
+<td>5</td>
+<td>会议过验收 Scenario；记录批准列表</td>
+</tr>
+</tbody>
+</table>
+<h3 id="阶段-d--统一实现与评估">阶段 D — 统一实现与评估</h3>
+<p><strong>参与者</strong>：SE 指定的 implementer（通常该 lane 主责）+ Agent<br>
+<strong>门禁</strong>：PR 必须链接 change id；SE merge</p>
+<table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>/opsx-apply</code> 按 <code>tasks.md</code> 实现；配合 <strong><code>tdd</code></strong> skill</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>pytest -q</code>（涉及 live 时见 <a href="development_workflow.md">development_workflow.md</a>）</td>
+</tr>
+<tr>
+<td>3</td>
+<td>写 <strong><code>eval.md</code></strong>（或在 PR 体）：对照 spec Scenario，记差距</td>
+</tr>
+<tr>
+<td>4</td>
+<td>PR 前 <strong><code>code-review</code></strong>（Standards × Spec）</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>/opsx-archive</code>；代码 PR 合 <code>dev</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>SE</strong>：若里程碑达成，更新 <a href="01-MVP%E6%9C%9F-%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1%E5%8F%8A%E8%AE%A1%E5%88%92.md"><code>docs/01</code></a> §8 验收勾选</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="7-指令说明cursor--cli">7. 指令说明（Cursor / CLI）</h2>
+<h3 id="71-cursor-slash-命令openspec">7.1 Cursor Slash 命令（OpenSpec）</h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>阶段</th>
+<th>行为</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/opsx-explore</code></td>
+<td>A</td>
+<td>读仓、讨论方案；<strong>不写业务代码</strong></td>
+</tr>
+<tr>
+<td><code>/opsx-propose &lt;change-id&gt;</code></td>
+<td>B</td>
+<td>创建 change 目录 + 全套 artifact；<strong>不写业务代码</strong></td>
+</tr>
+<tr>
+<td><code>/opsx-apply</code></td>
+<td>D</td>
+<td>按 tasks 实现（需 SE 已批准）</td>
+</tr>
+<tr>
+<td><code>/opsx-archive</code></td>
+<td>D 末</td>
+<td>delta 合入 <code>openspec/specs/</code>；change 移入 archive</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>若命令未出现：<strong>重启 Cursor</strong>（<code>openspec init</code> 写入 <code>.cursor/commands/</code>）。</p>
+</blockquote>
+<h3 id="72-cursor-skillspocock-精选">7.2 Cursor Skills（Pocock 精选）</h3>
+<p>路径：<a href="../.cursor/skills/"><code>.cursor/skills/</code></a>。在 Agent 对话中 <strong>显式引用</strong> skill 名或 <code>@</code> 对应 <code>SKILL.md</code>。</p>
+<table>
+<thead>
+<tr>
+<th>Skill</th>
+<th>何时用</th>
+<th>触发方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>grill-with-docs</code></td>
+<td>模块实验、方案澄清</td>
+<td><strong>用户显式</strong>（默认）</td>
+</tr>
+<tr>
+<td><code>grill-me</code></td>
+<td>纯产品/非代码议题</td>
+<td>用户显式</td>
+</tr>
+<tr>
+<td><code>research</code></td>
+<td>需要带引用的调研 md</td>
+<td>用户显式</td>
+</tr>
+<tr>
+<td><code>tdd</code></td>
+<td>apply 实现</td>
+<td>apply 阶段</td>
+</tr>
+<tr>
+<td><code>code-review</code></td>
+<td>PR 前</td>
+<td>用户显式</td>
+</tr>
+</tbody>
+</table>
+<p><code>grilling</code>、<code>domain-modeling</code> 由 grill-* 内部委托，通常无需单独调用。</p>
+<h3 id="73-openspec-cli">7.3 OpenSpec CLI</h3>
+<pre class="hljs"><code><div><span class="hljs-comment"># 安装（一次性，Node ≥ 20.19）</span>
+npm install -g @fission-ai/openspec@latest
+
+<span class="hljs-comment"># 已在业务仓 init；新 clone 后验证</span>
+<span class="hljs-built_in">cd</span> /home/pathfinder/projects/CameraAgent
+openspec doctor
+openspec update          <span class="hljs-comment"># 升级后刷新 .cursor 指令</span>
+
+<span class="hljs-comment"># 常用</span>
+openspec list
+openspec list --specs
+openspec status --change &lt;change-id&gt;
+openspec archive &lt;change-id&gt;   <span class="hljs-comment"># 也可在 Cursor 用 /opsx-archive</span>
+</div></code></pre>
+<h3 id="74-同步-pocock-精选技能维护">7.4 同步 Pocock 精选技能（维护）</h3>
+<p>上游更新后，由 SE 或当值维护者执行：</p>
+<pre class="hljs"><code><div><span class="hljs-built_in">cd</span> /home/pathfinder/projects/CameraAgent
+<span class="hljs-built_in">cd</span> reference/skills &amp;&amp; git pull &amp;&amp; <span class="hljs-built_in">cd</span> ../..
+SRC=reference/skills/skills
+DST=.cursor/skills
+<span class="hljs-keyword">for</span> s <span class="hljs-keyword">in</span> productivity/grill-me productivity/grilling engineering/grill-with-docs \
+         engineering/domain-modeling engineering/tdd engineering/code-review engineering/research; <span class="hljs-keyword">do</span>
+  name=$(<span class="hljs-built_in">basename</span> <span class="hljs-string">&quot;<span class="hljs-variable">$s</span>&quot;</span>)
+  <span class="hljs-built_in">rm</span> -rf <span class="hljs-string">&quot;<span class="hljs-variable">$DST</span>/<span class="hljs-variable">$name</span>&quot;</span>
+  <span class="hljs-built_in">cp</span> -r <span class="hljs-string">&quot;<span class="hljs-variable">$SRC</span>/<span class="hljs-variable">$s</span>&quot;</span> <span class="hljs-string">&quot;<span class="hljs-variable">$DST</span>/<span class="hljs-variable">$name</span>&quot;</span>
+<span class="hljs-keyword">done</span>
+<span class="hljs-built_in">cp</span> reference/skills/skills/engineering/domain-modeling/*.md .cursor/skills/domain-modeling/
+</div></code></pre>
+<p>记录新 commit 到 <a href="../reference/README.md"><code>reference/README.md</code></a>。</p>
+<hr>
+<h2 id="8-git--issue--pr-规范">8. Git / Issue / PR 规范</h2>
+<h3 id="81-分支">8.1 分支</h3>
+<table>
+<thead>
+<tr>
+<th>类型</th>
+<th>命名</th>
+<th>是否 merge</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>功能/规格</td>
+<td><code>feat/&lt;change-id&gt;</code> 或 <code>docs/&lt;change-id&gt;</code></td>
+<td>是（经 SE）</td>
+</tr>
+<tr>
+<td>实验 spike</td>
+<td><code>spike/&lt;owner&gt;/&lt;topic&gt;</code></td>
+<td><strong>否</strong>（有价值则重开 OpenSpec change）</td>
+</tr>
+<tr>
+<td>集成主干</td>
+<td><code>dev</code></td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h3 id="82-issue">8.2 Issue</h3>
+<pre class="hljs"><code><div>[openspec:p3-pr2-coarse-act-cv] 实现粗调 CV 四 skill + analyze-frame
+</div></code></pre>
+<h3 id="83-pr">8.3 PR</h3>
+<p><strong>标题</strong>：</p>
+<pre class="hljs"><code><div>feat(p3): coarse act CV skills (openspec: p3-pr2-coarse-act-cv)
+</div></code></pre>
+<p><strong>正文</strong>：使用 <a href="../.github/pull_request_template.md"><code>.github/pull_request_template.md</code></a>，必填：</p>
+<ul>
+<li><code>openspec/changes/&lt;id&gt;/</code> 链接</li>
+<li>tasks 勾选情况</li>
+<li>eval 摘要</li>
+<li><code>pytest</code> 结果</li>
+</ul>
+<h3 id="84-commit">8.4 Commit</h3>
+<p>遵循 <a href="development_workflow.md">development_workflow.md</a>：<code>feat:</code> / <code>fix:</code> / <code>docs:</code> 等；一次 apply 内按 task 原子提交更佳（便于 bisect）。</p>
+<hr>
+<h2 id="9-任务地图openspec-change-id">9. 任务地图（OpenSpec change id）</h2>
+<p>与 <a href="p3_act_channels.md">p3_act_channels.md</a> 对齐。并行 propose 前，<strong>SE 必须先完成</strong> <code>p3-schema-lock</code>。</p>
+<table>
+<thead>
+<tr>
+<th>change id</th>
+<th>主责</th>
+<th>协作</th>
+<th>优先级</th>
+<th>主要路径</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>p3-schema-lock</code></td>
+<td>SE</td>
+<td>全员</td>
+<td><strong>P0</strong></td>
+<td><code>schemas/shooting.py</code>、analyze-frame 契约</td>
+</tr>
+<tr>
+<td><code>p3-pr1-reference-preview</code></td>
+<td>Skills</td>
+<td>Model, SE</td>
+<td><strong>P0</strong></td>
+<td><code>skills/reference_image.py</code>、<code>services/gateway/reference_preview.py</code></td>
+</tr>
+<tr>
+<td><code>p3-pr2-coarse-act-cv</code></td>
+<td>Skills</td>
+<td>Harness, SE, Mobile</td>
+<td><strong>P0</strong></td>
+<td>四 CV skill、<code>ShootingLoop.analyze_frame</code>、<code>mobile/</code></td>
+</tr>
+<tr>
+<td><code>harness-skill-registry</code></td>
+<td>Harness</td>
+<td>SE</td>
+<td>P1</td>
+<td><code>skills/registry.py</code>、<code>models/factory.py</code></td>
+</tr>
+<tr>
+<td><code>harness-shooting-act-loop</code></td>
+<td>Harness</td>
+<td>SE, Skills</td>
+<td>P1</td>
+<td><code>workflow/shooting_loop.py</code></td>
+</tr>
+<tr>
+<td><code>model-qwen35-unified-agent</code></td>
+<td>Model</td>
+<td>Harness, SE</td>
+<td>P1</td>
+<td>收敛主 Agent 至 Qwen3.5-9B</td>
+</tr>
+<tr>
+<td><code>harness-memory-episodic</code></td>
+<td>Harness</td>
+<td>SE</td>
+<td>P2</td>
+<td><code>memory/</code></td>
+</tr>
+<tr>
+<td><code>harness-wiki-reference</code></td>
+<td>Harness</td>
+<td>Skills</td>
+<td>P2</td>
+<td>Wiki 新模块</td>
+</tr>
+<tr>
+<td><code>p4-minicpm-fine-act</code></td>
+<td>Skills</td>
+<td>Model, Harness</td>
+<td>P3</td>
+<td><code>agents/coach.py</code>、精调环</td>
+</tr>
+</tbody>
+</table>
+<p><strong>并行规则</strong>：PR1 与 PR2 可并行 <strong>propose</strong>；<strong>apply</strong> 建议串行：PR1 测通 → PR2 → registry。</p>
+<hr>
+<h2 id="10-团队落地待办适应本流程还需做什么">10. 团队落地待办（适应本流程还需做什么）</h2>
+<h3 id="101-全员day-1">10.1 全员（Day 1）</h3>
+<ul>
+<li><input type="checkbox" id="checkbox0"><label for="checkbox0">阅读本说明书 + <a href="../AGENTS.md"><code>AGENTS.md</code></a></label></li>
+<li><input type="checkbox" id="checkbox1"><label for="checkbox1">安装 OpenSpec CLI：<code>npm i -g @fission-ai/openspec</code></label></li>
+<li><input type="checkbox" id="checkbox2"><label for="checkbox2">重启 Cursor，确认 <code>/opsx-propose</code> 可用</label></li>
+<li><input type="checkbox" id="checkbox3"><label for="checkbox3">跑通：<code>openspec doctor</code></label></li>
+</ul>
+<h3 id="102-seday-12">10.2 SE（Day 1–2）</h3>
+<ul>
+<li><input type="checkbox" id="checkbox4"><label for="checkbox4">确认 <a href="../openspec/config.yaml"><code>openspec/config.yaml</code></a> 与项目一致（已注入 01/p3/AGENTS 指针）</label></li>
+<li><input type="checkbox" id="checkbox5"><label for="checkbox5">发起 <strong><code>/opsx-propose p3-schema-lock</code></strong> → 30min 评审 → apply</label></li>
+<li><input type="checkbox" id="checkbox6"><label for="checkbox6">建立 Issue 模板习惯（<code>[openspec:…]</code>）</label></li>
+<li><input type="checkbox" id="checkbox7"><label for="checkbox7">指定各 lane 主责与当前 Sprint change id</label></li>
+</ul>
+<h3 id="103-各-laneday-35">10.3 各 Lane（Day 3–5）</h3>
+<ul>
+<li><input type="checkbox" id="checkbox8"><label for="checkbox8">对本 lane 议题跑 <strong><code>grill-with-docs</code></strong></label></li>
+<li><input type="checkbox" id="checkbox9"><label for="checkbox9"><strong><code>/opsx-propose &lt;change-id&gt;</code></strong> 提交完整 artifact</label></li>
+<li><input type="checkbox" id="checkbox10"><label for="checkbox10"><strong>不</strong> 提交生产代码 PR</label></li>
+</ul>
+<h3 id="104-se-整合day-6">10.4 SE 整合（Day 6）</h3>
+<ul>
+<li><input type="checkbox" id="checkbox11"><label for="checkbox11">文档 PR：合并/批准各 change proposal</label></li>
+<li><input type="checkbox" id="checkbox12"><label for="checkbox12">发布「可 apply 顺序」与负责人</label></li>
+</ul>
+<h3 id="105-实现周week-2">10.5 实现周（Week 2+）</h3>
+<ul>
+<li><input type="checkbox" id="checkbox13"><label for="checkbox13">按顺序 <code>/opsx-apply</code> + <code>tdd</code> + <code>pytest</code></label></li>
+<li><input type="checkbox" id="checkbox14"><label for="checkbox14">每 change：<code>eval.md</code> → <code>/opsx-archive</code> → 代码 PR → SE merge</label></li>
+<li><input type="checkbox" id="checkbox15"><label for="checkbox15">archive 后更新 <code>docs/01</code> 里程碑勾选</label></li>
+</ul>
+<h3 id="106-可选后续增强">10.6 可选后续增强</h3>
+<ul>
+<li><input type="checkbox" id="checkbox16"><label for="checkbox16">跑一轮 grill 样例会话，填 §11 Rubric 实测表</label></li>
+<li><input type="checkbox" id="checkbox17"><label for="checkbox17">GitHub Issue 模板（<code>.github/ISSUE_TEMPLATE/</code>）</label></li>
+<li><input type="checkbox" id="checkbox18"><label for="checkbox18">CI 检查 PR 是否提及 openspec change id</label></li>
+<li><input type="checkbox" id="checkbox19"><label for="checkbox19">从 backup 迁回历史 ADR 至 <code>docs/adr/</code></label></li>
+</ul>
+<hr>
+<h2 id="11-质量门禁与-rubric">11. 质量门禁与 Rubric</h2>
+<h3 id="111-阶段门禁摘要">11.1 阶段门禁（摘要）</h3>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>硬门禁</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A 实验</td>
+<td>无生产代码 merge</td>
+</tr>
+<tr>
+<td>B 提案</td>
+<td>propose 不写代码</td>
+</tr>
+<tr>
+<td>C 整合</td>
+<td>无 SE 批准不 apply</td>
+</tr>
+<tr>
+<td>D 实现</td>
+<td>PR 链 change id；pytest 过；无 <code>*_v2</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="112-grill-样例会话-rubric待实测">11.2 grill 样例会话 Rubric（待实测）</h3>
+<p>议题建议：「Qwen3.5-9B 统一 Agent vs 外置 DeepSeek」或「Flux-9B 替 Qwen2511」。</p>
+<table>
+<thead>
+<tr>
+<th>检查项</th>
+<th>通过标准</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>轮次结构</td>
+<td>每轮多问 + 推荐答案</td>
+</tr>
+<tr>
+<td>事实 vs 决策</td>
+<td>Agent 自查仓内代码/配置</td>
+</tr>
+<tr>
+<td>结束门禁</td>
+<td>shared understanding 确认前不改代码</td>
+</tr>
+<tr>
+<td>with-docs</td>
+<td>CONTEXT 无实现细节；ADR 满足三条件</td>
+</tr>
+<tr>
+<td>可整合</td>
+<td>能导出 proposal 要点进 openspec change</td>
+</tr>
+</tbody>
+</table>
+<p><strong>实测记录</strong>（团队填写）：</p>
+<table>
+<thead>
+<tr>
+<th>日期</th>
+<th>议题</th>
+<th>轮次数</th>
+<th>时长</th>
+<th>误写代码？</th>
+<th>CONTEXT/ADR diff</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="12-adr-与-context-规范">12. ADR 与 CONTEXT 规范</h2>
+<h3 id="121-何时写-adr三条件同时满足">12.1 何时写 ADR（三条件同时满足）</h3>
+<ol>
+<li>reversing 成本高</li>
+<li>无上下文时后人会困惑</li>
+<li>存在真实权衡（非显然选择）</li>
+</ol>
+<p>格式：<a href="adr/README.md"><code>docs/adr/README.md</code></a> + <a href="../.cursor/skills/domain-modeling/ADR-FORMAT.md"><code>.cursor/skills/domain-modeling/ADR-FORMAT.md</code></a><br>
+命名：<code>docs/adr/NNNN-short-title.md</code></p>
+<h3 id="122-context-更新">12.2 CONTEXT 更新</h3>
+<ul>
+<li>仅 <strong>glossary</strong>；见 <a href="../.cursor/skills/domain-modeling/CONTEXT-FORMAT.md"><code>.cursor/skills/domain-modeling/CONTEXT-FORMAT.md</code></a></li>
+<li>通过 <strong><code>grill-with-docs</code></strong> 或人工 PR 更新</li>
+<li>当前词条见 <a href="../CONTEXT.md"><code>CONTEXT.md</code></a></li>
+</ul>
+<hr>
+<h2 id="13-风险与处理">13. 风险与处理</h2>
+<table>
+<thead>
+<tr>
+<th>风险</th>
+<th>处理</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>错误 spec 快速落地</td>
+<td>propose/apply 分离；SE 批准</td>
+</tr>
+<tr>
+<td>OpenSpec 与 <code>docs/01</code> 漂移</td>
+<td>archive 时 SE 勾选 M 清单</td>
+</tr>
+<tr>
+<td>CONTEXT 与 spec 混淆</td>
+<td>本说明书 §4 分流</td>
+</tr>
+<tr>
+<td>多 change 改同一文件</td>
+<td>SE 整合合并或串行 apply</td>
+</tr>
+<tr>
+<td>reference 镜像过期</td>
+<td><code>git pull</code> + §7.4 同步脚本</td>
+</tr>
+<tr>
+<td>mm-comfyui 被误改</td>
+<td>遵守 <a href="development_workflow.md">development_workflow.md</a> §3.5</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="14-快速参考卡片">14. 快速参考卡片</h2>
+<pre class="hljs"><code><div>实验   → grill-with-docs →（可选）/opsx-explore
+提案   → /opsx-propose &lt;change-id&gt;     [不写代码]
+整合   → SE 文档 PR + 团队批准
+实现   → /opsx-apply + tdd + pytest
+评估   → eval.md + code-review
+收尾   → /opsx-archive + 代码 PR + SE 更新 docs/01
+
+文档去哪：
+  术语     → CONTEXT.md
+  决策     → docs/adr/
+  行为规格 → openspec/specs/（archive 后）
+  进行中   → openspec/changes/&lt;id&gt;/
+  里程碑   → docs/01 + p3_*
+</div></code></pre>
+<hr>
+<h2 id="15-修订记录">15. 修订记录</h2>
+<table>
+<thead>
+<tr>
+<th>日期</th>
+<th>版本</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-08-13</td>
+<td>v1.0</td>
+<td>首版：交付件清单、四阶段手册、指令与规范、落地待办</td>
+</tr>
+</tbody>
+</table>
+
+</body>
+</html>

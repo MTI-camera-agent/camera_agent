@@ -1,8 +1,12 @@
-# FLUX.2 Local Service With vLLM-Omni
+# FLUX.2 Local Service With vLLM-Omni (cold fallback)
 
-This repository serves `/home/liujinyuan/DATA/models/FLUX.2-klein-4B` locally
-with vLLM-Omni. The server keeps the model loaded and exposes OpenAI-compatible
-image endpoints.
+> **Role in CameraAgent:** cold **fallback** for `reference_preview` when ComfyUI
+> (`:8188`, Qwen2511) is unavailable. **Do not start this service by default.**
+> Default image stack is ComfyUI; see [development_workflow.md](development_workflow.md) §3.5
+> and [01-MVP期-方案设计及计划.md](01-MVP期-方案设计及计划.md).
+
+This repository can serve a local FLUX.2 checkpoint with vLLM-Omni. The server
+keeps the model loaded and exposes OpenAI-compatible image endpoints on `:8010`.
 
 Default comparison parameters used by the example client:
 

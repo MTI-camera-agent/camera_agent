@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>CameraAgent · 景点打卡指导</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="brand">
+        <h1>CameraAgent</h1>
+        <p>选一张取景帧，说清想拍什么。我们先问清楚，再给出拍摄方案。</p>
+      </header>
+
+      <main class="screens">
+        <!-- S0 -->
+        <section id="screen-s0" class="screen active" data-screen="s0">
+          <div class="frame-stage" id="frameStage">
+            <div class="placeholder" id="framePlaceholder">还没有取景帧<br />相册上传，或现场拍一张</div>
+            <img id="framePreview" alt="取景预览" hidden />
+          </div>
+
+          <div class="actions-row">
+            <label class="file-btn">
+              从相册选择
+              <input id="galleryInput" type="file" accept="image/*" />
+            </label>
+            <label class="file-btn btn-accent">
+              拍照
+              <input id="cameraInput" type="file" accept="image/*" capture="environment" />
+            </label>
+          </div>
+
+          <label class="field" for="intentInput">拍摄意图</label>
+          <textarea
+            id="intentInput"
+            placeholder="例如：在断桥拍游客照，湖面和远山，人物在右侧"
+          >在断桥拍游客照，湖面和远山，人物在右侧</textarea>
+
+          <button class="btn-primary" id="analyzeBtn" type="button" disabled>分析</button>
+          <p class="status" id="s0Status"></p>
+        </section>
+
+        <!-- S1 -->
+        <section id="screen-s1" class="screen" data-screen="s1">
+          <div class="card">
+            <h2 id="draftGoal">确认几个细节</h2>
+            <p>根据画面事实与美学建议，先对齐你的拍摄意图。</p>
+          </div>
+          <details class="conflicts" id="conflictsBox" hidden>
+            <summary>可能的冲突</summary>
+            <ul id="conflictsList"></ul>
+          </details>
+          <div id="questionsMount"></div>
+          <button class="btn-primary" id="confirmBtn" type="button" disabled>确认并生成方案</button>
+          <button class="btn-secondary" id="backToS0" type="button" style="width: 100%; margin-top: 0.55rem">
+            返回改图
+          </button>
+          <p class="status" id="s1Status"></p>
+        </section>
+
+        <!-- S2 -->
+        <section id="screen-s2" class="screen" data-screen="s2">
+          <div class="card">
+            <h2 id="planGoal">拍摄方案</h2>
+            <p id="planAdvice"></p>
+          </div>
+          <ol class="steps" id="planSteps"></ol>
+          <label class="field">最终示意图编辑指令</label>
+          <div class="mono" id="editInstruction"></div>
+          <div class="reference-preview" id="referencePreviewBox" hidden>
+            <label class="field">目标示意图（Qwen2511）</label>
+            <img id="referencePreviewImg" alt="目标示意图" hidden />
+            <p class="status" id="referencePreviewStatus"></p>
+          </div>
+          <button class="btn-primary" id="restartBtn" type="button" style="margin-top: 1rem">再拍一组</button>
+          <p class="status" id="s2Status"></p>
+        </section>
+      </main>
+
+      <p class="footer-note">
+        局域网 HTTP 下请优先用相册上传；相机抓拍在 HTTPS（如 Cloudflare Tunnel）下更可靠。
+      </p>
+    </div>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

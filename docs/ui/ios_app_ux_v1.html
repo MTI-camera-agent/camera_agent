@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CameraAgent iOS App — UX v2.0（端侧VLM候选 + 隐藏输入 + 左侧Plan）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0b1c24; --ink-soft:#16303c; --lake:#1a6b7a; --lake-bright:#2a9aad;
+    --sun:#e8b84a; --danger:#b33a3a; --mist:#edf3f5; --paper:#f7fafb;
+    --muted:#5c737c; --line:#d6e0e2;
+    --font-display:"Fraunces",Georgia,serif;
+    --font-body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:var(--font-body);background:linear-gradient(165deg,#0b1c24 0%,#123040 42%,#1a4552 100%);color:var(--ink);min-height:100vh;padding:32px 16px 64px}
+  .wrap{max-width:1180px;margin:0 auto}
+  header.page{color:var(--mist);margin-bottom:28px}
+  header.page h1{font-family:var(--font-display);font-weight:700;font-size:30px;letter-spacing:.5px}
+  header.page p{color:#9fb4ba;margin-top:6px;font-size:14px}
+  header.page a{color:var(--lake-bright)}
+  .sec-title{font-family:var(--font-display);color:var(--mist);font-size:20px;margin:28px 0 14px;border-left:3px solid var(--lake-bright);padding-left:10px}
+  .sec-sub{color:#9fb4ba;font-size:13px;margin:-8px 0 14px 60px}
+  #storyboard{display:flex;gap:18px;overflow-x:auto;padding:8px 2px 18px;scroll-snap-type:x mandatory}
+  .mini-wrap{scroll-snap-align:start;flex:0 0 auto}
+  .mini-cap{color:#9fb4ba;font-size:12px;text-align:center;margin-bottom:6px;letter-spacing:.3px}
+  .mini-cap b{color:var(--mist)}
+  .mini-shell{width:184px;height:392px;overflow:hidden;border-radius:30px;background:#000;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+  .phone{width:390px;height:844px;background:#000;border-radius:48px;position:relative;overflow:hidden;
+         box-shadow:0 0 0 10px #1a1a1a,0 0 0 12px #333,0 24px 60px rgba(0,0,0,.5)}
+  .mini-shell .phone{transform:scale(.471);transform-origin:top left}
+  .screen{position:absolute;inset:0;background:#000;overflow:hidden;display:flex;flex-direction:column}
+  .statusbar{height:50px;flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;
+             padding:0 26px 0 30px;color:#fff;font-size:14px;font-weight:600;z-index:30;position:absolute;top:0;left:0;right:0}
+  .statusbar .r{display:flex;gap:6px;align-items:center}
+  .island{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:118px;height:34px;background:#000;border-radius:20px;z-index:31}
+  .statusbar .bat{width:24px;height:11px;border:1.5px solid #fff;border-radius:3px;position:relative}
+  .statusbar .bat::after{content:"";position:absolute;right:-3px;top:2px;width:2px;height:5px;background:#fff;border-radius:0 1px 1px 0}
+  .statusbar .bat i{display:block;height:7px;margin:1px;background:#fff;border-radius:1px}
+
+  .cam{flex:1 1 auto;position:relative;overflow:hidden;background:#0b1c24}
+  .cam .scene{position:absolute;inset:0}
+  .camtop{position:absolute;top:50px;left:0;right:0;height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:20}
+  .camtop .ico{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;backdrop-filter:blur(4px)}
+  .camtop .left{display:flex;gap:10px}
+  .camtop .agent{background:linear-gradient(135deg,var(--lake-bright),var(--lake));box-shadow:0 0 0 2px rgba(255,255,255,.25)}
+  .chrome{position:absolute;left:0;right:0;bottom:0;padding:8px 18px 30px;z-index:18;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.55))}
+  .zoom-row{display:flex;justify-content:center;gap:18px;color:#fff;font-size:13px;font-weight:600}
+  .zoom-row span{opacity:.55;cursor:pointer;padding:2px 4px}
+  .zoom-row span.on{opacity:1;background:rgba(255,255,255,.18);border-radius:8px}
+  .mode-row{display:flex;justify-content:center;gap:14px;color:#fff;font-size:11px}
+  .mode-row span{opacity:.5}.mode-row span.on{opacity:1;color:var(--sun);font-weight:600}
+  .shutter-row{display:flex;align-items:center;justify-content:space-between;padding:0 8px;margin-top:2px}
+  .thumb{width:42px;height:42px;border-radius:8px;background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.4)}
+  .shutter{width:66px;height:66px;border-radius:50%;border:4px solid #fff;background:transparent}
+  .flip{width:42px;height:42px;border-radius:50%;background:rgba(0,0,0,.4);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px}
+
+  /* ✦ panel */
+  .agent-panel{position:absolute;left:14px;right:14px;bottom:96px;z-index:25;
+               background:rgba(11,28,36,.8);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12);
+               border-radius:18px;padding:12px 12px 10px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+  .ap-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .ap-head .t{color:#cfe0e3;font-size:12px;font-weight:600;letter-spacing:.3px}
+  .ap-head .x{color:#9fb4ba;font-size:16px;cursor:pointer;width:24px;height:24px;display:flex;align-items:center;justify-content:center}
+  .cand-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  .cand{font-size:12px;font-weight:600;color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:7px 12px;cursor:pointer;background:rgba(255,255,255,.06)}
+  .cand:hover{background:rgba(42,154,173,.3);border-color:var(--lake-bright)}
+  .cand .d{font-size:9px;font-weight:400;opacity:.6;margin-left:4px}
+  .selfie-toggle{display:flex;align-items:center;gap:10px;border:1px dashed rgba(232,184,74,.5);border-radius:12px;padding:9px 12px;margin-bottom:8px;cursor:pointer;background:rgba(232,184,74,.08)}
+  .selfie-toggle .ico{font-size:18px}
+  .selfie-toggle .t{color:#e8b84a;font-size:13px;font-weight:600;flex:1}
+  .selfie-toggle .d{font-size:10px;color:#9fb4ba;width:100%}
+  .selfie-toggle .sw{width:34px;height:20px;border-radius:12px;background:rgba(255,255,255,.2);position:relative}
+  .selfie-toggle .sw i{position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.2s}
+  .custom-btn{display:flex;align-items:center;gap:8px;color:#9fb4ba;font-size:13px;cursor:pointer;padding:6px 4px}
+  .custom-btn .e{font-size:16px}
+  .ap-hint{text-align:center;color:#5c7d83;font-size:10px;margin-top:6px}
+  .input-row{display:none;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:6px 8px;margin-top:8px}
+  .input-row.open{display:flex}
+  .input-row input{flex:1;background:transparent;border:none;outline:none;color:#fff;font-family:var(--font-body);font-size:13px}
+  .input-row input::placeholder{color:#7a929a}
+  .input-row .voice{color:#7a929a;font-size:16px;cursor:not-allowed}
+  .input-row .send{color:var(--lake-bright);font-size:18px;cursor:pointer;width:28px;text-align:center}
+
+  /* plan strip (left vertical) */
+  .plan-strip{position:absolute;left:14px;top:120px;bottom:200px;z-index:22;display:flex;flex-direction:column;gap:0;
+              background:rgba(11,28,36,.55);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:10px 10px;width:96px}
+  .pstep{display:flex;align-items:flex-start;gap:6px;padding:6px 0;position:relative}
+  .pstep:not(:last-child)::after{content:"";position:absolute;left:8px;top:24px;bottom:-4px;width:2px;background:rgba(255,255,255,.18)}
+  .pstep .pd{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;flex:0 0 auto;border:1.5px solid rgba(255,255,255,.4);color:#fff;background:rgba(0,0,0,.3)}
+  .pstep.done .pd{background:var(--lake);border-color:var(--lake);color:#fff}
+  .pstep.cur .pd{background:var(--sun);border-color:var(--sun);color:#0b1c24}
+  .pstep .pt{font-size:9.5px;color:#cfe0e3;line-height:1.25;flex:1}
+  .pstep.done .pt{color:#9fb4ba;text-decoration:line-through}
+  .pstep.cur .pt{color:#fff;font-weight:600}
+
+  /* advice pill (top center) */
+  .advice-pill{position:absolute;top:108px;left:50%;transform:translateX(-50%);z-index:21;max-width:260px;
+               background:rgba(11,28,36,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.12);
+               border-radius:999px;padding:8px 16px;color:#fff;font-size:12.5px;font-weight:600;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+
+  /* score ring (top right under ✕) */
+  .score-mini{position:absolute;top:108px;right:14px;z-index:21;width:44px;height:44px;border-radius:50%;
+              background:conic-gradient(var(--lake-bright) calc(var(--p)*1%),rgba(255,255,255,.2) 0);
+              display:flex;align-items:center;justify-content:center}
+  .score-mini i{width:32px;height:32px;border-radius:50%;background:rgba(11,28,36,.85);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff}
+
+  /* eval cluster (bottom-right, compact) */
+  .eval-cluster{position:absolute;right:14px;bottom:24px;z-index:23;display:flex;flex-direction:column;gap:6px;align-items:flex-end}
+  .eval-cluster .pbar{width:120px}
+  .eval-cluster .acts{display:flex;gap:6px}
+  .eval-cluster .acts button{font-family:var(--font-body);font-size:11px;border:none;border-radius:8px;padding:7px 10px;cursor:pointer}
+  .pbar{height:7px;border-radius:6px;background:rgba(255,255,255,.2);overflow:hidden}
+  .pbar i{display:block;height:100%;background:linear-gradient(90deg,var(--lake),var(--lake-bright))}
+  .pbar-lbl{font-size:9px;color:#9fb4ba;display:flex;justify-content:space-between;width:120px}
+  .btn-ghost{background:rgba(255,255,255,.18);color:#fff}
+  .btn-primary{background:var(--lake);color:#fff}
+  .btn-danger{background:var(--danger);color:#fff}
+
+  /* overlay */
+  .ov{position:absolute;inset:0;pointer-events:none;z-index:15}
+  .ov .rotv{position:absolute;top:33.33%;bottom:33.33%;left:0;width:1px;background:rgba(255,255,255,.3)}
+  .ov .roth{position:absolute;left:33.33%;right:33.33%;top:0;height:1px;background:rgba(255,255,255,.3)}
+  .ov .rotv2{left:66.66%}.ov .roth2{top:66.66%;left:0;right:0}
+  .ov .bbox{position:absolute;border:2px solid var(--lake-bright);border-radius:8px;box-shadow:0 0 0 2px rgba(42,154,173,.25)}
+  .ov .bbox .lbl{position:absolute;top:-12px;left:-2px;background:var(--lake-bright);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;font-weight:600}
+  .ov .anchor{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--sun);border:2px solid #fff;transform:translate(-50%,-50%);box-shadow:0 1px 4px rgba(0,0,0,.5)}
+  .ov .txt{position:absolute;left:0;right:0;text-align:center;color:#fff;font-size:13px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.7);padding:0 16px}
+  .ov .txt.top{top:160px}.ov .txt.bottom{bottom:90px}
+  .ov .arrow{position:absolute;left:30%;top:46%;color:var(--sun)}
+  .ov .refimg{position:absolute;inset:0;opacity:.35}
+  .pip{position:absolute;top:170px;right:14px;width:92px;height:92px;border-radius:12px;overflow:hidden;border:2px solid rgba(255,255,255,.7);box-shadow:0 6px 16px rgba(0,0,0,.4);z-index:22}
+  .pip .tag{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:#fff;font-size:9px;text-align:center;padding:2px}
+
+  /* sheets / loading / countdown / done */
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-radius:24px 24px 0 0;padding:14px 18px 30px;box-shadow:0 -8px 30px rgba(0,0,0,.3);z-index:30}
+  .grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 12px}
+  .sheet h2{font-family:var(--font-display);font-size:18px;color:var(--ink);margin-bottom:4px}
+  .sheet .sub{font-size:12px;color:var(--muted);margin-bottom:14px}
+  .qcard{background:var(--mist);border-radius:14px;padding:12px 14px;margin:10px 0}
+  .qcard .qt{font-size:13px;font-weight:600;color:var(--ink);margin-bottom:8px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chips .c{font-size:12px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:6px 12px;cursor:pointer;color:var(--ink-soft)}
+  .chips .c:hover{border-color:var(--lake-bright)}
+  .chips .c.sel{background:var(--lake);color:#fff;border-color:var(--lake)}
+  .collapse{font-size:12px;color:var(--lake);margin:8px 0 2px;cursor:pointer}
+  .conflicts{font-size:11px;color:var(--muted);background:#fbe6e6;border-radius:10px;padding:8px 10px;display:none}
+  .conflicts.open{display:block}.conflicts b{color:var(--danger)}
+  .center-col{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:#fff;z-index:24;pointer-events:none}
+  .center-col .btn-primary{pointer-events:auto;border:none;border-radius:10px;padding:8px 16px;cursor:pointer}
+  .spinner{width:46px;height:46px;border-radius:50%;border:4px solid rgba(255,255,255,.2);border-top-color:var(--lake-bright);animation:sp 1s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .ready-ring{width:130px;height:130px;border-radius:50%;border:6px solid rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:18px;box-shadow:0 0 0 8px rgba(255,255,255,.15)}
+  .countdown{font-family:var(--font-display);font-size:120px;color:#fff;text-shadow:0 4px 20px rgba(0,0,0,.5)}
+  .done-shot{position:absolute;inset:0;background:linear-gradient(165deg,#1a4552,#0b1c24);display:flex;align-items:center;justify-content:center;color:#fff;z-index:12}
+  .done-card{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-radius:24px 24px 0 0;padding:16px 18px 28px;z-index:30}
+
+  /* severe banner / modal */
+  .severe-banner{position:absolute;top:50px;left:0;right:0;background:var(--danger);color:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px;z-index:26;font-size:13px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+  .severe-banner button{margin-left:auto;background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:8px;padding:5px 10px;font-size:11px;cursor:pointer}
+  .modal-bg{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:40}
+  .modal{background:var(--paper);border-radius:18px;padding:22px 20px;width:300px;text-align:center}
+  .modal h3{font-family:var(--font-display);font-size:18px;margin-bottom:8px}
+  .modal p{font-size:13px;color:var(--muted);margin-bottom:16px}
+  .modal .row{display:flex;gap:8px}
+  .modal .row button{flex:1;border:none;border-radius:12px;padding:11px 0;font-size:13px;cursor:pointer}
+  .note-mock{position:absolute;bottom:8px;left:0;right:0;text-align:center;font-size:10px;color:#9fb4ba;z-index:50}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <h1>CameraAgent — iOS App UX v2.0</h1>
+    <p>端侧 VLM 候选（MiniCPM，mock）· 隐藏式文字/语音（点✎唤起）· 左侧 Plan 圆点连线 · 持续 Evaluation + 择机抓拍 + 中途结束提醒 · mock=<a href="../01-MVP期-方案设计及计划.md">A.4</a> · 说明见 <a href="UX_DESIGN.md">UX_DESIGN.md</a> · 旧版 <a href="ios_app_ux.html">ios_app_ux.html</a></p>
+  </header>
+
+  <div class="sec-title">流程概览（相机 → ✦ → 候选/开关/✎ → Plan 持续 Eval → 成片）</div>
+  <div class="sec-sub">横向滚动看全流程分镜</div>
+  <div id="storyboard"></div>
+
+  <div class="sec-title">交互预览</div>
+  <div class="sec-sub">点手机内按钮走流程；右侧状态点可跳任意态</div>
+  <div id="interactive">
+    <div class="phone-stage"><div class="phone"><div class="screen" id="screen"></div></div></div>
+    <div class="side">
+      <div class="nav-card"><h3>状态跳转</h3><div class="nav-grid" id="navgrid"></div></div>
+      <div class="api-card"><h3>当前环节 API 绑定</h3><div class="ep" id="api-ep">—</div><div class="pl" id="api-pl"></div></div>
+      <div class="legend"><b>说明</b>：✦ 面板默认只显 VLM 候选 chips + 🤳 给自己拍开关 + ✎（<b>无显式文字框</b>，点✎才唤起）；点候选→直接 Plan（无 Question）；Plan 在<b>左侧竖向圆点条</b>，√推进，提示不约束；端侧 VLM 持续 Eval→择机抓拍；中途跳走→提醒结束。字段对齐 <a href="../../schemas/shooting.py">schemas/shooting.py</a> + A.4。</div>
+    </div>
+  </div>
+</div>
+<style>
+  .nav-card{background:var(--paper);border-radius:16px;padding:16px 18px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+  .nav-card h3{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+  .nav-grid{display:flex;flex-wrap:wrap;gap:6px}
+  .nav-grid button{font-family:var(--font-body);font-size:12px;background:var(--mist);color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:6px 11px;cursor:pointer;transition:.15s}
+  .nav-grid button:hover{border-color:var(--lake-bright);color:var(--lake)}
+  .nav-grid button.on{background:var(--lake);color:#fff;border-color:var(--lake)}
+  .api-card{background:#0e2229;border:1px solid #1f3b45;border-radius:14px;padding:14px 16px;margin-top:14px;color:var(--mist)}
+  .api-card h3{color:#7fa0a6;font-size:11px;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+  .api-card .ep{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#9fdfe8;word-break:break-all}
+  .api-card .pl{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#7fa0a6;margin-top:6px;white-space:pre-wrap}
+  .legend{font-size:12px;color:#9fb4ba;margin-top:14px;line-height:1.6}.legend b{color:var(--mist)}
+  #interactive{display:flex;gap:32px;align-items:flex-start;flex-wrap:wrap}
+  .phone-stage{flex:0 0 auto}.side{flex:1 1 320px;min-width:300px}
+</style>
+
+<script>
+/* mock (A.4 断桥) */
+const MOCK={
+  draftGoal:"断桥游客照，湖面+远山，人物右侧",
+  questions:[{questionId:"q1",text:"您希望拍半身还是全身？",options:["半身","全身"],rec:0}],
+  conflicts:[{summary:"意图要求人物在右侧，但当前帧人物偏左",userSide:"人物在右侧",aestheticSide:"建议人物落在右侧三分",sceneSide:"当前主体偏画面左侧"}],
+  plan:{goal:"断桥游客照，人物右侧、保留湖面远山",steps:[
+    {stepId:"s1",title:"粗调 机位/站位"},{stepId:"s2",title:"目标示意图就位"},
+    {stepId:"s3",title:"细调 姿态/视角"},{stepId:"s4",title:"拍摄完成"}]},
+  coarseGuidance:{layers:[{kind:"rule_of_thirds"},{kind:"bbox",normalized:[0.55,0.30,0.35,0.50],label:"target_subject"},{kind:"text",text:"人物向右移至右三分线",position:"top"}]},
+  refPreview:{latencyMs:28500,generator:"qwen2511"},
+  analyzeFine:{compositionScore:0.78,vlmAlignScore:0.82,gaps:["头部可再微左转 5°"],progressScore:0.804}
+};
+const PLAN_ADVICE=["人物向右移至右三分线","对照示意图：人物靠右、湖面占下 1/3","头部再向左微转 5°，保持","就绪，准备抓拍"];
+const COMP=[0.42,0.58,0.78,0.86];
+
+function sceneSVG(figX,isRef,clone){
+  const fx=figX*390;
+  return `<svg class="scene" viewBox="0 0 390 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#bcd6dc"/><stop offset="1" stop-color="#e8f0f1"/></linearGradient>
+    <linearGradient id="lake" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a5c66"/><stop offset="1" stop-color="#16303c"/></linearGradient></defs>
+    <rect width="390" height="360" fill="url(#sky)"/>
+    <path d="M0 300 Q60 250 120 285 T240 270 T390 290 V360 H0 Z" fill="#7fa0a6" opacity=".55"/>
+    <path d="M0 320 Q90 292 170 312 T330 302 T390 316 V360 H0 Z" fill="#5c7d83" opacity=".7"/>
+    <rect y="360" width="390" height="240" fill="url(#lake)"/>
+    <g stroke="#0b1c24" stroke-width="2" opacity=".45" fill="none"><line x1="0" y1="382" x2="390" y2="382"/>
+      <line x1="34" y1="362" x2="34" y2="402"/><line x1="78" y1="362" x2="78" y2="402"/>
+      <line x1="312" y1="362" x2="312" y2="402"/><line x1="356" y1="362" x2="356" y2="402"/></g>
+    <g transform="translate(${fx},300)"><ellipse cx="0" cy="14" rx="13" ry="28" fill="#0b1c24"/><circle cx="0" cy="-18" r="9" fill="#cfa37a"/></g>
+    ${clone?`<g transform="translate(${0.72*390},300)" opacity=".5"><ellipse cx="0" cy="14" rx="13" ry="28" fill="#1a6b7a"/><circle cx="0" cy="-18" r="9" fill="#cfa37a"/></g>`:""}
+  </svg>`;
+}
+function selfieSVG(){return `<svg class="scene" viewBox="0 0 390 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><rect width="390" height="600" fill="#26495a"/><circle cx="195" cy="250" r="70" fill="#cfa37a"/><ellipse cx="195" cy="430" rx="120" ry="160" fill="#0b1c24"/></svg>`;}
+
+function statusbar(){return `<div class="statusbar"><span>9:41</span><div class="r"><span style="font-size:11px">5G</span><span class="bat"><i style="width:78%"></i></span></div></div><div class="island"></div>`;}
+function camtop(rightAgent){
+  const right=rightAgent?`<div class="ico agent" title="CameraAgent" onclick="go('agent_panel')">✦</div>`:`<div class="ico" onclick="go('camera')" title="退出">✕</div>`;
+  return `<div class="camtop"><div class="left"><div class="ico" title="闪光">⚡</div><div class="ico" title="夜景">◐</div></div>${right}</div>`;
+}
+function chrome(){return `<div class="chrome"><div class="zoom-row"><span>.5</span><span class="on">1x</span><span>2</span><span>4</span><span>8</span></div><div class="mode-row"><span>人像</span><span class="on">拍照</span><span>全景</span></div><div class="shutter-row"><div class="thumb"></div><div class="shutter"></div><div class="flip">↻</div></div></div>`;}
+
+function overlayHTML(layers,refOn,anchors){
+  let h='<div class="ov">';
+  (layers||[]).forEach(L=>{
+    if(L.kind==="rule_of_thirds"){h+='<div class="rotv"></div><div class="rotv rotv2"></div><div class="roth"></div><div class="roth roth2"></div>';}
+    if(L.kind==="bbox"&&L.normalized){const[x,y,w,ht]=L.normalized;h+=`<div class="bbox" style="left:${x*100}%;top:${y*100}%;width:${w*100}%;height:${ht*100}%"><span class="lbl">${L.label||""}</span></div>`;}
+    if(L.kind==="text"){h+=`<div class="txt ${L.position||'top'}">${L.text||""}</div>`;}
+    if(L.kind==="arrow"){h+='<svg class="arrow" width="80" height="40"><path d="M5 30 L55 30 M45 18 L65 30 L45 42" stroke="#e8b84a" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';}
+  });
+  if(anchors){const b=[0.55,0.30,0.35,0.50];anchors.forEach(a=>{h+=`<div class="anchor" style="left:${a[0]*100}%;top:${a[1]*100}%"></div>`;});}
+  if(refOn)h+=`<div class="refimg">${sceneSVG(0.72,true,false)}</div>`;
+  h+='</div>';return h;
+}
+function planStrip(cur){
+  const steps=MOCK.plan.steps;let h='<div class="plan-strip">';
+  steps.forEach((s,i)=>{const idx=i+1;const cls=idx<cur?'done':idx===cur?'cur':'';
+    const mk=idx<cur?'✓':idx===cur?'▶':'○';
+    h+=`<div class="pstep ${cls}"><span class="pd">${mk}</span><span class="pt">${idx}. ${s.title}</span></div>`;});
+  h+='</div>';return h;
+}
+
+/* states */
+function cameraHTML(){return `${statusbar()}${camtop(true)}<div class="cam"><div class="scene">${sceneSVG(0.30,false,false)}</div></div>${chrome()}<div class="note-mock">相机主界面 · 占位预览（真功能用 expo-camera）</div>`;}
+function agentPanelHTML(inputOpen){
+  const cands=[["拍断桥打卡","景"],["给他人拍照","人"],["拍摄古典建筑","景"],["拍摄湖景","景"]];
+  let ch=cands.map(c=>`<span class="cand" onclick="go('plan_coarse')">${c[0]}<span class="d">${c[1]}</span></span>`).join("");
+  return `${statusbar()}${camtop(true)}<div class="cam"><div class="scene">${sceneSVG(0.30,false,false)}</div></div>${chrome()}
+  <div class="agent-panel">
+    <div class="ap-head"><span class="t">CameraAgent · 端侧 VLM 推荐</span><span class="x" onclick="go('camera')">✕</span></div>
+    <div class="cand-row">${ch}</div>
+    <div class="selfie-toggle" onclick="setSc(2);go('clone_id')"><span class="ico">🤳</span><div><div class="t">给自己拍</div><div class="d">前置自拍→分身→置入后置预览</div></div><span class="sw"><i style="left:2px"></i></span></div>
+    <div class="custom-btn" onclick="go('agent_input')"><span class="e">✎</span><span>自定义意图（文字/语音）</span></div>
+    <div class="ap-hint">点候选=捕获当前帧分析（无意图输入）；3 大场景为 skill 分类底色</div>
+  </div>`;
+}
+function agentInputHTML(){
+  return `${statusbar()}${camtop(true)}<div class="cam"><div class="scene">${sceneSVG(0.30,false,false)}</div></div>${chrome()}
+  <div class="agent-panel">
+    <div class="ap-head"><span class="t">自定义意图</span><span class="x" onclick="go('agent_panel')">✕</span></div>
+    <div class="input-row open"><input id="intent" placeholder="输入拍摄意图…（可能触发 Question）"><span class="voice" title="未来语音">🎤</span><span class="send" onclick="go('question')">↗</span></div>
+    <div class="ap-hint">仅自定义文字才可能触发 Question；候选/给自己拍不触发</div>
+  </div>`;
+}
+function cloneIDHTML(){return `${statusbar()}${camtop(false)}<div class="cam"><div class="scene">${selfieSVG()}</div></div>
+  <div class="sheet"><div class="grab"></div><h2>生成分身 ID</h2><div class="sub">前置自拍上半身 → mock 生成 identity_photo（identity-photo-gen 待建）</div>
+  <div style="font-size:12px;background:#fdf2dd;color:#9a7416;border-radius:10px;padding:8px 10px;margin-bottom:10px">白底·正面·上半身·无遮挡</div>
+  <button class="btn-primary" style="width:100%;border:none;border-radius:12px;padding:13px;font-size:14px;cursor:pointer" onclick="go('plan_coarse')">📸 拍一张分身照 → 进入引导</button></div>`;}
+function questionHTML(){
+  const m=MOCK;let qh='';
+  m.questions.forEach(q=>{qh+=`<div class="qcard"><div class="qt">${q.text}</div><div class="chips">`;q.options.forEach((o,i)=>{qh+=`<span class="c${i===q.rec?' sel':''}" onclick="this.parentNode.querySelectorAll('.c').forEach(x=>x.classList.remove('sel'));this.classList.add('sel')">${o}</span>`;});qh+='</div></div>';});
+  const cl=m.conflicts.map(c=>`<div>• ${c.summary}<br><b>用户</b> ${c.userSide} · <b>美学</b> ${c.aestheticSide} · <b>场景</b> ${c.sceneSide}</div>`).join("");
+  return `${statusbar()}${camtop(false)}<div class="cam"><div class="scene">${sceneSVG(0.30,false,false)}</div></div>
+  <div class="sheet"><div class="grab"></div><h2>${m.draftGoal}</h2><div class="collapse" onclick="this.nextElementSibling.classList.toggle('open')">⚠ 冲突摘要（点展开）</div><div class="conflicts">${cl}</div>${qh}
+  <button class="btn-ghost" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:11px;margin-bottom:8px;cursor:pointer" onclick="go('agent_input')">← 返回</button>
+  <button class="btn-primary" style="width:100%;border:none;border-radius:12px;padding:13px;font-size:14px;cursor:pointer" onclick="go('plan_coarse')">确认 → 进入引导</button></div>`;}
+function planHTML(cur,overlay){
+  const advice=PLAN_ADVICE[cur-1];const comp=COMP[cur-1];
+  let layers=MOCK.coarseGuidance.layers.slice();
+  if(sc===2)layers.push({kind:"bbox",normalized:[0.10,0.32,0.28,0.46],label:"self/clone"});
+  const refOn=cur>=3;const showRef=cur>=2;
+  const pip=showRef?`<div class="pip">${sceneSVG(0.72,true,false)}<div class="tag">目标图${cur>=3?' · alpha':''}</div></div>`:"";
+  const anchors=[[0.55,0.30],[0.90,0.55]];
+  const prog=cur>=3?`<div class="pbar"><i style="width:${Math.round(MOCK.analyzeFine.progressScore*100)}%"></i></div><div class="pbar-lbl"><span>对齐进度</span><span>${MOCK.analyzeFine.progressScore.toFixed(3)}</span></div>`:"";
+  const advance=cur<3?`go('${['plan_ref','plan_fine'][cur-1]}')`:cur===3?`go('capture')`:`go('capture')`;
+  const advBtn=cur<3?`<button class="btn-primary" onclick="${advance}">Eval 推进 →</button>`:`<button class="btn-primary" onclick="go('capture')">就绪·抓拍</button>`;
+  return `${statusbar()}${camtop(false)}${planStrip(cur)}
+  <div class="advice-pill">${advice}</div>
+  <div class="score-mini" style="--p:${Math.round(comp*100)}"><i>${comp.toFixed(2)}</i></div>
+  <div class="cam"><div class="scene">${sceneSVG(0.30,false,sc===2)}</div>${overlay||overlayHTML(layers,refOn,anchors)}${pip}</div>
+  <div class="eval-cluster">${prog}<div class="acts">${advBtn}<button class="btn-danger" onclick="go('severe')">severe</button><button class="btn-ghost" onclick="go('plan_refresh')">刷新</button><button class="btn-ghost" onclick="go('end_remind')">结束</button></div></div>`;
+}
+function severeHTML(){return `${planHTML(planStep)}<div class="severe-banner">⚠ 连续偏离，是否退出 Plan？<button onclick="go('camera')">退出</button></div>`;}
+function planRefreshHTML(){return `${planHTML(planStep)}<div class="modal-bg"><div class="modal"><h3>场景变化</h3><p>检测到场景失效（原帧缺失物体出现），需重新规划 Plan 与参考图。</p><div class="row"><button class="btn-ghost" onclick="go('plan_coarse')">取消</button><button class="btn-primary" onclick="go('plan_coarse')">重新规划</button></div></div></div>`;}
+function endRemindHTML(){return `${planHTML(planStep)}<div class="modal-bg"><div class="modal"><h3>流程已结束</h3><p>检测到你已离开引导或自行拍摄。是否保留本次 Plan 与成片？</p><div class="row"><button class="btn-ghost" onclick="go('camera')">丢弃</button><button class="btn-primary" onclick="go('done')">保留</button></div></div></div>`;}
+function captureHTML(){return `${statusbar()}${camtop(false)}<div class="cam"><div class="scene">${sceneSVG(0.30,false,sc===2)}</div></div><div class="center-col" id="cd"><div class="ready-ring">就绪</div><div class="countdown" id="cdnum">3</div><div style="font-size:13px;color:#cfe0e3">captureReady · 择机抓拍</div></div>`;}
+function doneHTML(){
+  const m=MOCK;const steps=m.plan.steps.map((s,i)=>`<div style="font-size:12px;color:#2a7a3a;margin:3px 0">✓ ${i+1}. ${s.title}</div>`).join("");
+  const post=sc===2?`<div style="font-size:11px;color:var(--muted);background:#fdf2dd;border-radius:8px;padding:6px 8px;margin:6px 0">后处理：character-swap / id-correction（P4+ 未来）</div>`:"";
+  return `${statusbar()}${camtop(false)}<div class="done-shot"><div style="text-align:center"><div style="font-size:40px">🖼</div><div style="font-size:13px;margin-top:6px">成片预览</div></div></div>
+  <div class="done-card"><h2 style="font-family:var(--font-display);font-size:18px;margin-bottom:4px">拍摄完成</h2><div style="font-size:12px;color:var(--muted);margin-bottom:8px">${m.plan.goal}</div>${steps}${post}
+  <div class="eval-cluster" style="position:static;align-items:stretch;margin-top:12px"><div class="acts"><button class="btn-ghost" style="flex:1" onclick="go('camera')">再拍一组</button><button class="btn-primary" style="flex:1" onclick="go('camera')">完成</button></div></div></div>`;}
+
+function renderState(state){
+  switch(state){
+    case 'camera':return cameraHTML();
+    case 'agent_panel':return agentPanelHTML(false);
+    case 'agent_input':return agentInputHTML();
+    case 'clone_id':return cloneIDHTML();
+    case 'question':return questionHTML();
+    case 'plan_coarse':planStep=1;return planHTML(1);
+    case 'plan_ref':planStep=2;return planHTML(2);
+    case 'plan_fine':planStep=3;return planHTML(3);
+    case 'severe':return severeHTML();
+    case 'plan_refresh':return planRefreshHTML();
+    case 'end_remind':return endRemindHTML();
+    case 'capture':return captureHTML();
+    case 'done':return doneHTML();
+  }
+}
+const API={
+  camera:["（相机就绪）","✦ 右上 → agent_panel"],
+  agent_panel:["（端侧 VLM 候选）","MiniCPM 读预览 + skill 白名单 → 1~5 候选"],
+  agent_input:["POST /api/v1/sessions/{id}/submit-intent","frame + userIntent=<text>（可能触发 Question）"],
+  clone_id:["(mock) identity-photo-gen","前置自拍 → 分身 → 置入后置预览"],
+  question:["POST submit-intent →","IntentPhaseResult{ draftGoal, questions, conflicts }（仅自定义文字）"],
+  plan_coarse:["POST /api/v1/sessions/{id}/analyze-frame?phase=coarse_act","→ { guidanceOverlay, compositionScore, stepCompleted } (PR2)"],
+  plan_ref:["GET /api/v1/sessions/{id}/reference-preview","→ ready 后 GET .../reference-preview.png"],
+  plan_fine:["POST analyze-frame?phase=fine_act","→ { vlmAlignScore, progressScore, captureReady } (PR2)"],
+  severe:["planDeviation=severe","连续 5 帧 score<0.35 / IoU<0.2×3 / 人脸消失>3s"],
+  plan_refresh:["invalidate signal + 新帧","re-Plan → 刷新 overlay + 重生参考图"],
+  end_remind:["用户中途跳走 / 自行拍摄","端侧提醒流程结束（保留/丢弃）"],
+  capture:["captureReady=true","端侧择机抓拍 · captureReason"],
+  done:["（拍摄结束）","本地保存成片；场景二后处理 P4+"]
+};
+const NAV=[["camera","相机"],["agent_panel","✦候选"],["agent_input","✎输入"],["clone_id","Clone-ID"],["question","Question"],["plan_coarse","Plan粗调"],["plan_ref","Plan目标图"],["plan_fine","Plan细调"],["severe","Severe"],["plan_refresh","Plan刷新"],["end_remind","结束提醒"],["capture","倒计时"],["done","Done"]];
+
+let sc=1,cur='camera',planStep=1,cdTimer=null;
+function paint(){
+  if(cdTimer&&cur!=='capture'){clearInterval(cdTimer);cdTimer=null;}
+  const el=document.getElementById('screen');el.innerHTML=renderState(cur);
+  document.querySelectorAll('#navgrid button').forEach(b=>b.classList.toggle('on',b.dataset.s===cur));
+  const a=API[cur]||["—",""];document.getElementById('api-ep').textContent=a[0];document.getElementById('api-pl').textContent=a[1];
+  if(cur==='capture')runCountdown();
+}
+function go(s){cur=s;paint();}
+function setSc(v){sc=v;}
+function runCountdown(){
+  if(cdTimer)clearInterval(cdTimer);
+  let n=3;const num=document.querySelector('#screen #cdnum');if(!num)return;
+  num.textContent=n;
+  cdTimer=setInterval(()=>{n--;if(n<=0){clearInterval(cdTimer);cdTimer=null;go('done');}else{num.textContent=n;}},1000);
+}
+function init(){
+  const ng=document.getElementById('navgrid');
+  NAV.forEach(([s,l])=>{const b=document.createElement('button');b.textContent=l;b.dataset.s=s;b.onclick=()=>go(s);ng.appendChild(b);});
+  const sb=document.getElementById('storyboard');
+  const frames=[["camera","相机(Home)",1],["agent_panel","✦候选/开关/✎",1],["clone_id","Clone-ID(给自己拍)",2],["question","Question(✎)",1],["plan_coarse","Plan·粗调",1],["plan_ref","Plan·目标图",1],["plan_fine","Plan·细调",1],["severe","Severe",1],["plan_refresh","Plan刷新",1],["end_remind","结束提醒",1],["capture","倒计时·抓拍",1],["done","Done",1]];
+  frames.forEach(([st,cap,v])=>{const w=document.createElement('div');w.className='mini-wrap';
+    const cap2=document.createElement('div');cap2.className='mini-cap';cap2.innerHTML=`<b>${cap}</b>`;
+    const sh=document.createElement('div');sh.className='mini-shell';const ph=document.createElement('div');ph.className='phone';
+    const scr=document.createElement('div');scr.className='screen';const oldSc=sc;sc=v;scr.innerHTML=renderState(st);sc=oldSc;
+    ph.appendChild(scr);sh.appendChild(ph);w.appendChild(cap2);w.appendChild(sh);sb.appendChild(w);});
+  sc=1;cur='camera';paint();
+}
+init();
+</script>
+</body>
+</html>

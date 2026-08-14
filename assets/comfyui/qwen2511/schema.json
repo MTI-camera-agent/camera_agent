@@ -1,0 +1,77 @@
+{
+  "version": "1",
+  "parameters": {
+    "image": {
+      "node_id": "78",
+      "field": "image",
+      "type": "image",
+      "required": true,
+      "description": "Input image path",
+      "default": "DSC03895_ps_1.jpg",
+      "label": "用户上传的参考/输入图像"
+    },
+    "prompt": {
+      "node_id": "435",
+      "field": "value",
+      "type": "string",
+      "required": true,
+      "description": "Text prompt",
+      "default": "给画面中的女生戴上米色贝雷帽，其他保持不变。",
+      "label": "主提示词输入（节点「Prompt」），用户通过对话修改生成内容"
+    },
+    "seed_433_3": {
+      "node_id": "433:3",
+      "field": "seed",
+      "type": "int",
+      "required": false,
+      "description": "Random seed",
+      "default": 46574740329182,
+      "label": "随机种子"
+    },
+    "steps_433_3": {
+      "node_id": "433:3",
+      "field": "steps",
+      "type": "int",
+      "required": false,
+      "description": "Generation steps",
+      "default": 8,
+      "label": "采样步数"
+    },
+    "cfg_433_3": {
+      "node_id": "433:3",
+      "field": "cfg",
+      "type": "int",
+      "required": false,
+      "description": "常用生成参数：CFG 引导强度",
+      "default": 1,
+      "label": "CFG 引导强度"
+    },
+    "sampler_name_433_3": {
+      "node_id": "433:3",
+      "field": "sampler_name",
+      "type": "string",
+      "required": false,
+      "description": "常用生成参数：sampler_name",
+      "default": "euler",
+      "label": "sampler_name"
+    },
+    "scheduler_433_3": {
+      "node_id": "433:3",
+      "field": "scheduler",
+      "type": "string",
+      "required": false,
+      "description": "常用生成参数：scheduler",
+      "default": "simple",
+      "label": "scheduler"
+    },
+    "denoise_433_3": {
+      "node_id": "433:3",
+      "field": "denoise",
+      "type": "int",
+      "required": false,
+      "description": "常用生成参数：去噪强度",
+      "default": 1,
+      "label": "去噪强度"
+    }
+  }
+}

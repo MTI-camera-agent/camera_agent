@@ -3,6 +3,9 @@ outputs_dir: outputs
 
 logging:
   level: INFO
+  console_level: WARNING
+  file: outputs/logs/camera_agent.log
+  httpx_level: WARNING
 
 loop:
   max_iterations: 3
@@ -12,18 +15,92 @@ tracing:
   format: plain
 
 structured_vision:
-  provider: agno.google
-  model_id: gemini-3.1-flash-lite
-  api_key_env: GEMINI_API_KEY
+  provider: agno.deepseek
+  model_id: deepseek-v4-flash
+  api_key_env: DEEPSEEK_API_KEY
   temperature: 0.2
   max_output_tokens: 4096
   retries: 1
+  timeout_seconds: 120
+  # DeepSeek has JSON mode but not native json_schema; keep true for Plan.
+  use_json_mode: true
+  # Prefer non-thinking for lower latency/cost on structured plan calls.
+  use_thinking: false
+  # DeepSeek Chat API is text-only (rejects image_url). Bridge images via local VLM.
+  vision_bridge:
+    base_url: http://127.0.0.1:8000
+    # model_id: null  # auto-detect from /v1/models
+    timeout_seconds: 180
+    max_tokens: 1024
+    temperature: 0.0
+
+# Reflector / dual-image evaluation (native vision) via local MiniCPM-V-4.6.
+# Default: transformers serve on :8001 (scripts/start_minicpm_server.sh).
+# Public ModelBest API is a cold fallback only — see docs/minicpm_evaluation.md.
+# Omit api_key_env for unauthenticated local serve; set MINICPM_API_KEY only for public API.
+# Note: transformers serve ignores response_format; prompts/reflection.md forces bare JSON.
+structured_evaluation:
+  provider: agno.openai_compatible
+  model_id: MiniCPM-V-4.6
+  base_url: http://127.0.0.1:8001/v1
+  temperature: 0.2
+  max_output_tokens: 2048
+  retries: 1
+  timeout_seconds: 120
   use_json_mode: true
 
+# Primary reference_preview path: ComfyUI + Qwen2511 (default start :8188).
 image_generator:
+  provider: comfyui
+  base_url: http://127.0.0.1:8188
+  workflow_api_path: assets/comfyui/qwen2511/workflow.api.json
+  schema_path: assets/comfyui/qwen2511/schema.json
+  timeout_seconds: 600
+  poll_interval_seconds: 1.0
+
+# Cold fallback only — do not start :8010 by default.
+# Switch image_generator.provider to openai_compatible and set base_url when needed.
+image_generator_fallback:
   provider: openai_compatible
   base_url: http://127.0.0.1:8010
   timeout_seconds: null
   guidance_scale: 1.0
   num_inference_steps: 4
   seed: 0
+
+# MVP P2 FastAPI gateway (services.gateway.main). Serves frontend/web + session API.
+gateway:
+  demo_token: ""  # if non-empty, require matching X-Demo-Token header
+  max_frame_long_edge: 1280
+  frames_dir: outputs/gateway_frames
+  plans_dir: outputs/plans
+  previews_dir: outputs/reference_previews  # P3: Qwen2511/FLUX reference_preview PNGs
+  web_dir: frontend/web
+  # Same-origin hosting is default; set e.g. ["*"] only for cross-origin dev.
+  cors_origins: []
+
+# MVP P1 shooting slow path (app_shooting.py). Independent of image_loop.
+# Qwen3-VL: scene describe + fixed aesthetic prompt (never receives userIntent).
+# main_agent: reconciles intent vs scene vs aesthetic draft → Question / Plan.
+shooting:
+  main_agent:
+    provider: agno.deepseek
+    model_id: deepseek-v4-flash
+    api_key_env: DEEPSEEK_API_KEY
+    temperature: 0.2
+    max_output_tokens: 4096
+    retries: 1
+    timeout_seconds: 120
+    use_json_mode: true
+    use_thinking: false
+  qwen3vl:
+    base_url: http://127.0.0.1:8000
+    timeout_seconds: 180
+    max_tokens: 1024
+    temperature: 0.0
+  # P3 reference_preview async channel (kickoff on confirm-intent).
+  # Primary generator = image_generator (ComfyUI Qwen2511 :8188) above.
+  # Set fallback_generator: flux to enable the cold FLUX :8010 fallback.
+  reference_preview:
+    fallback_generator: ""  # "flux" enables image_generator_fallback (:8010)
+    poll_interval_seconds: 1.5

@@ -1,0 +1,34 @@
+sequenceDiagram
+  participant Edge as 用户端API
+  participant CV as CV Guidance
+  participant Mini as 端侧Act / Evaluation
+  participant Cloud as 云侧Intent / Plan
+  participant RefGen as 目标及示意图
+  Edge->>Cloud: frame + userIntent
+  Cloud->>Cloud: Qwen3VL 场景+语义理解
+  alt 存在真实歧义_minimal
+    Cloud-->>Edge: Question 带选项 仅澄清真实歧义
+    Edge-->>Cloud: answers
+  end
+  Cloud->>Cloud: Planner 产出 Plan 拍什么 怎么拍 coarse reference指令
+  par coarse_act
+    Cloud-->>Edge: coarseGuidance + Plan目标描述
+    Edge->>CV: 渲染 overlay 三分线 bbox 箭头
+  and reference_preview
+    Cloud->>RefGen: frame + editInstruction
+    RefGen-->>Cloud: reference PNG
+    Cloud-->>Edge: reference_preview ready PIP
+  end
+  loop edge eval 1fps
+    Edge->>Mini: 当前帧 + reference + Plan goal
+    Mini-->>Edge: achieved? / next guidance
+    alt Plan-refresh 触发 移动后出现原帧未含物体 可能影响目标
+      Edge->>Cloud: invalidate signal + 新帧
+      Cloud->>Cloud: re-Plan
+      Cloud-->>Edge: 新 Plan + 新 coarse reference
+      Edge->>CV: 刷新 overlay
+    else 继续对齐
+      Edge->>CV: 刷新引导趋近
+    end
+  end
+  Note over Edge,Mini: Loop 完成 = 趋近目标 / re-Plan / 用户终止

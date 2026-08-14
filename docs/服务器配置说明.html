@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>服务器配置说明.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> or <div class="page"></div> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="云端-gpu-服务器配置说明模型常驻--租赁选型">云端 GPU 服务器配置说明（模型常驻 / 租赁选型）</h1>
+<ul>
+<li><strong>版本</strong>：v1.1</li>
+<li><strong>日期</strong>：2026-08-13</li>
+<li><strong>推荐卡型</strong>：<strong>NVIDIA A100 80GB</strong>（单租户目标栈常驻；双租户见 §5）</li>
+<li><strong>目的</strong>：固定云端模型分工与常驻显存 / 时延量级，供租赁选型；端侧模型不计入云端。</li>
+<li><strong>原则</strong>：权重<strong>同时常驻</strong>，避免换入换出；MiniCPM-V 等放端侧。</li>
+<li><strong>性质</strong>：工程估算。数字含权重 + 激活 / KV / ComfyUI 余量；以 <code>nvidia-smi</code> + 压测校准。</li>
+</ul>
+<p>相关：<a href="development_workflow.md">development_workflow.md</a>、<a href="flux_vllm_omni_service.md">flux_vllm_omni_service.md</a>、<a href="01-MVP%E6%9C%9F-%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1%E5%8F%8A%E8%AE%A1%E5%88%92.md">01-MVP期-方案设计及计划.md</a>。<br>
+消费级 <strong>RTX 5090 32GB</strong> 仅作附录候选，见 <a href="#%E9%99%84%E5%BD%95-a-%E5%80%99%E9%80%89%E5%8F%82%E8%80%83-rtx-5090-32gb">附录 A</a>。</p>
+<hr>
+<h2 id="1-结论a100-优先">1. 结论（A100 优先）</h2>
+<table>
+<thead>
+<tr>
+<th>问题</th>
+<th>结论</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>优先租什么？</strong></td>
+<td><strong>A100 80GB ×1</strong>：跑齐目标栈（9B Agent + Flux-9B + 4B 记忆 + 检测）仍有约 <strong>25–40GB</strong> 余量，适合生产单租户。</td>
+</tr>
+<tr>
+<td><strong>目标栈能否免换出？</strong></td>
+<td><strong>能。</strong> 合计常驻约 <strong>37–50GB</strong>（见 §4），远低于 80GB。</td>
+</tr>
+<tr>
+<td><strong>一张 A100 能否并发两套完整服务？</strong></td>
+<td><strong>不建议按两套完整隔离栈承诺。</strong> 2× 全栈 ≈ <strong>75–100GB</strong> 易顶满。可行做法：两租户共享检测与/或 4B，或第二租户减配；稳妥则 <strong>双卡</strong> / 两实例。</td>
+</tr>
+<tr>
+<td><strong>5090 32GB？</strong></td>
+<td>附录候选：精简栈勉强，<strong>不含</strong>与 Agent 同步常驻的 4B 时仍紧；不作首选。</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="2-模型分工云端">2. 模型分工（云端）</h2>
+<h3 id="21-职责一览">2.1 职责一览</h3>
+<table>
+<thead>
+<tr>
+<th>角色</th>
+<th>模型</th>
+<th>精度（云端默认）</th>
+<th>职责</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>统一 Agent / 理解 / 美学指令</strong></td>
+<td><strong>Qwen3.5-9B</strong></td>
+<td>FP8（A100）；可选 NVFP4（Blackwell）</td>
+<td>预览帧 + Intent → 澄清问题；确认后输出 <strong>edit instruction</strong> 与 <strong>ShootingPlan</strong>；美学摄影能力由 Qwen3-VL-8B 整合训练并入，并微调 Agent</td>
+</tr>
+<tr>
+<td><strong>目标示意图</strong></td>
+<td><strong>Flux.2-Klein-9B</strong></td>
+<td>FP8</td>
+<td>按 instruction 生成 <code>reference_preview</code>（目标参照图）</td>
+</tr>
+<tr>
+<td><strong>记忆归档</strong></td>
+<td><strong>Qwen3-VL-4B</strong></td>
+<td>FP8</td>
+<td>用户摄影风格偏好、图像/视频描述等归纳；<strong>与 9B 并行，不阻塞 Agent 对话</strong></td>
+</tr>
+<tr>
+<td><strong>人脸</strong></td>
+<td><strong>InsightFace buffalo_l</strong></td>
+<td>ONNX</td>
+<td>检测 / 识别 / 对齐</td>
+</tr>
+<tr>
+<td><strong>通用打标</strong></td>
+<td><strong>RAM++</strong></td>
+<td>FP16</td>
+<td>开放集标签</td>
+</tr>
+<tr>
+<td><strong>Embedding</strong></td>
+<td><strong>SigLIP2</strong></td>
+<td>FP16</td>
+<td>检索 / 风格·场景向量</td>
+</tr>
+<tr>
+<td><strong>端侧（不上云）</strong></td>
+<td>MiniCPM-V 等</td>
+<td>—</td>
+<td>精调对比等本地环</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>现网开发机仍可能暂用 Qwen-Image-Edit-2511 / 外置 LLM；<strong>本说明的租赁目标栈以 Flux.2-Klein-9B 为示意图生成模型</strong>，2511 仅作迁移期冷备选，不计入 A100 默认常驻。</p>
+</blockquote>
+<h3 id="22-主路径时序逻辑">2.2 主路径时序（逻辑）</h3>
+<pre class="hljs"><code><div>预览帧 + userIntent
+        │
+        ▼
+┌───────────────────────┐
+│  Qwen3.5-9B（统一）    │  理解需求 / 追问澄清
+│  确认后 → instruction │  + ShootingPlan
+│         + Plan        │
+└───────────┬───────────┘
+            │
+            ├──────────────────────────────┐
+            ▼                              ▼（异步，不阻塞对话）
+┌───────────────────────┐      ┌───────────────────────┐
+│ Flux.2-Klein-9B       │      │ Qwen3-VL-4B           │
+│ 目标示意图生成         │      │ 记忆归档 / 风格归纳    │
+└───────────────────────┘      └───────────────────────┘
+
+检测栈（可与上列并行）：buffalo_l ∥ RAM++ ∥ SigLIP2
+</div></code></pre>
+<p>要点：</p>
+<ol>
+<li><strong>对话主链路只依赖 Qwen3.5-9B</strong>（理解 → 问题 → instruction/Plan）。</li>
+<li><strong>Flux</strong> 在 Plan/instruction 就绪后生成示意图，宜异步 PIP。</li>
+<li><strong>4B</strong> 后台归档，与 9B <strong>同卡常驻、可并发推理</strong>，不得占用 Agent 请求队列到阻塞交互。</li>
+<li><strong>检测三件套</strong> 常驻，供人脸/标签/向量；时延远小于 VLM/生成。</li>
+</ol>
+<hr>
+<h2 id="3-单模型显存a100-常驻">3. 单模型显存（A100 常驻）</h2>
+<p>单位：GiB。<strong>常驻</strong> = 权重 + 框架 + 中等上下文 / 单图激活（不含极端长视频）。</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>精度</th>
+<th>权重约</th>
+<th>常驻约（A100）</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Qwen3.5-9B</td>
+<td>FP8</td>
+<td>9–11</td>
+<td><strong>12–15</strong></td>
+<td>Agent + 视觉；KV 随 <code>max-model-len</code> 增加</td>
+</tr>
+<tr>
+<td>Flux.2-Klein-9B</td>
+<td>FP8（DiT+TE 上 GPU）</td>
+<td>~9 + TE</td>
+<td><strong>14–18</strong></td>
+<td>TE 卸 CPU 可降至 ~10–12，增首包时延</td>
+</tr>
+<tr>
+<td>Qwen3-VL-4B</td>
+<td>FP8</td>
+<td>5–6</td>
+<td><strong>6–9</strong></td>
+<td>归档短上下文可压到 ~6–7</td>
+</tr>
+<tr>
+<td>buffalo_l</td>
+<td>ONNX</td>
+<td>~0.3</td>
+<td><strong>0.5–1.5</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>RAM++</td>
+<td>FP16</td>
+<td>~1–2</td>
+<td><strong>1.5–3</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>SigLIP2</td>
+<td>FP16</td>
+<td>~0.8–1.5</td>
+<td><strong>1–2.5</strong></td>
+<td>so400m 量级</td>
+</tr>
+<tr>
+<td>驱动 / 碎片 / 多进程余量</td>
+<td>—</td>
+<td>—</td>
+<td><strong>2–3</strong></td>
+<td>多服务建议按 3 预留</td>
+</tr>
+</tbody>
+</table>
+<p><strong>检测三件套合计</strong>：约 <strong>3–5 GiB</strong>。</p>
+<blockquote>
+<p>A100（Ampere）无原生 FP8 Tensor Core；FP8 <strong>权重</strong>仍显著省显存，计算路径常落到 BF16/FP16 kernel。显存表按 FP8 权重常驻计；若改 BF16 全精度，9B/Flux 约再涨一倍量级，不推荐。</p>
+</blockquote>
+<hr>
+<h2 id="4-目标栈总显存单租户--a100">4. 目标栈总显存（单租户 · A100）</h2>
+<table>
+<thead>
+<tr>
+<th>组件</th>
+<th>常驻约</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Qwen3.5-9B FP8</td>
+<td>12–15</td>
+</tr>
+<tr>
+<td>Flux.2-Klein-9B FP8</td>
+<td>14–18</td>
+</tr>
+<tr>
+<td>Qwen3-VL-4B FP8</td>
+<td>6–9</td>
+</tr>
+<tr>
+<td>检测三件套</td>
+<td>3–5</td>
+</tr>
+<tr>
+<td>余量预留</td>
+<td>2–3</td>
+</tr>
+<tr>
+<td><strong>合计</strong></td>
+<td><strong>约 37–50 GiB</strong></td>
+</tr>
+<tr>
+<td><strong>A100 80GB 剩余</strong></td>
+<td><strong>约 30–43 GiB</strong></td>
+</tr>
+</tbody>
+</table>
+<p>用途建议：KV / 偶发高分辨率、Flux 与 9B 短时峰值、观测与小幅并发（如 4B 与 Agent 并行时各 1 路）。</p>
+<table>
+<thead>
+<tr>
+<th>变体</th>
+<th>合计约</th>
+<th>A100 判定</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>目标全栈（上表）</td>
+<td>37–50</td>
+<td>✅ 首选</td>
+</tr>
+<tr>
+<td>暂缓 4B</td>
+<td>31–41</td>
+<td>✅ 余量更大</td>
+</tr>
+<tr>
+<td>目标栈 + 2511 冷备同时常驻</td>
+<td>55–70</td>
+<td>⚠️ 挤；默认勿双生成常驻</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="5-双服务并发同一张-a100-80gb">5. 双服务并发（同一张 A100 80GB）</h2>
+<p>「两套服务」默认按<strong>隔离进程、权重不共享</strong>估算。</p>
+<table>
+<thead>
+<tr>
+<th>配置</th>
+<th>合计约</th>
+<th>判定</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2 × 目标全栈（9B+Flux+4B+检测）</td>
+<td><strong>75–100</strong></td>
+<td>❌</td>
+<td>易 OOM</td>
+</tr>
+<tr>
+<td>2 ×（9B+Flux+检测），<strong>共享 1×4B</strong></td>
+<td><strong>68–85</strong></td>
+<td>⚠️</td>
+<td>卡上限；需限 batch / len</td>
+</tr>
+<tr>
+<td>2 ×（9B+Flux+检测），<strong>共享 4B + 检测</strong></td>
+<td><strong>62–75</strong></td>
+<td>⚠️～✅</td>
+<td>较现实的同卡双租户</td>
+</tr>
+<tr>
+<td>1 × 全栈 + 1 × 仅 Agent/检测（无 Flux）</td>
+<td><strong>50–65</strong></td>
+<td>✅</td>
+<td>第二实例不做示意图</td>
+</tr>
+<tr>
+<td><strong>2 × 独立全栈</strong></td>
+<td>—</td>
+<td>❌</td>
+<td>改 <strong>2× A100</strong> 或两台实例</td>
+</tr>
+</tbody>
+</table>
+<p><strong>推荐表述</strong>：A100 80GB <strong>优先保障单租户目标栈 + 4B/Agent 并行</strong>；双租户同卡需共享轻量模型或减配，否则双卡。</p>
+<p>示意切分（共享检测 + 共享 4B）：</p>
+<pre class="hljs"><code><div>A100 80GB
+├── shared: Qwen3-VL-4B (~7) + 检测 (~4)
+├── tenant-A: Qwen3.5-9B (~13) + Flux-9B (~16)
+└── tenant-B: Qwen3.5-9B (~13) + Flux-9B (~16)
+    合计 ≈ 69 GiB（紧；生产需压测）
+</div></code></pre>
+<p>可用 MIG 切两块硬隔离，灵活性下降。</p>
+<hr>
+<h2 id="6-推理时延a100--warm">6. 推理时延（A100 · warm）</h2>
+<p>条件：权重已常驻；单请求；预览帧长边 ~1280 或示意 1024²；FP8 权重。A100 单请求时延与高端消费卡同量级，吞吐与稳定性更好。</p>
+<table>
+<thead>
+<tr>
+<th>调用</th>
+<th>P50 量级</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Qwen3.5-9B：理解 / 澄清（帧+Intent）</td>
+<td><strong>1–3 s</strong></td>
+<td>视输出长度；多轮追问按轮累加</td>
+</tr>
+<tr>
+<td>Qwen3.5-9B：确认后 instruction + Plan</td>
+<td><strong>1–3 s</strong></td>
+<td>结构化输出略长时可到 ~4 s</td>
+</tr>
+<tr>
+<td>上述两阶段串行（典型慢路径）</td>
+<td><strong>2–6 s</strong></td>
+<td>不含外置 API</td>
+</tr>
+<tr>
+<td>Flux.2-Klein-9B 示意图（蒸馏 ~4 step）</td>
+<td><strong>2–5 s</strong></td>
+<td>本仓 Klein-4B@3090 warm 编辑 ~3.6 s 可作下界参考</td>
+</tr>
+<tr>
+<td>Qwen3-VL-4B 记忆归档（后台）</td>
+<td><strong>0.5–1.5 s</strong></td>
+<td>不计入对话关键路径</td>
+</tr>
+<tr>
+<td>buffalo_l</td>
+<td><strong>20–80 ms</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>RAM++</td>
+<td><strong>50–200 ms</strong></td>
+<td></td>
+</tr>
+<tr>
+<td>SigLIP2</td>
+<td><strong>30–100 ms</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>端到端（用户可感知）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>组成</th>
+<th>量级</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>对话澄清 → Plan</td>
+<td>仅 Qwen3.5-9B</td>
+<td><strong>约 2–6 s</strong></td>
+</tr>
+<tr>
+<td>示意图 PIP</td>
+<td>Flux 异步</td>
+<td><strong>+2–5 s</strong>（不挡对话）</td>
+</tr>
+<tr>
+<td>记忆归档</td>
+<td>4B 异步</td>
+<td><strong>不阻塞</strong></td>
+</tr>
+<tr>
+<td>检测增强</td>
+<td>三件套并行</td>
+<td><strong>+0.1–0.3 s</strong></td>
+</tr>
+</tbody>
+</table>
+<p>冷启动（应开机预热，勿走在线路径）：9B / 4B 各约 20–60 s；Flux/ComfyUI 首次可达 <strong>1–3 min</strong>。</p>
+<hr>
+<h2 id="7-租赁配置建议以-a100-为中心">7. 租赁配置建议（以 A100 为中心）</h2>
+<table>
+<thead>
+<tr>
+<th>档位</th>
+<th>GPU</th>
+<th>场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>首选</strong></td>
+<td><strong>A100 80GB ×1</strong></td>
+<td>单租户目标全栈常驻；9B∥4B 并行</td>
+</tr>
+<tr>
+<td>双租户稳妥</td>
+<td><strong>A100 80GB ×2</strong>（或两实例）</td>
+<td>各跑全栈，故障域隔离</td>
+</tr>
+<tr>
+<td>同卡双租户试验</td>
+<td>A100 80GB ×1</td>
+<td>仅共享 4B/检测减配后压测通过再上</td>
+</tr>
+<tr>
+<td>更高吞吐</td>
+<td>H100 80GB</td>
+<td>原生 FP8；单价更高</td>
+</tr>
+<tr>
+<td>消费级候选</td>
+<td>RTX 5090 32GB</td>
+<td>见附录 A，非首选</td>
+</tr>
+</tbody>
+</table>
+<p><strong>系统侧</strong>：内存 ≥ 128GB；NVMe ≥ 500GB（多套 FP8）；驱动/CUDA 匹配 vLLM + ComfyUI；systemd 预热 Agent、Flux、4B、检测服务。</p>
+<p><strong>量化</strong>：A100 上 VLM/生成默认 <strong>FP8 权重</strong>；勿按 BF16 全量预留。</p>
+<hr>
+<h2 id="8-部署约束">8. 部署约束</h2>
+<ol>
+<li><strong>常驻</strong>：在线路径禁止卸权重；OOM 时先降 <code>max-model-len</code> / 并发，再升配。</li>
+<li><strong>主对话只走 Qwen3.5-9B</strong>；Flux 与 4B 异步，队列隔离，避免生成/归档占满抢占对话。</li>
+<li><strong>示意图生成默认 Flux.2-Klein-9B</strong>；勿与 2511 双常驻。</li>
+<li><strong>MiniCPM-V → 端侧</strong>，不占 A100。</li>
+<li><strong>上线压测</strong>：9B 对话、Flux 示意、4B 并行归档、检测三件套；记录 P50/P95 与显存峰值。</li>
+</ol>
+<hr>
+<h2 id="附录-a-候选参考rtx-5090-32gb">附录 A. 候选参考：RTX 5090 32GB</h2>
+<blockquote>
+<p>非租赁首选。桌面 5090 标称 <strong>32GB</strong>；可用预算按约 <strong>30GB</strong>（扣驱动/上下文）。本地开发文档中的「约 24GB」可能是观测/碎片后数值，不改标称容量。</p>
+</blockquote>
+<h3 id="a1-能否跑目标栈">A.1 能否跑目标栈？</h3>
+<table>
+<thead>
+<tr>
+<th>组合</th>
+<th>合计约</th>
+<th>32GB</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>9B FP8 + Flux FP8 + 检测</td>
+<td>30–36</td>
+<td>❌ / 极紧</td>
+<td>几乎无 4B 余量</td>
+</tr>
+<tr>
+<td>9B <strong>NVFP4</strong> + Flux FP8 + 检测</td>
+<td>26–33</td>
+<td>⚠️</td>
+<td>精简单租户下限；限 KV / batch=1</td>
+</tr>
+<tr>
+<td>上表 + 4B 常驻</td>
+<td>33–41</td>
+<td>❌</td>
+<td>与「4B∥Agent」目标冲突</td>
+</tr>
+<tr>
+<td>目标全栈（同 §4）</td>
+<td>37–50</td>
+<td>❌</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>结论</strong>：5090 适合开发或精简演示（NVFP4 + Flux + 检测，4B 卸掉或端侧代劳）；<strong>不能满足</strong>「A100 目标全栈 + 4B 与 Agent 同步常驻」。双租户同卡不可行。</p>
+<h3 id="a2-5090-时延量级参考">A.2 5090 时延量级（参考）</h3>
+<p>与 §6 同量级（warm 单请求）；NVFP4 在 Blackwell 上 VLM 吞吐可优于 A100 FP8 权重路径，但显存天花板限制并发与 4B 常驻。</p>
+<h3 id="a3-何时可考虑-5090">A.3 何时可考虑 5090</h3>
+<ul>
+<li>预算优先、仅单用户开发；</li>
+<li>接受暂缓云端 4B，或记忆改 CPU/更小模型；</li>
+<li>接受偶发串行 / 更紧的 <code>gpu_memory_utilization</code>。</li>
+</ul>
+<p>生产与「双模型并行不阻塞」仍优先 <strong>A100 80GB</strong>。</p>
+<hr>
+<h2 id="修订记录">修订记录</h2>
+<table>
+<thead>
+<tr>
+<th>日期</th>
+<th>版本</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-08-13</td>
+<td>v1.0</td>
+<td>首版：多生成栈对比、5090/A100 并列</td>
+</tr>
+<tr>
+<td>2026-08-13</td>
+<td>v1.1</td>
+<td>明确 9B/Flux/4B/检测分工；<strong>首选 A100 80GB</strong>；刷新显存与时延；5090 降为附录</td>
+</tr>
+</tbody>
+</table>
+
+</body>
+</html>

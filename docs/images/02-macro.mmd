@@ -1,0 +1,53 @@
+---
+config:
+  layout: elk
+---
+flowchart LR
+  subgraph loop ["Loop iteration_N (主线骨架)"]
+    direction TB
+    PlanN[Planning] --> ActN[Act] --> EvalN[Evaluation] --> RepN{replan?}
+    RepN -->|not satisfied feedback| PlanN
+    RepN -->|satisfied or max_iter| DoneN[complete]
+  end
+  subgraph right ["右侧分层"]
+    direction TB
+    subgraph skills ["Skills"]
+      direction TB
+      VLM[Qwen3VLPhoto 已有]
+      RefImg[ReferenceImageSkill 已实现未实测]
+      EditMini[edit环Reflector+MiniCPM 已有]
+      Scenario[分身入画等场景Skill 待建]
+      Reg[SkillRegistry 待建]
+    end
+    subgraph base ["Base_Modules"]
+      direction TB
+      Schema[schemas 已有]
+      SysP[prompts+PromptLoader 已有]
+      Route[models/factory HTTP routing 已有 无GPU调度]
+      ToolCall[ToolRegistry 12tools 已有]
+    end
+    subgraph wiki ["Knowledge_Wiki"]
+      SelfLib[自建参考库 待建]
+      XHS[小红书notes参考 待建]
+    end
+    subgraph mem ["Memory"]
+      Prim[FileCache+JsonHistory 已有 未用]
+      Episodic[Episodic 单次拍摄 待建]
+      Semantic[Semantic 用户画像 待建]
+      RawS[Raw Session 待建]
+    end
+  end
+  Schema --> PlanN
+  SysP --> PlanN
+  Route -.-> VLM
+  Route -.-> RefImg
+  ToolCall --> ActN
+  VLM --> PlanN
+  RefImg --> ActN
+  Scenario --> PlanN
+  Reg -.wraps.-> VLM
+  EditMini --> EvalN
+  EvalN -.records.-> Episodic
+  DoneN -.final photo.-> Episodic
+  PlanN -.reads reference.-> SelfLib
+  SelfLib -.link.-> XHS

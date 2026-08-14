@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>02-框架及流程图.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> or <div class="page"></div> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="02--框架及流程图独立维护">02 — 框架及流程图（独立维护）</h1>
+<ul>
+<li><strong>版本</strong>：v0.1</li>
+<li><strong>日期</strong>：2026-07-25</li>
+<li><strong>状态</strong>：独立迭代——与 <a href="01-MVP%E6%9C%9F-%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1%E5%8F%8A%E8%AE%A1%E5%88%92.md">01-MVP期-方案设计及计划.md</a> 后续同步。01 现有 §3 架构与流程为<strong>旧快照</strong>，本文为<strong>迭代版</strong>（宏观图重排、端云图精简命名）。</li>
+<li><strong>范围</strong>：本文只收框架与流程图（宏观架构 / 端云协作 / 场景 Skill）及配套状态表，不重复 01 的设计 rationale。</li>
+<li><strong>关联文档</strong>：
+<ul>
+<li><a href="01-MVP%E6%9C%9F-%E6%96%B9%E6%A1%88%E8%AE%BE%E8%AE%A1%E5%8F%8A%E8%AE%A1%E5%88%92.md">01-MVP期-方案设计及计划.md</a> — MVP 主文档（§3 旧快照 + §9.1 PR 待办）</li>
+<li><a href="project_guide.md">project_guide.md</a> — 代码仓模块导读与扩展点</li>
+<li><a href="p3_act_channels.md">p3_act_channels.md</a> — P3 双通道 Act 执行计划（PR1/PR2/PR3）</li>
+</ul>
+</li>
+</ul>
+<hr>
+<h2 id="1-宏观架构harness--loop-骨架">1. 宏观架构（harness + loop 骨架）</h2>
+<p><strong>排布</strong>：左为 Loop iteration_N 主线骨架；右自上而下为 Skills / Base_Modules / Knowledge_Wiki / Memory。节点与连线内容与 01 §3.1 一致，仅优化排布与美观。</p>
+<pre><code class="language-mermaid"><div class="mermaid">---
+config:
+  layout: elk
+---
+flowchart LR
+  subgraph loop ["Loop iteration_N (主线骨架)"]
+    direction TB
+    PlanN[Planning] --> ActN[Act] --> EvalN[Evaluation] --> RepN{replan?}
+    RepN -->|not satisfied feedback| PlanN
+    RepN -->|satisfied or max_iter| DoneN[complete]
+  end
+  subgraph right ["右侧分层"]
+    direction TB
+    subgraph skills ["Skills"]
+      direction TB
+      VLM[Qwen3VLPhoto 已有]
+      RefImg[ReferenceImageSkill 已实现未实测]
+      EditMini[edit环Reflector+MiniCPM 已有]
+      Scenario[分身入画等场景Skill 待建]
+      Reg[SkillRegistry 待建]
+    end
+    subgraph base ["Base_Modules"]
+      direction TB
+      Schema[schemas 已有]
+      SysP[prompts+PromptLoader 已有]
+      Route[models/factory HTTP routing 已有 无GPU调度]
+      ToolCall[ToolRegistry 12tools 已有]
+    end
+    subgraph wiki ["Knowledge_Wiki"]
+      SelfLib[自建参考库 待建]
+      XHS[小红书notes参考 待建]
+    end
+    subgraph mem ["Memory"]
+      Prim[FileCache+JsonHistory 已有 未用]
+      Episodic[Episodic 单次拍摄 待建]
+      Semantic[Semantic 用户画像 待建]
+      RawS[Raw Session 待建]
+    end
+  end
+  Schema --> PlanN
+  SysP --> PlanN
+  Route -.-> VLM
+  Route -.-> RefImg
+  ToolCall --> ActN
+  VLM --> PlanN
+  RefImg --> ActN
+  Scenario --> PlanN
+  Reg -.wraps.-> VLM
+  EditMini --> EvalN
+  EvalN -.records.-> Episodic
+  DoneN -.final photo.-> Episodic
+  PlanN -.reads reference.-> SelfLib
+  SelfLib -.link.-> XHS
+</div></code></pre>
+<blockquote>
+<p>渲染图（mermaid-cli + ELK 引擎生成）：<img src="images/02-macro.png" alt="宏观架构"></p>
+</blockquote>
+<p><strong>层状态表</strong>（已有 / 待建 / 复用参考）：</p>
+<table>
+<thead>
+<tr>
+<th>层</th>
+<th>状态</th>
+<th>关键文件 / 说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Schema</td>
+<td>已有</td>
+<td><code>schemas/{plan,action,state,tool,shooting,perception}.py</code></td>
+</tr>
+<tr>
+<td>System Prompt</td>
+<td>已有</td>
+<td><code>prompts/*.md</code> + <code>agents/prompt_loader.py</code></td>
+</tr>
+<tr>
+<td>Model Routing</td>
+<td>已有（HTTP only，无 GPU 调度）</td>
+<td><code>models/factory.py</code>、<code>models/protocols.py</code>（<code>StructuredVisionClient</code>/<code>ImageGenerationClient</code>）</td>
+</tr>
+<tr>
+<td>Tools-call</td>
+<td>已有（12 tools / 4 layer）</td>
+<td><code>tools/registry.py::create_default_tool_registry</code>、<code>schemas/tool.py</code>、<code>workflow/compiler.py</code>、<code>workflow/executor.py</code></td>
+</tr>
+<tr>
+<td>Loop — 编辑环</td>
+<td>已有</td>
+<td><code>workflow/image_loop.py::ImageLoop.run</code>；<code>config.yaml loop.max_iterations</code></td>
+</tr>
+<tr>
+<td>Loop — 拍照 Act 环</td>
+<td>待建（P3+）</td>
+<td><code>workflow/shooting_loop.py</code> 仅两段式，无 evaluator/replan</td>
+</tr>
+<tr>
+<td>Skills — base</td>
+<td>已有（无 registry）</td>
+<td><code>skills/qwen3vl_photo.py</code>、<code>skills/reference_image.py</code>（PR1 已实现未实测）</td>
+</tr>
+<tr>
+<td>Skills — registry</td>
+<td>待建</td>
+<td>现直构于 <code>app_shooting.py</code> / <code>services/gateway/factory.py</code></td>
+</tr>
+<tr>
+<td>Agents</td>
+<td>已有（Perception 未接线）</td>
+<td><code>agents/{planner,reflector,intent_agent,shooting_planner_agent,perception}.py</code></td>
+</tr>
+<tr>
+<td>Memory — 原语</td>
+<td>已有（未被环使用）</td>
+<td><code>memory/{cache,history,image_state}.py</code>（<code>FileCache</code>=路径助手；<code>JsonHistoryStore</code>=append-only JSONL）</td>
+</tr>
+<tr>
+<td>Memory — 三分类</td>
+<td>待建</td>
+<td>无；现用 <code>schemas/state.py::ExecutionState</code> + <code>workflow/state_manager.py</code></td>
+</tr>
+<tr>
+<td>Knowledge Wiki</td>
+<td>待建</td>
+<td>零代码；自建库 / 小红书 notes 参考</td>
+</tr>
+<tr>
+<td>MiniCPM 端侧 / 拍照精调</td>
+<td>待建（P5）</td>
+<td>仅编辑环 <code>:8001</code> 已有：<code>agents/reflector.py</code> + <code>config.yaml structured_evaluation</code></td>
+</tr>
+<tr>
+<td>端云分裂 / edge runtime</td>
+<td>待建</td>
+<td>当前 Edge = 浏览器送帧（P2 已有）；无端侧推理运行时</td>
+</tr>
+</tbody>
+</table>
+<p><strong>读图要点</strong>：Loop 主线骨架在左，四层栈在右按 Skills→Base→Wiki→Memory 自上而下。编辑环 <code>ImageLoop</code>（已有）跑完整 Plan→compile→execute→evaluate→replan，<code>max_iterations</code> 由 <code>config.yaml loop.max_iterations</code> 注入，落盘 <code>outputs/logs/state_iter_NN.json</code> 与 <code>outputs/plans/plan_iter_NN.json</code>；拍照 Act 环（待建）目前 <code>ShootingLoop</code> 仅 <code>collect_intent_phase</code>→<code>confirm_and_plan</code> 两段式。基础设施层全部已有；模型路由 HTTP-only（不变量：只注入 HTTP 客户端，不做 GPU 调度）。Skills 层 base skill 已有但无 registry；Memory 薄原语已有但未被任一环使用，三分类待建；Wiki/小红书/端侧/端云分裂零代码。</p>
+<hr>
+<h2 id="2-端云协作流程单次迭代">2. 端云协作流程（单次迭代）</h2>
+<p>Agent 分裂为<strong>云端</strong>（Intent / Plan / 目标示意图）与<strong>端侧</strong>（CV Guidance / 端侧 Act·Evaluation）两环境。云端负责理解场景+意图、必要 Question、Plan 生成与目标参考图；端侧负责 1fps 帧评估与引导刷新。</p>
+<pre><code class="language-mermaid"><div class="mermaid">sequenceDiagram
+  participant Edge as 用户端API
+  participant CV as CV Guidance
+  participant Mini as 端侧Act / Evaluation
+  participant Cloud as 云侧Intent / Plan
+  participant RefGen as 目标及示意图
+  Edge->>Cloud: frame + userIntent
+  Cloud->>Cloud: Qwen3VL 场景+语义理解
+  alt 存在真实歧义_minimal
+    Cloud-->>Edge: Question 带选项 仅澄清真实歧义
+    Edge-->>Cloud: answers
+  end
+  Cloud->>Cloud: Planner 产出 Plan 拍什么 怎么拍 coarse reference指令
+  par coarse_act
+    Cloud-->>Edge: coarseGuidance + Plan目标描述
+    Edge->>CV: 渲染 overlay 三分线 bbox 箭头
+  and reference_preview
+    Cloud->>RefGen: frame + editInstruction
+    RefGen-->>Cloud: reference PNG
+    Cloud-->>Edge: reference_preview ready PIP
+  end
+  loop edge eval 1fps
+    Edge->>Mini: 当前帧 + reference + Plan goal
+    Mini-->>Edge: achieved? / next guidance
+    alt Plan-refresh 触发 移动后出现原帧未含物体 可能影响目标
+      Edge->>Cloud: invalidate signal + 新帧
+      Cloud->>Cloud: re-Plan
+      Cloud-->>Edge: 新 Plan + 新 coarse reference
+      Edge->>CV: 刷新 overlay
+    else 继续对齐
+      Edge->>CV: 刷新引导趋近
+    end
+  end
+  Note over Edge,Mini: Loop 完成 = 趋近目标 / re-Plan / 用户终止
+</div></code></pre>
+<blockquote>
+<p>渲染图（mermaid-cli 生成）：<img src="images/02-edge-cloud.png" alt="端云协作流程"></p>
+</blockquote>
+<blockquote>
+<p>注：mermaid <code>sequenceDiagram</code> 宽高比由渲染器决定，源码无法强制 2:1；5 个 participant + <code>par</code>/<code>loop</code> 自然横向展开，短标签使其更宽更净。若需严格 2:1 画幅，在渲染容器/CSS 设定（如固定宽度、横向滚动）。</p>
+</blockquote>
+<p><strong>读图要点</strong>：<strong>Question 极简原则</strong>（仅真实歧义、带选项、可答默认推荐，避免打断）；<code>par coarse_act ∥ reference_preview</code> 并行交付——粗调 overlay 即时下发，Qwen2511 参考图异步（≤30s 首版）到达 PIP；端侧 eval 闭环 1fps（输入=当前帧+目标参考+Plan goal 描述 → achieved?/下一步引导）；<strong>Plan-refresh 触发</strong>（Evaluation 发现使现有 Plan 失效的信息，典型：原帧缺失物体在用户按引导移动后出现且可能影响目标 → invalidate → re-Plan → 重新与云端通信）；现状：慢路径已有 P1/P2，端侧 eval 循环、Plan-refresh、edge runtime 均<strong>待建</strong>。</p>
+<hr>
+<h2 id="3-场景-skill-示例分身入画clone-self-into-scene">3. 场景 Skill 示例：分身入画（clone-self-into-scene）</h2>
+<p>分身入画 Skill 打包完整 App 流程：前置自拍生成分身 ID 图 → 后置场景理解+意图 → Plan[机位/视角/站位/stance/pose] → 粗调引导 → 交付目标参考图 → 端侧持续评估闭环。下图每步为独立节点，便于后续逐步贴效果示意。</p>
+<pre><code class="language-mermaid"><div class="mermaid">flowchart TB
+  S1["① 前置相机自拍上半身 → 生成分身ID图"]
+  S2["② Agent 理解后置场景空间+语义+用户意图 → Plan(机位/视角/站位/stance/pose)"]
+  S3["③ 粗调引导用户对齐机位/视角"]
+  S4["④ 交付目标参考图(reference)"]
+  S5["⑤ 前端: 参考预览 + 站位/身体虚框图形引导"]
+  S6["⑥ 端侧VLM持续评估 → 刷新引导或完成闭环"]
+  Done(["完成拍摄"])
+  S1 -->|分身ID图| S2
+  S2 -->|Plan| S3
+  S3 -->|粗调对齐| S4
+  S4 -->|target reference image| S5
+  S5 -->|参考预览+虚框overlay| S6
+  S6 -->|未达标 刷新引导| S3
+  S6 -->|趋近目标| Done
+</div></code></pre>
+<blockquote>
+<p>渲染图（mermaid-cli 生成）：<img src="images/02-clone-self.png" alt="分身入画"></p>
+</blockquote>
+<blockquote>
+<p>每步为独立节点，便于后续逐步贴效果示意。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>复用 / 待建</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>① 前置自拍 + 分身 ID 图生成</td>
+<td>待建（前置相机采集 + 身份图生成）</td>
+</tr>
+<tr>
+<td>② 后置场景理解 + Plan</td>
+<td>复用参考：<code>IntentAgent</code>/<code>ShootingPlannerAgent</code>/<code>Qwen3VLPhotoClient</code>（已有），需扩展前后置协同与 stance/pose 推理</td>
+</tr>
+<tr>
+<td>③ 粗调引导</td>
+<td>待建（<code>cv-guide</code> P3）</td>
+</tr>
+<tr>
+<td>④ 目标参考图</td>
+<td>复用参考：<code>ReferenceImageSkill</code>（PR1 已实现未实测）</td>
+</tr>
+<tr>
+<td>⑤ 参考预览 + 虚框 overlay</td>
+<td>待建（<code>overlay-compose</code> P3；前端 canvas 渲染 <code>GuidanceLayer</code>）</td>
+</tr>
+<tr>
+<td>⑥ 端侧 VLM 持续评估</td>
+<td>待建（MiniCPM 拍照精调 P5；云端 <code>:8001</code> 仅 edit 环已有）</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<p><em>本文档独立维护与迭代；与 01-MVP期-方案设计及计划.md 后续同步。</em></p>
+
+</body>
+</html>
